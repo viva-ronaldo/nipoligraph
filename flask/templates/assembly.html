@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+  <!--<div class="wrapper">-->
+    {% include 'sidebar.html' %}
+
+    {% include 'nav.html' %}
+
+    <div class="overlay"></div>
+
+    <div class="jumbotron" style="display: flex; align-items: end; background-image: url('{{ url_for('static', filename='WHAT THEY DO.jpg') }}'); background-size: cover">
+
+      <div class="row d-flex ml-4 justify-content-start">
+        <div class="col-md-6 ml-4 py-3" style='color: white'>
+          <h1>What They <b>Do</b></h1>
+          <p>This page is focused on the current Assembly session, which started on 11 January 2020, and aims to track the activity of members and ministers via questions asked and answered, contributes to debates, and votes.</p>
+        </div>      
+      </div>
+    </div>
+
+    <div class='container-xl'>    
+
+      <div class="row mb-2 justify-content-md-center">
+
+        <div class="my-header px-5 py-3 pt-md-5 pb-md-2 mx-auto text-center">
+          <p>Upcoming Assembly business (see <a href='http://aims.niassembly.gov.uk/assemblybusiness/businessdiary.aspx'>niassembly.gov.uk</a> for full information):</p>
+          <ul>
+          {% for item in diary.itertuples() %}
+              <li><span style="color: {{ item.EventHTMLColour }}"><b>{{ item.EventName}}</b></span> on {{ item.EventPrettyDate }} at {{ item.StartTime[11:16] }}</li>
+          {% endfor %}
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="row mb-2 justify-content-md-center">
+        <div class="col-lg-7">
+          <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+            <div class="col p-4 d-flex flex-column justify-content-center">
+              <h4 class="mb-0">Voting records</h4>
+              <p class="card-text mb-auto">The <b>voting patterns</b> of {{n_mlas}} MLAs over {{n_votes}} votes (those voting in at least 70% of the votes) are visualised using dimensionality reduction: there is no explicit meaning to the two graph axes, but circles that are close together represent MLAs that vote in similar ways. Parties cluster strongly together because they often each vote as a bloc. See <i><a href='#Technical-stuff'>Technical Stuff</i></a> for more explanation.</p>
+              <div id='vis3' style='max-width: 700px'></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+            <div class="col p-4 d-flex flex-column position-static">
+              <h4 class="mb-0">Party voting unity</h4>
+              <p class="card-text mb-auto">Shows the percentage of votes in which all of a party's votes were in the same direction. Only considers motions on which at least five members of the party voted. 'Abstain' is treated as a separate vote direction. <b>TODO possibly remove this one.</b></p>
+              <div id='vis6' style='max-width: 400px'></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mb-2 justify-content-md-center">
+        <div class="col-xl-6">
+          <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+            <div class="col p-4 d-flex flex-column position-static">
+              <h4 class="mb-0">Member questions asked</h4>
+              <div>
+                <p class="card-text mb-auto">Shows the most prolific <b>question askers</b> among MLAs in the current session.</p>
+              </div>
+              <div id='vis4' style='max-width: 450px'></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-6 col-lg-6">
+          <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+            <div class="col p-4 d-flex flex-column position-static">
+              <!--<strong class="d-inline-block mb-2 text-primary">Optional category</strong>-->
+              <h4 class="mb-0">Ministerial answers</h4>
+              <div style='min-height: 180px'>
+                <p class="card-text mb-auto">Shows the <b>number of questions (written and oral) answered</b> by each minister in the current session (bar lengths), and the <b>average time taken</b> to do so (circle sizes). The First and Deputy First Ministers respond to questions as a pair.</p>  
+              </div>
+              <div id='vis2' style='max-width: 450px'></div>
+            </div>
+          </div>
+        </div>
+        <!-- <div class="col-xl-4 col-lg-6">
+          <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+            <div class="col p-4 d-flex flex-column position-static">
+              <h4 class="mb-0">Minister time to answer</h4>
+              <div style='min-height: 180px'>
+                <p class="card-text mb-auto">Ranking the ministers by average <b>time to respond</b> to questions (written and oral).</p>
+              </div>
+              <div id='vis1' style='max-width: 400px'></div>
+            </div>
+          </div>
+        </div> -->
+      </div>
+      
+      <div class="row mb-2 justify-content-md-center">
+        <div class="col-lg-7">
+          <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+            <div class="col p-4 d-flex flex-column position-static">
+              <h4 class="mb-0">Plenary discussion topics</h4>
+              <p class="card-text mb-auto">A model is used to assign a 'topic' label to all Plenary session member 'contributions' (a speech by a member, or part of a speech, if interrupted), based on the words featured. These are the frequencies of each topic in the current Assembly session. Hover over the bars to see the key words that define each topic. See <i><a href='#Technical-stuff'>Technical Stuff</i></a> for more explanation.<br />These labels are used in the <a href="{{ url_for('indiv') }}">Individual page</a> to describe what subjects each member tends to talk about in plenary sessions.</p>
+              <div id='vis5' style='max-width: 600px'></div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="col-lg-5 blog-sidebar" id='Technical-stuff'>
+          <div class="p-4 mb-3 bg-light rounded">
+            <h4 class="font-italic">Technical Stuff</h4>
+            <ul class="nav nav-tabs" id="myTab" role="tablist" style="margin-bottom:15px">
+              <li class="nav-item" role="presentation">
+                <a class="nav-link active" id="one-tab" data-toggle="tab" href="#one" role="tab" aria-controls="one" aria-selected="true">Assembly data</a>
+              </li>
+              <li class="nav-item" role="presentation">
+                <a class="nav-link" id="three-tab" data-toggle="tab" href="#three" role="tab" aria-controls="three" aria-selected="false">Voting records</a>
+              </li>
+              <li class="nav-item" role="presentation">
+                <a class="nav-link" id="two-tab" data-toggle="tab" href="#two" role="tab" aria-controls="two" aria-selected="false">Plenary topics</a>
+              </li>
+              <li class="nav-item" role="presentation">
+                <a class="nav-link" id="four-tab" data-toggle="tab" href="#four" role="tab" aria-controls="four" aria-selected="false">Plenary emotions</a>
+              </li>
+            </ul>
+            <div class="tab-content" id="myTabContent">
+              <div class="tab-pane fade show active" id="one" role="tabpanel" aria-labelledby="one-tab">The data on this page apply to the current Assembly session, starting on 11 January 2020. Data are obtained from the <a href="http://data.niassembly.gov.uk/">NI Assembly Open Data API</a>.</div>
+              <div class="tab-pane fade" id="two" role="tabpanel" aria-labelledby="two-tab">Using all Hansard records from Assembly Plenary sessions from 2015 to present, an <a href="https://radimrehurek.com/gensim/auto_examples/tutorials/run_lda.html#sphx-glr-auto-examples-tutorials-run-lda-py">LDA model</a> was trained, to cluster the contributions based on their content (the words spoken by the member, excluding some procedural terms). This creates a set of 14 recognisable 'topics'. Each contribution in the current session was then assigned one of these labels. Some contributions are only one sentence long, so it is not always reliable to make these assignments, and these topics are not tied to the overall subject of the debate in which the contribution was made.</div>
+              <div class="tab-pane fade" id="three" role="tabpanel" aria-labelledby="three-tab">The votes scatter plot uses <a href="https://en.wikipedia.org/wiki/Principal_component_analysis">Principal Component Analysis</a> to reduce each member's voting record into two numerical dimensions. The closer together two members are in the plot, the more similar are their voting records. The horizontal and vertical axes carry information about the patterns of voting, but the axes may not be perfectly aligned with our notions of what 'controls' voting. Here, the horizontal axis (the more important of the two) represents a combination of 'nationalist-unionist' and economic and/or social left-right dimensions (members situated on the right side of the plot tend to be more conservative and/or more unionist), while the y-axis seems to be related to voting with or against the First and Deputy First Ministers (members of the two biggest parties are located in the lower half of the plot).</div>
+              <div class="tab-pane fade" id="four" role="tabpanel" aria-labelledby="four-tab">Emotion scores for plenary contributions are calculated using the <b>R</b> package <a href="https://github.com/trinker/sentimentr">sentimentr</a>, which does so by counting words marked as being indicative of each of the emotions, while accounting for negations and other speech modifiers. You can explore the NRC lexicon, to see which words are linked to which emotion, <a href='https://www.saifmohammad.com/WebPages/NRC-Emotion-Lexicon.htm'>here</a>.</div>
+            </div>
+            <p class="mb-0"></p>
+          </div>
+        </aside>
+        
+      </div>
+
+      <div class="row mb-2 justify-content-md-center">
+        <div class="col-md-8">
+          <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+            <div class="col p-4 d-flex flex-column position-static">
+              <h4 class="mb-0">Plenary discussion emotions</h4>
+              <p class="card-text mb-auto">Plenary contributions from the current session are scored for the extent to which they express one of five different emotions, and scores are averaged by party. See <i><a href='#Technical-stuff'>Technical Stuff</i></a> for more explanation.</p>
+              <div id='vis7'></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mb-2 justify-content-md-center">
+        <div class="col-md-12">
+          <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+            <div class="col p-4 d-flex flex-column position-static">
+              <h4 class="mb-0">Votes in this session</h4>
+              <ul style='max-width:620px'>
+                <li><b>{{votes_passed_string}}</b> motions have passed <span id='votes_passed_sparkline'></span> </li>
+                <li><b>{{uni_tabled_passed_string}}</b> motions proposed by <span style='color:darkorange'><b>unionists</b></span> have passed <span id='uni_votes_passed_sparkline'></span> </li>
+                <li><b>{{nat_tabled_passed_string}}</b> motions proposed by <span style='color:forestgreen'><b>nationalists</b></span> have passed <span id='nat_votes_passed_sparkline'></span></li>
+                <li><b>{{mix_tabled_passed_string}}</b> motions proposed by more than one group have passed</li>
+                <li><b>{{uni_nat_split_string}}</b> votes were split unionist/nationalist (<b>{{num_uni_nat_split_passes}}</b> passed)</li>
+                <li>In sectarian split votes, Alliance have voted with <span style='color:darkorange'><b>unionists</b></span> in <b>{{alli_like_uni_string}}</b> votes and with <span style='color:forestgreen'><b>nationalists</b></span> in <b>{{alli_like_nat_string}}</b> votes</li>
+                <li>In sectarian split votes, Green have voted with <span style='color:darkorange'><b>unionists</b></span> in <b>{{green_like_uni_string}}</b> votes and with <span style='color:forestgreen'><b>nationalists</b></span> in <b>{{green_like_nat_string}}</b> votes</li>
+              </ul>
+              <table id="example" class="table table-striped table-bordered" style='font-size: 0.9em'>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Motion</th>
+                    <th>Tabled by</th>
+                    <th>Result</th>
+                    <th>Unionist bloc vote</th>
+                    <th>Nationalist bloc vote</th>
+                    <th>Alliance vote</th>
+                    <th>Green vote</th>
+                    <th>Sectarian split?</th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  <!--</div>-->
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right">
+      <p class='text-muted'>Contains Parliamentary information licensed under the <a href="http://data.niassembly.gov.uk/licence.aspx">Open Government Licence v3.0</a></p> 
+    </div>
+{% endblock %}
+
+{% block other_js %}
+
+    <script type="text/javascript" src="{{ url_for('static', filename='jquery.sparkline.2.1.2.js') }}"></script>
+    <script src="https://cdn.datatables.net/1.10.21/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.5/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.5/js/responsive.bootstrap.min.js"></script>
+
+    <script src="http://cdn.datatables.net/plug-ins/1.10.15/dataRender/datetime.js"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='moment.min.js') }}"></script>
+
+    <script type="text/javascript">
+
+        // parse("/data/plot_minister_answers_bars", "vis1");
+        parse("/data/plot_minister_answer_times", "vis2");
+        if (screen.width > 500) {
+          parse("/data/plot_vote_pca_all_mlas_web", "vis3");
+          parse("/data/plot_questions_asked_web", "vis4");
+          parse("/data/plot_plenary_emotions_by_party_web", "vis7");
+        } else {
+          parse("/data/plot_vote_pca_all_mlas_mobile", "vis3");
+          parse("/data/plot_questions_asked_mobile", "vis4");
+          parse("/data/plot_plenary_emotions_by_party_mobile", "vis7");
+        }
+        parse("/data/plot_plenary_topics_overall", "vis5");
+        parse("/data/plot_party_unity_bars", "vis6");
+        
+
+        var dataSet = {{votes_list | tojson }};
+
+        $(document).ready(function() {
+            $('#example').DataTable( {
+                responsive: true,
+                data: dataSet,
+                columns: [
+                    { title: "Date", 
+                      render: function(data, type, row){
+                        if(type === "sort" || type === "type"){
+                            return data;
+                        }
+                        return moment(data).format("DD MMM YYYY");
+                      },
+                      responsivePriority: 3
+                    },
+                    { title: "Motion",
+                      render: function(data, type, row) {
+                        return '<a href="' + data.split('|')[1] + '" target="_blank">' + data.split('|')[0] + '</a>';
+                      }, 
+                      responsivePriority: 1
+                    },
+                    { title: "Tabled by", responsivePriority: 6 },
+                    { title: "Result", 
+                      render: function(data) {return '<b>'+data+'</b>'},
+                      responsivePriority: 2 },
+                    { title: "Unionist vote", responsivePriority: 4 },
+                    { title: "Natonalist vote", responsivePriority: 5 },
+                    { title: "Alliance vote", responsivePriority: 7 },
+                    { title: "Green vote", responsivePriority: 8 },
+                    { title: "Sectarian split?", responsivePriority: 9 }
+                ],
+                ordering: false
+            } );
+        } );
+
+        $(function() {
+          // $("#votes_passed_sparkline").sparkline([15, 12], {
+          //     type: 'pie', width: '25px', height: '25px',
+          //     sliceColors: ['crimson', 'antiquewhite']});
+          $("#votes_passed_sparkline").sparkline([27,15,27,0,0], {
+              type: 'bullet', height: '30px', targetWidth: 7, 
+              targetColor: 'black', performanceColor: 'crimson',
+              rangeColors: ['antiquewhite','white','black'],
+              disableTooltips: true});
+          $("#uni_votes_passed_sparkline").sparkline([2, 7], {
+              type: 'pie', width: '25px', height: '25px', borderWidth: 1,
+              sliceColors: ['darkorange', 'antiquewhite'],
+              disableTooltips: true});
+          $("#nat_votes_passed_sparkline").sparkline([12,9,0,0,0], {
+              type: 'bullet', height: '30px', targetWidth: 7,
+              targetColor: 'black', performanceColor: 'forestgreen',
+              rangeColors: ['white','white','black'],
+              disableTooltips: true});
+          // $("#nat_votes_passed_sparkline").sparkline([9, 3], {
+          //     type: 'pie', width: '25px', height: '25px',
+          //     sliceColors: ['forestgreen', 'antiquewhite']});
+        });
+
+    </script>
+
+{% endblock %}

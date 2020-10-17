@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+  <!--<div class="wrapper">-->
+    {% include 'sidebar.html' %}
+
+    {% include 'nav.html' %}
+
+    <div class="overlay"></div>
+
+    <div class="jumbotron" style="background-image: url('{{ url_for('static', filename='WHAT THEY SAY.jpg') }}'); background-size: cover">
+      <div class="row d-flex justify-content-start">
+        <!-- <div style='position: absolute; top: 50%; left'> -->
+        <div class="col-md-6 ml-5 my-3" style='color: white'>
+          <h1>What They <b>Say</b></h1>
+          <p>Most of the NI MLAs and MPs are active on Twitter, so tracking this activity can provide some insight into their political outlook, and their engagement with the public and their colleagues. Tweets are collected weekly, starting from July 2020.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class='container-xl'>    
+
+        <div class="row mb-2">
+
+          <div class="col-lg-6">
+            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+              <div class="col p-4 d-flex flex-column position-static">
+                <h4 class="mb-0">Top tweeters</h4>
+                <div style='min-height: 100px'>
+                  <p class="card-text mb-auto">These are the most active politicians on Twitter, by <b>total tweets</b> in the past month.</p>
+                </div>
+                <div id='vis2' style='max-width: 600px'></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6">
+            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+              <div class="col p-4 d-flex flex-column position-static">
+                <h4 class="mb-0">Most impactful tweeters</h4>
+                <div style='min-height: 100px'>
+                  <p class="card-text mb-auto">This plot shows the politicians with the <b>biggest impact</b> on Twitter, as measured by the average number of retweets received by each of their <i>original tweets</i> in the past month (measured after around one week, so an underestimate of the true retweet rate).</p>
+                </div>
+                <div id='vis3' style='max-width: 600px'></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="row mb-2 justify-content-center">
+          <div class="col-lg-8" style='max-width: 750px'>
+            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+              <div class="col p-4 d-flex flex-column position-static">
+                <h4 class="mb-0">Retweet networks</h4>
+                <p class="card-text mb-auto">This network plot shows how 'connected' the politicians are to one another, measured through Twitter retweets, since 1 July 2020. Connections are drawn in both directions (giving and receiving retweets), but you can hover on a politician to show only the connections for retweets that they received from others. See <i><a href='#Technical-stuff'>Technical Stuff</a></i> for more explanation. <br/>Sinn Fein members form a much more active tweet-and-retweet network than do DUP members - many of the latter's older MLAs rarely or never use Twitter.</p>
+                <!--<img src="{{url_for('static', filename='example_tweet_graph_plot.png')}}" style='width:100%'>-->
+                <div id="tweet-network-plot" class="view" style='max-width: 650px'></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-2 justify-content-md-center">
+
+          <div class="col-lg-7">
+            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+              <div class="col p-4 d-flex flex-column position-static">
+                <h4 class="mb-0">Most positive, negative tweeters</h4>
+                <p class="card-text mb-auto">This plot shows the politicians whose tweets (including retweets) scored highest and lowest, on average, for <b>positive sentiment</b> (calculated as the <a class='use-underline' href="https://github.com/cjhutto/vaderSentiment">VADER</a> 'compound' score), in the past month.</p>
+                <div id='vis4' style='max-width: 600px'></div>
+              </div>
+            </div>
+          </div>
+
+          <aside class="col-lg-5 blog-sidebar" id='Technical-stuff'>
+            <div class="p-4 mb-3 bg-light rounded">
+              <h4 class="font-italic">Technical Stuff</h4>
+              <ul class="nav nav-tabs" id="myTab" role="tablist" style="margin-bottom:15px">
+                <li class="nav-item" role="presentation">
+                  <a class="nav-link active" id="one-tab" data-toggle="tab" href="#one" role="tab" aria-controls="one" aria-selected="true">Twitter data</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <a class="nav-link" id="two-tab" data-toggle="tab" href="#two" role="tab" aria-controls="two" aria-selected="false">Tweet content map</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <a class="nav-link" id="three-tab" data-toggle="tab" href="#three" role="tab" aria-controls="three" aria-selected="false">Network plot</a>
+                </li>
+              </ul>
+              <div class="tab-content" id="myTabContent">
+                <div class="tab-pane fade show active" id="one" role="tabpanel" aria-labelledby="one-tab">Tweets are collected from Twitter once a week using the <b>R</b> package <a class='use-underline' href="https://github.com/ropensci/rtweet">rtweet</a>. The number of retweets for each tweet is recorded at this time, so some tweets will have had a full week to collect retweets, while others will have had only a day or less. The retweet rates should therefore be taken as the average number of retweets obtained in the first 3-4 days of a tweet's lifetime.</div>
+                <div class="tab-pane fade" id="two" role="tabpanel" aria-labelledby="two-tab">The tweet content plot uses, first, word embeddings (<a class='use-underline' href="https://radimrehurek.com/gensim/auto_examples/tutorials/run_word2vec.html">Word2Vec</a>, with 50 dimensions, trained on 180,000 tweets), and then <a class='use-underline' href="https://en.wikipedia.org/wiki/Principal_component_analysis">Principal Component Analysis</a>, to reduce the content of each tweet into two numerical dimensions. These co-ordinates are averaged for each tweeter. Tweeters that are positioned close together on the plot tend to use similar words in their tweets. Note however that, as can be expected, reducing the complexity of hundreds of tweets into two numbers is a big over-simplification, as indicated on the axis labels: the position of the politicians on these two axes only explains 25% of the <i>variance</i>, or differences, in the content of their tweets.</div>
+                <div class="tab-pane fade" id="three" role="tabpanel" aria-labelledby="three-tab">Point positions for the tweet network plot were calculated with the <b>R</b> package <a class='use-underline' href="https://briatte.github.io/ggnet/">ggnet2</a>. Each tweeter is positioned near to those that they frequently <i>retweet</i> or <i>are retweeted by</i>, and the thickness of the <i>edge</i> (line) connecting two tweeters is proportional to the number of times they retweeted one another (whichever is the larger of the two directions), in the past month. The size of each <i>node</i> (circle) is proportional to the total number of retweets <i>received</i>. Note that due to the weekly data collection frequency, these are underestimates of the true, 'final', retweet numbers. <br />Hovering over a node highlights the incoming edges, which are the retweets <i>received</i> by that politician. The most influential politicians - those who are frequently retweeted - tend to appear near the centre of a cluster, with large nodes and many connecting edges. Politicians positioned near the middle of the plot are those that get some retweets from outside their party.</div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <!--
+        <div class="row mb-2 justify-content-md-center">
+
+          <div class="col-lg-8">
+            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+              <div class="col p-4 d-flex flex-column position-static">
+                <h4 class="mb-0">Party tweet volume and impact</h4>
+                <p class="card-text mb-auto">This plot shows the total number of <b>original tweets</b> (not retweets) by each party in the past month (horizontal axis), and the <b>average number of retweets</b> on each of those tweets, measured after around a week (vertical axis).</p>
+                <div id='vis1' style='padding-top:20px; padding-bottom:20px'></div>
+                <p>Parties far to the right of the panel tweet often (it helps if they have more MLAs), but parties to the top of the panel seem to have more impact when they do tweet.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        -->
+
+        <div class="row mb-2 justify-content-md-center">
+
+          <aside class="col-md-4 blog-sidebar">
+              <div class="p-4 mb-3 bg-light rounded">
+                <h4 class="font-italic">Tweet Generator <span class="badge badge-info">COMING SOON</span></h4>
+                <p class="mb-0">Generate original tweets in the style of each party.</p>
+              </div>
+          </aside>
+
+          <div class="col-lg-8">
+            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+              <div class="col p-4 d-flex flex-column justify-content-center">
+                <h4 class="mb-0">Tweet content</h4>
+                <p class="card-text mb-auto">This plot positions tweeters relative to one another based on the content of their tweets: those close together tend to tweet 'about the same things', in a simplified sense. See <i><a href='#Technical-stuff'>Technical Stuff</a></i> for more explanation. Circles are sized proportional to number of tweets. Unlike other plots on this page, this plot considers all tweets since July 2020, including retweets, but plots only politicians with at least 20 tweets in this period.</p>
+                <div id='vis5' style='max-width: 600px'></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+    </div>
+
+  <!--</div>-->
+
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}
+
+{% block other_js %}
+
+    <script type="text/javascript">
+
+        //parse("/data/plot_party_tweets_scatter", "vis1")
+        if (screen.width >= 500) {
+            parse("/data/plot_user_tweetnum_web", "vis2")
+            parse("/data/plot_user_retweet_web", "vis3")
+            parse("/data/plot_user_tweet_sentiment_web", "vis4")
+            parse("/data/plot_tweet_pca_all_mlas_web", "vis5")
+        } else {
+            parse("/data/plot_user_tweetnum_mobile", "vis2")
+            parse("/data/plot_user_retweet_mobile", "vis3")
+            parse("/data/plot_user_tweet_sentiment_mobile", "vis4")
+            parse("/data/plot_tweet_pca_all_mlas_mobile", "vis5")
+        }
+
+        const network_x_width = Math.min(650, window.innerWidth-100); //match the values used when saving in R
+        const network_y_height = network_x_width * 0.8;
+        
+        var spec = {
+          "$schema": "https://vega.github.io/schema/vega/v5.json",
+          "description": "Network diagram for retweets modelled after the airports example",
+          "width": network_x_width,  
+          "height": network_y_height,  //these settings may not do anything
+          "padding": {"top": 25, "left": 10},
+          "autosize": "pad",
+
+          //can only get size information into expressions via windowSize
+          "data": [
+            {
+              "name": "node-data",
+              "url": "{{url_for('static', filename='tweets_network_since1july2020_nodes.json')}}",
+              "format": {"type": "json"},
+              "transform": [
+                { 
+                  "type": "formula", 
+                  "expr": "min(650,(windowSize()[0]-100)) * datum.x / 650", 
+                  "as": "rescale_x" 
+                },
+                {
+                  "type": "formula",
+                  "expr": "0.8*min(650,(windowSize()[0]-100)) * datum.y / 500",
+                  "as": "y"
+                }
+              ]
+            },
+            {
+              "name": "link-data-background",
+              "url": "{{url_for('static', filename='tweets_network_since1july2020_edges.csv')}}",
+              "format": {"type": "csv"},
+              //input fields are source,target,value
+              //use transform to change the meaning of source and target - 
+              //  these take the whole row from node-data, and
+              //  linkpath will use source.x, .y, and target.x, .y
+              "transform": [
+                {
+                  "type": "lookup",
+                  "from": "node-data", 
+                  "key": "label",  //look up fields by inserting their values into node-data.label
+                  "fields": ["source", "target"], 
+                  "as": ["source_bkg", "target_bkg"]
+                },
+                { "type": "formula", "expr": "min(650,(windowSize()[0]-100)) * datum.source_bkg.x / 650", "as": "rescale_source_x" },
+                { "type": "formula", "expr": "min(650,(windowSize()[0]-100)) * datum.target_bkg.x / 650", "as": "rescale_target_x" },
+                {
+                  "type": "linkpath",
+                  "shape": "line", 
+                  "sourceX": "rescale_source_x",
+                  "sourceY": "source_bkg.y",
+                  "targetX": "rescale_target_x",
+                  "targetY": "target_bkg.y"
+                }  // this creates an object called 'path' by default
+              ]
+            },
+            //edges seem to take the biggest size of the two directions            
+            {
+              "name": "link-data-select",
+              "url": "{{url_for('static', filename='tweets_network_since1july2020_edges.csv')}}",
+              "format": {"type": "csv"},
+              "transform": [
+                {
+                  "type": "lookup",
+                  "from": "node-data", 
+                  "key": "label",  //look up fields by inserting their values into node-data.label
+                  "fields": ["source", "target"], 
+                  "as": ["source_sel", "target_sel"]
+                },
+                {
+                  "type": "filter",
+                  "expr": "tooltip && tooltip.label == datum.target_sel.label"
+                },  //highlight the retweets by others to this person
+                { "type": "formula", "expr": "min(650,(windowSize()[0]-100)) * datum.source_sel.x / 650", "as": "rescale_source_x" },
+                { "type": "formula", "expr": "min(650,(windowSize()[0]-100)) * datum.target_sel.x / 650", "as": "rescale_target_x" },
+                {
+                  "type": "linkpath",
+                  "shape": "line", 
+                  "sourceX": "rescale_source_x",
+                  "sourceY": "source_sel.y",
+                  "targetX": "rescale_target_x",
+                  "targetY": "target_sel.y"
+                }
+              ]
+            }
+          ],
+          
+          "marks": [
+            //first set of paths are always on
+            {
+              "type": "path",
+              "interactive": false,
+              "from": {"data": "link-data-background"},
+              "encode": {
+                "enter": {
+                  "path": {"field": "path"},
+                  "stroke": {"value": "black"},
+                  "strokeOpacity": {"value": 0.25},
+                  "strokeWidth": {"scale": "edgewidth", "field": "value"}
+                },
+                "update": {
+                  "strokeOpacity": {"signal": "tt_edge_opacity"}
+                }
+              }
+            },
+            //second mark is just paths TO the selected node
+            {
+              "type": "path",
+              "interactive": false,
+              "from": {"data": "link-data-select"},
+              "encode": {
+                "enter": {
+                  "path": {"field": "path"},
+                  "stroke": {"value": "black"},
+                  "strokeOpacity": {"value": 0.8},
+                  "strokeWidth": {"scale": "edgewidth", "field": "value"}
+                }
+              }
+            },
+            {
+              "type": "text",
+              "zindex": {"value": 50},
+              "encode": {
+                "enter": {
+                  "x": {"value": network_x_width},
+                  "y": {"value": -10},
+                  "align": {"value": "right"},
+                  "baseline": {"value": "bottom"},
+                  "fill": {"value": "black"},
+                  "fontSize": {"value": 16},
+                  "font": {"value": "Molengo"}
+                },
+                "update": {
+                  "text": {"signal": "tt_title"}
+                  
+                }
+              }
+            },
+            {
+              "type": "symbol",
+              "from": {"data": "node-data"},
+              //"zindex": {"value": 1},  //this doesn't work but putting mark last in the list does work
+              "encode": {
+                "enter": {
+                  "x": {"field": "rescale_x"},
+                  "y": {"field": "y"},
+                  "fill": {"field": "color", "scale": "color"},
+                  "stroke": {"value": "white"},
+                  "size": {"field": "size", "scale": "size"}
+                },
+              }
+            }
+          ],
+
+          "scales": [
+            {
+              "name": "color",
+              "type": "ordinal",
+              "domain": ["UUP","Sinn Fein","Alliance","DUP","Independent","Green","SDLP","TUV","PBP"],
+              "range": ["navy","darkgreen","gold","maroon","grey","seagreen","lawngreen","purple","red"]
+            },
+            {
+              "name": "size",
+              "type": "linear",
+              "round": true,
+              "nice": false,
+              "zero": false,
+              "domain": {"data": "node-data", "field": "size"},
+              "range": [50,800]
+            },
+            {
+              "name": "edgewidth",
+              "type": "pow",
+              "exponent": 0.5,
+              "round": true,
+              "nice": false,
+              "zero": false,
+              "domain": {"data": "link-data-background", "field": "value"},
+              "range": [0.5, 10.0]
+            }
+          ],
+
+          "signals": [
+            {
+              "name": "tooltip",
+              "value": null,
+              "on": [
+                {"events": "symbol:mouseover", "update": "datum"},
+                {"events": "symbol:mouseout",  "update": "null"}
+              ]
+            },
+            {
+              "name": "tt_title",
+              "value": "",
+              "update": "tooltip ? tooltip.plot_label_all + ': ' + tooltip.size + (tooltip.size==1 ? ' retweet received' : ' retweets received') : ''"
+            },
+            {
+              "name": "tt_edge_opacity",
+              "value": 0.25,
+              "update": "tooltip ? 0.05 : 0.25"
+            }
+          ]
+        };
+
+        function image(view, type) {
+          return function(event) {
+            event.preventDefault();
+            view.toImageURL(type).then(function(url) {
+              var link = document.createElement('a');
+              link.setAttribute('href', url);
+              link.setAttribute('target', '_blank');
+              link.setAttribute('download', 'tweet-network-plot.' + type);
+              link.dispatchEvent(new MouseEvent('click'));
+            }).catch(function(error) { console.error(error); });
+          };
+        }
+
+        var view = new vega.View(vega.parse(spec), {
+          loader: vega.loader({baseURL: './'}),
+          logLevel: vega.Warn,
+          renderer: 'svg'
+        }).initialize('#tweet-network-plot').hover().run();
+    </script>
+
+{% endblock %}

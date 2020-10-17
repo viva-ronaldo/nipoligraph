@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>NI PoliGraph</title>
+
+    <link href="https://getbootstrap.com/docs/4.4/dist/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <!--<link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css">-->
+    <link href="https://cdn.datatables.net/1.10.21/css/dataTables.bootstrap4.min.css" rel="stylesheet" type="text/css">
+    
+    <!-- Fonts -->
+    <link href='https://fonts.googleapis.com/css?family=Molengo&display=swap' rel='stylesheet'>
+    <link href="{{ url_for('static', filename='fontawesome-free-5.15.1-web/css/all.css') }}" rel="stylesheet"> 
+
+    <!-- My styling -->
+    <link href="{{ url_for('static', filename='nipolitics_style.css') }}" rel="stylesheet" type="text/css">
+
+    <!-- Favicon for browser tab -->
+    <link rel="shortcut icon" href="{{url_for('static', filename='ni_poligraph_logo_mountains_icon.png')}}">
+
+    <!--<script src="https://vega.github.io/vega/vega.min.js"></script>-->
+    <!-- Import Vega & Vega-Lite (does not have to be from CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@4"></script>
+    <!-- Import vega-embed -->
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+
+    <style>
+
+    </style>
+</head>
+
+<body>
+
+    {% block content %} {% endblock %}
+
+    <footer>
+      <div class="container-fluid">
+
+        <div class="row mt-3">
+
+          <div class="col-3"></div>
+
+          <div class="col-6 mx-auto text-center">
+            <ul class="list-inline text-center">
+              <li class="list-inline-item">
+                <a href="https://github.com/viva-ronaldo">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li class="list-inline-item">
+                <a href="#">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li class="list-inline-item">
+                <a href="#">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-linkedin fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+            </ul>
+            <p class="copyright text-muted">Copyright &copy; NI PoliGraph 2020</p>
+          </div>
+
+          {% block addtl_footer %} {% endblock %}
+
+        </div>
+      </div>
+    </footer>
+
+    <!-- JQuery JS -->
+    <!-- <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.0/jquery.min.js"></script> -->
+    <!-- <script type="text/javascript" src="http://code.jquery.com/jquery-1.11.3.min.js"></script> -->
+    <script type="text/javascript" src="{{ url_for('static', filename='jquery-3.5.1.min.js') }}"></script>
+     <!-- Popper.JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js" integrity="sha384-cs/chFZiN24E4KMATLdqdvsezGxaGsi4hLGOzlXwp5UZB1LY//20VyM2taTB4QvJ" crossorigin="anonymous"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm" crossorigin="anonymous"></script>
+
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+
+    <!-- for the disappear/reappearing navbar -->
+    <script type="text/javascript" src="{{ url_for('static', filename='startbootstrap_clean_blog.min.js') }}"></script>
+
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            $('#sidebarCollapse').on('click', function () {
+                $('#sidebar').toggleClass('hiddenondesktop');
+                $('.overlay').toggleClass('active');
+            });
+            //by clicking outside the sidebar on the active overlay,
+            //this will close the sidebar and remove the overlay
+            $('.dismiss, .overlay').on('click', function() {
+                $('#sidebar').toggleClass('hiddenondesktop');
+                $('.overlay').toggleClass('active');
+            });
+
+        });
+
+        function parse(url, div) {
+            var opt = {
+              //mode: "vega-lite", //vega-lite?
+              renderer: "svg",
+              actions: {export: true, source: false, editor: false}
+            };
+
+            vegaEmbed("#"+div, url, opt, function(error, result) {
+              // result.view is the Vega View, url is the original Vega-Lite specification
+                //vegaTooltip.vegaLite(result.view, url);
+            });
+        };
+       
+    </script>
+
+    {% block other_js %} {% endblock %}
+
+</body>
+
+</html>

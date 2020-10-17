@@ -1,0 +1,44 @@
+<nav id="sidebar" class="hiddenondesktop">
+    <!-- <div class="dismiss">
+        <i class="fas fa-arrow-left"></i>
+    </div> -->
+    <div class="sidebar-header mt-4">
+        <!-- <h3><a href="{{ url_for('index') }}">NI PoliGraph</a></h3> -->
+        <img src="{{ url_for('static', filename='ni_poligraph_logo_mountains_grey.png') }}" style='width: 100%'>
+    </div>
+    <ul id='sidebar-list' class="list-unstyled components">
+        <li>
+            <a href="{{ url_for('twitter') }}">What They <b>Say</b></a>
+        </li>
+        <li>
+            <a href="{{ url_for('news') }}">What We <b>Report</b></a>
+        </li>
+        <li>
+            <a href="{{ url_for('assembly') }}">What They <b>Do</b></a>
+        </li>
+        <li>
+            <a href="{{ url_for('polls') }}">How We <b>Vote</b></a>
+        </li>
+        <li>
+            <a href="#pageSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">Find a politician</a>
+
+            <ul class="collapse list-unstyled" id="pageSubmenu">
+                <li>
+                    <form action="{{ url_for('indiv') }}" method="get">
+                      <div class="form-group">
+                        <select class="form-control" name="mla_name" onchange="this.form.submit()">
+                            <option value="" selected disabled hidden >Choose MLA/MP...</option>
+                            {% for mla in full_mla_list %}
+                                <option value="{{mla}}">{{mla}}</option>
+                            {% endfor %}  
+                        </select>
+                      </div>
+                    </form>
+                </li>
+           </ul>
+        </li>
+        <li>
+            <a href="{{ url_for('about') }}">About</a>
+        </li>
+    </ul>
+</nav>

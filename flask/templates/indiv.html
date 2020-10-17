@@ -1,0 +1,493 @@
+{% extends 'base.html' %}
+
+{% include 'nav.html' %}
+
+{% block content %}
+
+  <div class="wrapper">
+    {% include 'sidebar.html' %}
+
+    <div class="overlay"></div>
+
+    <div class='container-xl'>    
+
+        <div class="row mb-2 justify-content-start pt-4">
+
+          <div class="col-lg-3 col-md-12">
+            <form action="{{ url_for('indiv') }}" method="get">
+              <div class="form-group">
+                <select class="form-control" id="exampleFormControlSelect1" name="mla_name" style="width:220px" onchange="this.form.submit()">
+                <option value="" selected disabled hidden>Choose MLA/MP...</option>
+                {% for mla in full_mla_list %}
+                    <option value="{{mla}}">{{mla}}</option>
+                {% endfor %}  
+                </select>
+                <!-- <button class="btn btn-outline-primary" type="submit">Refresh</button> -->
+              </div>
+            </form>
+          </div>
+
+          {% if person_selected %}
+            <div class="col-lg-6 px-5 py-2 text-center">
+              <div class='col pt-3 pb-1' style='border-style: solid; border-width: medium; border-color: Thistle'>
+                <h1>{{person_name_string}}</h1>
+                <h2>{{person_party}}</h2>
+                {% if person_is_mla %}
+                    <a href="http://aims.niassembly.gov.uk/mlas/details.aspx?&per={{mla_personid}}&sel=1&ind=0&prv=0" target="_blank">
+                        <img src="{{image_url}}" alt="Portrait of MLA or MP" style="margin: 10px; width: 112px; height: 149px;" title="Click to open MLA profile on niassembly.gov.uk">
+                    </a>
+                {% else %}
+                    <img src="{{image_url}}" alt="Portrait of MLA or MP" style="width: 112px; height: 149px;">
+                {% endif %}
+                
+                <ul>
+                  {% if twitter_handle is not none %}
+                    <li style='display: inline'><i class='fab fa-twitter'></i> <a class='use-underline' target='_blank' href='https://www.twitter.com/{{twitter_handle}}'>{{twitter_handle}}</a></li> 
+                  {% endif %}
+                  {% if email_address is not none %}
+                    <li style='display: inline'><i class='fas fa-envelope-open'></i> <span style='font-size: 0.8em'>{{email_address}}</span></li>
+                  {% endif %}
+                </ul>
+                
+              </div>
+            </div>
+          {% endif %}
+
+        </div>
+
+        
+        {% if person_selected %}
+          <div class="row mb-2 justify-content-md-center">
+
+            {% if person_is_mla %}
+              <div class="col-xl-8">
+                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+                  <div class="col p-4 d-flex flex-column position-static">
+                    <h4 class="mb-0">Assembly activity</h4>
+
+                     <table style="width:100%; border-collapse: separate; border-spacing: 5px 15px; table-layout: fixed">
+
+                      <tr><td width='70%'></td><td width='30%'></td></tr>
+                      <tr>
+                        <td colspan='2'>Sits on the following committees:
+                          <ul>
+                            {% for c in person_committee_roles %}
+                              <li>{{c}}</li>
+                            {% endfor %}
+                          </ul>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td colspan='2'>Has taken part in <span class='ring-percent-dyn-colour-outof27' data-val='{{votes_present_numbers[0]}}'></span> {{votes_present_string | safe}} </td>
+                      </tr>
+
+                      {% if 'Minister' not in person_name_string %}
+                        <tr>
+                          <td> Has asked <b>{{num_questions}} questions</b> in the current Assembly session ({{questions_rank_string | safe}})</td>
+                          <td> <div style='width: 80%' class="member-questions"></div> </td>
+                        </tr>
+                      {% endif %}
+
+                      <tr>
+                        <td> Has made <b>{{num_plenary_contribs}} contribution{{'s' if num_plenary_contribs != 1 else ''}}</b> in Plenary sessions in the current Assembly session ({{plenary_contribs_rank_string | safe}}) </td>
+                        <td> <div style='width: 80%' class="contribs-volumes"></div> </td>
+                      </tr>
+                      
+                      {% if top_contrib_topic_list != [] %}
+                        <tr>
+                          <td colspan='2'>Most frequently makes contributions on
+                            {% for t in top_contrib_topic_list %}
+                                <span style='font-size: {{t.split('|')[1]}}px; color: {{t.split('|')[2]}}'><b>{{t.split('|')[0]}}</b></span>
+                                {% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                          </td>
+                        </tr>
+
+                        <tr>
+                          <td>TODO contrib emotions</td>
+                        </tr>
+                      {% endif %}
+                      
+                    </table> 
+
+                  </div>
+                </div>
+              </div>
+
+            {% endif %}
+
+
+            <div class="col-xl-7">
+              <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+                <div class="col p-4 d-flex flex-column position-static">
+                  <h4 class="mb-0">News</h4>
+                  <ul>
+                      <li> Mentioned in {{news_articles_last_month}} news article{{'s' if news_articles_last_month != 1 else ''}} in the last month</li>
+                      <li> {{news_articles_by_week | sum}} news article mention{{'s' if (news_articles_by_week | sum) != 1 else ''}} since 1 May 2020 <span class="newssparkline"></span></li>
+                  </ul>
+                  <h4 class="mb-0">Twitter</h4>
+
+                  <table style="width:100%; border-collapse: separate; border-spacing: 5px 15px; table-layout: fixed">
+
+                    <tr><td width='70%'></td><td width='30%'></td></tr>
+
+                    <!-- <tr>
+                      <td colspan='2'> {{tweets_last_month}} tweet{{'s' if tweets_last_month != 1 else ''}} in the last month </td>
+                    </tr> -->
+                    <tr>
+                      <td colspan='2'> <b>{{tweets_by_week | sum}}</b> tweet{{'s' if (tweets_by_week | sum) != 1 else ''}} since 1 July 2020 <span class="tweetssparkline"></span> </td>
+                    </tr>
+
+                    <tr>
+                      <td> {{tweet_volume_rank_string | safe}} </td>
+                      <td> <div style='width: 80%' class="tweets-volumes"></div> </td>
+                    </tr>
+
+                    {% if retweet_rate_rank_string != 'n/a' %}
+                      <tr>
+                        <td> {{retweet_rate_rank_string | safe}} </td>
+                        <td> <div style='width: 80%' class="tweets-retweets"></div></td>
+                      </tr>
+                    {% endif %}
+                    {% if tweet_positivity_rank_string != 'n/a' %}
+                      <tr>
+                        <td>{{tweet_positivity_rank_string | safe}} </td>
+                        <td> <div style='width: 80%' class="tweets-positivity"></div></td>
+                      </tr>
+                   {% endif %}
+
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {% if sample_recent_tweets.shape[0] > 0 %}
+              <div class="col-xl-5">
+                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+                  <div class="col p-4 d-flex flex-column position-static">
+                    <h4 class="mb-0">Sample of recent tweets from <i class='fab fa-twitter'></i><a target='_blank' class='use-underline' href='https://www.twitter.com/{{twitter_handle}}'>{{twitter_handle}}</a></h4>
+                    <ul style='font-size: 0.9em'>
+                        {% for row in sample_recent_tweets.itertuples() %}
+                            {% if row.involves_quote %}
+                                <li><i>{{ row.text }}</i> ({{ row.created_at }}, quoting <a class='use-underline' target="_blank" href="{{ row.quoted_url}}">this tweet</a>)</li>
+                            {% else %}
+                                <li><i>{{ row.text }}</i> ({{ row.created_at }})</li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+
+            
+          </div>
+
+          <div class="row mb-2 justify-content-md-center">
+            {% if person_is_mla %}
+              <div class="col-lg-8">
+                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+                  <div class="col p-4 d-flex flex-column position-static">
+                    <h4 class="mb-0">Voting history</h4>
+                    <table id="vote_list" class="table table-striped table-bordered" style="width:100%">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Motion</th>
+                          <th>Voted</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+
+        {% endif %}        
+
+      </div>
+
+    </div>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="row">
+      <div class="col-md-6">
+        <p></p>
+      </div>
+      <div class="col-md-6 text-md-right">
+        {% if person_selected and person_is_mla %}
+          <p>Image from NI Assembly, licensed under the <a class='use-underline' href="http://data.niassembly.gov.uk/licence.aspx">Open Government Licence v3.0</a></p> 
+        {% elif person_selected and 'parliament.uk' in image_url %}
+          <p>Image from UK Parliament, licensed under the <a class='use-underline' href="https://www.parliament.uk/site-information/copyright-parliament/open-parliament-licence/">Open Government Licence v3.0</a></p> 
+        {% elif person_selected %}
+          <p>Image licensed under the <a class='use-underline' href="https://creativecommons.org/licenses/by/2.0/deed.en">Creative Commons Attribution 2.0 Generic Licence</a></p> 
+        {% endif %}
+      </div>
+    </div>
+{% endblock %}
+
+{% block other_js %}
+
+    <!--
+    <script type="text/javascript" src="contrib/jquery.ui-1.6rc5/ui/ui.core.js"></script>
+    <script type="text/javascript" src="contrib/jquery.ui-1.6rc5/ui/ui.tabs.js"></script>
+    <script type="text/javascript" src="contrib/google-code-prettify/prettify.js"></script>
+    <script type="text/javascript" src="contrib/jpicker-1.1.6/jpicker-1.1.6.min.js"></script> 
+    <script type="text/javascript" src="assets/index.js"></script>
+    -->
+
+    <script type="text/javascript" src="{{ url_for('static', filename='jquery.sparkline.2.1.2.js') }}"></script>
+
+    <script src="https://cdn.datatables.net/1.10.21/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.5/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.5/js/responsive.bootstrap.min.js"></script>
+  
+    <script src="http://cdn.datatables.net/plug-ins/1.10.15/dataRender/datetime.js"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='moment.min.js') }}"></script>
+
+    <script type="text/javascript" src="{{ url_for('static', filename='jquery-progresspiesvg-min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='progresspiesvgAppl-min.js') }}"></script>    
+
+    <script type="text/javascript">
+
+        $(function() {
+                var news_values = {{news_articles_by_week | tojson}};
+                var tweets_values = {{tweets_by_week | tojson}};
+
+                /** This code runs when everything has been loaded on the page */
+                /* Inline sparklines take their values from the contents of the tag */
+                $('.inlinesparkline').sparkline(); 
+                $('.newssparkline').sparkline(news_values, { width: '50px', height: '20px'}); 
+                $('.tweetssparkline').sparkline(tweets_values, { width: '75px', height: '20px'}); 
+        });
+
+        var dataSet = {{mla_votes_list | tojson }};
+
+        $(document).ready(function() {
+            $('#vote_list').DataTable( {
+                data: dataSet,
+                columns: [
+                    { title: "Date", 
+                      render: function(data, type, row){
+                        if(type === "sort" || type === "type"){
+                            return data;
+                        }
+                        return moment(data).format("DD MMM YYYY");
+                      }
+                    },
+                    { title: "Motion",
+                      render: function(data, type, row) {
+                        return '<a href="' + data.split('|')[1] + '" target="_blank">' + data.split('|')[0] + '</a>';
+                      }
+                    },
+                    { title: "Voted"
+                    //render: function(data) {return '<b>'+data+'</b>'} 
+                    }
+                ],
+                ordering: false  //default is to order by date taken as a string
+            } );
+        });
+
+        $(function() {
+            $(".progress.percent").progressPie();
+            $(".ring-percent-dyn-colour").progressPie({
+                strokeWidth: 1,
+                ringWidth: 3,
+                mode: $.fn.progressPie.Mode.COLOR 
+            });
+            $(".pie-silver-no-data").progressPie({
+                mode:$.fn.progressPie.Mode.COLOR, 
+                valueData: "val", 
+                size:30, strokeWidth: 5, strokeColor: "silver"
+            });
+            $(".ring-big-no-data").progressPie({
+                strokeWidth: 1,
+                ringWidth: 3,
+                size: 80,
+                mode: $.fn.progressPie.Mode.COLOR,
+                valueData: "val"
+            });
+            $(".ring-percent-dyn-colour-outof27").progressPie({
+                strokeWidth: 1,
+                ringWidth: 3,
+                mode: $.fn.progressPie.Mode.COLOR ,
+                valueData: "val", 
+                valueAdapter: function(valueStr) {
+                  return parseInt(valueStr) * 100 / {{votes_present_numbers[1]}};
+                }
+            });
+        });
+
+
+        var member_tweet_volumes = {{member_tweet_volumes | tojson}};
+        
+        var spec = {
+          "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+          "width": "container", "height": 20,
+          "autosize": "fit-x",
+          "data": {"name": "hello", "values": member_tweet_volumes},
+          "mark": {"type": "tick", "thickness": 3},
+          "encoding": {
+            "x": {
+              "field": "data", 
+              "type": "quantitative", 
+              "title": false,
+              "axis": {"grid": false, "labelFontSize": 8, "tickSize": 3, "tickCount": 6},
+              "scale": {"type": "log"}
+            },
+            "color": {
+              "condition": {
+                "test": "datum['data'] == {{tweets_by_week | sum}}", "value": "red"
+              }, "value": "grey"
+            },
+            "size": {
+              "condition": {
+                "test": "datum['data'] == {{tweets_by_week | sum}}", "value": 15
+              }, "value": 6
+            }
+          }
+        };
+
+        var member_question_volumes = {{member_question_volumes | tojson}};
+        var spec2 = {
+          "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+          "width": "container", "height": 20,
+          "autosize": "fit-x",
+          "data": {"name": "hello", "values": member_question_volumes},
+          "mark": {"type": "tick", "thickness": 2},
+          "encoding": {
+            "x": {
+              "field": "data", 
+              "type": "quantitative", 
+              "title": false,
+              "axis": {"grid": false, "labelFontSize": 8, "tickSize": 3, "tickCount": 3},
+              "scale": {"type": "linear", "zero": false}
+            },
+            "color": {
+              "condition": {
+                "test": "datum['data'] == {{num_questions}}", "value": "red"
+              }, "value": "grey"
+            },
+            "size": {
+              "condition": {
+                "test": "datum['data'] == {{num_questions}}", "value": 15
+              }, "value": 6
+            }
+          }
+        };
+
+        var member_contribs_volumes = {{member_contribs_volumes | tojson}};
+        var spec3 = {
+          "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+          "width": "container", "height": 20,
+          "autosize": "fit-x",
+          "data": {"name": "hello", "values": member_contribs_volumes},
+          "mark": {"type": "tick", "thickness": 2},
+          "encoding": {
+            "x": {
+              "field": "data", 
+              "type": "quantitative", 
+              "title": false,
+              "axis": {"grid": false, "labelFontSize": 8, "tickSize": 3, "tickCount": 3},
+              "scale": {"type": "linear", "zero": false}
+            },
+            "color": {
+              "condition": {
+                "test": "datum['data'] == {{num_plenary_contribs}}", "value": "red"
+              }, "value": "grey"
+            },
+            "size": {
+              "condition": {
+                "test": "datum['data'] == {{num_plenary_contribs}}", "value": 15
+              }, "value": 6
+            }
+          }
+        };
+        
+        var member_retweet_rates = {{member_retweet_rates | tojson}};
+        var spec4 = {
+          "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+          "width": "container", "height": 20,
+          "autosize": "fit-x",
+          "data": {"name": "hello", "values": member_retweet_rates},
+          "mark": {"type": "tick", "thickness": 2},
+          "encoding": {
+            "x": {
+              "field": "data", 
+              "type": "quantitative", 
+              "title": false,
+              "axis": {"grid": false, "labelFontSize": 8, "tickSize": 3, "tickCount": 3},
+              "scale": {"type": "linear", "zero": false}
+            },
+            "color": {
+              "condition": {
+                "test": "datum['data'] == {{retweet_rate}}", "value": "red"
+              }, "value": "grey"
+            },
+            "size": {
+              "condition": {
+                "test": "datum['data'] == {{retweet_rate}}", "value": 15
+              }, "value": 6
+            }
+          }
+        };
+
+        var member_tweet_positivities = {{member_tweet_positivities | tojson}};
+        var spec5 = {
+          "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+          "width": "container", "height": 20,
+          "autosize": "fit-x",
+          "data": {"name": "hello", "values": member_tweet_positivities},
+          "mark": {"type": "tick", "thickness": 2},
+          "encoding": {
+            "x": {
+              "field": "data", 
+              "type": "quantitative", 
+              "title": false,
+              "axis": {"grid": false, "labelFontSize": 8, "tickSize": 3, "tickCount": 3},
+              "scale": {"type": "linear", "zero": false}
+            },
+            "color": {
+              "condition": {
+                "test": "datum['data'] == {{tweet_positivity}}", "value": "red"
+              }, "value": "grey"
+            },
+            "size": {
+              "condition": {
+                "test": "datum['data'] == {{tweet_positivity}}", "value": 15
+              }, "value": 6
+            }
+          }
+        };
+
+        if ({{tweets_by_week | sum}} > 0) {
+          vegaEmbed('.tweets-volumes', spec, opt = {"actions": false});
+        }
+        if ({{num_questions}} > 0) {
+          vegaEmbed('.member-questions', spec2, opt = {"actions": false});  
+        }
+        if ({{num_plenary_contribs}} > 0) {
+          vegaEmbed('.contribs-volumes', spec3, opt = {"actions": false});
+        }
+        if ({{retweet_rate | tojson}} != null) {
+          vegaEmbed('.tweets-retweets', spec4, opt = {"actions": false});
+        }
+        if ({{tweet_positivity | tojson}} != null) {
+          vegaEmbed('.tweets-positivity', spec5, opt = {"actions": false});
+        }
+
+        var votes_present_numbers = {{votes_present_numbers | tojson}};
+        $(function() {
+          $("#votes_attended_sparkline").sparkline([votes_present_numbers[1],votes_present_numbers[0],votes_present_numbers[1],0,0], {
+              type: 'bullet', height: '30px', targetWidth: 7, 
+              targetColor: 'black', performanceColor: 'sienna',
+              rangeColors: ['antiquewhite','white','black'],
+              disableTooltips: true});
+        });
+    </script>
+
+{% endblock %}
