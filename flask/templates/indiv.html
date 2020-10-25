@@ -1,35 +1,19 @@
 {% extends 'base.html' %}
 
-{% include 'nav.html' %}
-
 {% block content %}
 
-  <div class="wrapper">
     {% include 'sidebar.html' %}
 
+    {% include 'nav.html' %}
     <div class="overlay"></div>
 
-    <div class='container-xl'>    
+    <div class='container-xl' style='min-height: 800px'>    
 
-        <div class="row mb-2 justify-content-start pt-4">
-
-          <div class="col-lg-3 col-md-12">
-            <form action="{{ url_for('indiv') }}" method="get">
-              <div class="form-group">
-                <select class="form-control" id="exampleFormControlSelect1" name="mla_name" style="width:220px" onchange="this.form.submit()">
-                <option value="" selected disabled hidden>Choose MLA/MP...</option>
-                {% for mla in full_mla_list %}
-                    <option value="{{mla}}">{{mla}}</option>
-                {% endfor %}  
-                </select>
-                <!-- <button class="btn btn-outline-primary" type="submit">Refresh</button> -->
-              </div>
-            </form>
-          </div>
+        <div class="row mb-2 justify-content-center pt-4">
 
           {% if person_selected %}
             <div class="col-lg-6 px-5 py-2 text-center">
-              <div class='col pt-3 pb-1' style='border-style: solid; border-width: medium; border-color: Thistle'>
+              <div class='col pt-3 pb-1' style='background: #e6e6e6'>
                 <h1>{{person_name_string}}</h1>
                 <h2>{{person_party}}</h2>
                 {% if person_is_mla %}
@@ -62,10 +46,10 @@
             {% if person_is_mla %}
               <div class="col-xl-8">
                 <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-                  <div class="col p-4 d-flex flex-column position-static">
+                  <div class="col p-4 d-flex flex-column position-static data-panel-a">
                     <h4 class="mb-0">Assembly activity</h4>
 
-                     <table style="width:100%; border-collapse: separate; border-spacing: 5px 15px; table-layout: fixed">
+                     <table style="width:100%; border-collapse: separate; border-spacing: 5px 12px; table-layout: fixed">
 
                       <tr><td width='70%'></td><td width='30%'></td></tr>
                       <tr>
@@ -98,17 +82,44 @@
                         <tr>
                           <td colspan='2'>Most frequently makes contributions on
                             {% for t in top_contrib_topic_list %}
-                                <span style='font-size: {{t.split('|')[1]}}px; color: {{t.split('|')[2]}}'><b>{{t.split('|')[0]}}</b></span>
+                                <span style="font-size: {{t.split('|')[1]}}px; color: {{t.split('|')[2]}}"><b>{{t.split('|')[0]}}</b></span>
                                 {% if not loop.last %}, {% endif %}
                             {% endfor %}
                           </td>
                         </tr>
 
-                        <tr>
-                          <td>TODO contrib emotions</td>
-                        </tr>
+                        {% if member_emotion_ranks_string is not none %}
+                          <tr>
+                            <td colspan='2'>{{member_emotion_ranks_string | safe}}</td>
+                          </tr>
+                        {% endif %}
                       {% endif %}
                       
+                      <tr></tr><tr></tr>
+                      <tr>
+                        <td colspan='2'>Search for contributions on specific issues from this member on <b>They Work For You</b>:</td>
+                      </tr>
+                      <tr>
+                        <td colspan='2'>
+                          <div style="position: relative; width: 17em; color: #000000; background-color: #E8FDCB; font-family: Arial, Geneva, Sans-serif; margin-bottom: 1em; border: 1px solid #4d6c25; padding: 0 10px 2em 10px;">
+                              <h5 style="font-family: Arial, Geneva, Sans-serif; font-size: 1.4em; position: absolute; margin: 0; bottom: 2px; right: 10px;"  title="TheyWorkForYou.com"><a style="color: #880101; text-decoration: none; font-weight: normal;" href="https://www.TheyWorkForYou.com" target="_blank"><em style="font-weight: bold; font-style: normal;">TheyWorkFor</em><strong style="color: #cc0000; font-weight: bolder;">You</strong>.com</a></h5>
+                              <form style="margin: 0; padding: 5px 0 0 0;" title="Search NI Assembly debates since 1998" action="https://www.theyworkforyou.com/search/" method="get" target="_blank" >
+                                  
+                                  <!-- <label style="display: block; font-size: small; font-weight: bold; margin: 0 0 2px 0;" for="search_input"></label> -->
+                                  
+                                  <input type="hidden" name="section" value="ni">
+                                  <input type="hidden" name="person" value="{{person_name_lc}}">
+
+                                  <input id="search_input" name="q" style="width: 12em; border: solid 1px #4D6C25;" title="Enter a debate search term" type="text" tabindex="3" size="12" maxlength="100" placeholder="e.g., climate, police">
+                                  
+                                  <input id="twfy_submit" name="twfy_submit" style="border: solid 0px #4d6c25; background-color: #4D6C25; color: #ffffff; font-weight: bold; text-transform: uppercase;" title="Submit search" tabindex="4" type="submit" value="Go">
+                                  
+                                  <br>
+                              </form>
+                          </div>
+                        </td>
+                      </tr>
+
                     </table> 
 
                   </div>
@@ -120,23 +131,31 @@
 
             <div class="col-xl-7">
               <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-                <div class="col p-4 d-flex flex-column position-static">
+                <div class="col p-4 d-flex flex-column position-static data-panel-b">
                   <h4 class="mb-0">News</h4>
-                  <ul>
-                      <li> Mentioned in {{news_articles_last_month}} news article{{'s' if news_articles_last_month != 1 else ''}} in the last month</li>
-                      <li> {{news_articles_by_week | sum}} news article mention{{'s' if (news_articles_by_week | sum) != 1 else ''}} since 1 May 2020 <span class="newssparkline"></span></li>
-                  </ul>
-                  <h4 class="mb-0">Twitter</h4>
-
-                  <table style="width:100%; border-collapse: separate; border-spacing: 5px 15px; table-layout: fixed">
+                  <table style="width:100%; border-collapse: separate; border-spacing: 5px 10px; table-layout: fixed">
 
                     <tr><td width='70%'></td><td width='30%'></td></tr>
 
-                    <!-- <tr>
-                      <td colspan='2'> {{tweets_last_month}} tweet{{'s' if tweets_last_month != 1 else ''}} in the last month </td>
-                    </tr> -->
                     <tr>
-                      <td colspan='2'> <b>{{tweets_by_week | sum}}</b> tweet{{'s' if (tweets_by_week | sum) != 1 else ''}} since 1 July 2020 <span class="tweetssparkline"></span> </td>
+                      <td colspan='2'>Mentioned in {{news_articles_last_month}} news article{{'s' if news_articles_last_month != 1 else ''}} in the last month</td>
+                    </tr>
+                    <tr>
+                      <td>{{news_articles_by_week | sum}} news article mention{{'s' if (news_articles_by_week | sum) != 1 else ''}} since 1 May 2020</td>
+                      <td><span class="newssparkline"></span></td>
+                    </tr>
+
+                  </table>
+
+                  <h4 class="mb-0 mt-4">Twitter</h4>
+
+                  <table style="width:100%; border-collapse: separate; border-spacing: 5px 10px; table-layout: fixed">
+
+                    <tr><td width='70%'></td><td width='30%'></td></tr>
+
+                    <tr>
+                      <td> <b>{{tweets_by_week | sum}}</b> tweet{{'s' if (tweets_by_week | sum) != 1 else ''}} since 1 July 2020</td>
+                      <td><span class="tweetssparkline"></span></td>
                     </tr>
 
                     <tr>
@@ -155,7 +174,7 @@
                         <td>{{tweet_positivity_rank_string | safe}} </td>
                         <td> <div style='width: 80%' class="tweets-positivity"></div></td>
                       </tr>
-                   {% endif %}
+                    {% endif %}
 
                   </table>
                 </div>
@@ -165,7 +184,7 @@
             {% if sample_recent_tweets.shape[0] > 0 %}
               <div class="col-xl-5">
                 <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-                  <div class="col p-4 d-flex flex-column position-static">
+                  <div class="col p-4 d-flex flex-column position-static data-panel-a">
                     <h4 class="mb-0">Sample of recent tweets from <i class='fab fa-twitter'></i><a target='_blank' class='use-underline' href='https://www.twitter.com/{{twitter_handle}}'>{{twitter_handle}}</a></h4>
                     <ul style='font-size: 0.9em'>
                         {% for row in sample_recent_tweets.itertuples() %}
@@ -207,38 +226,23 @@
 
         {% endif %}        
 
-      </div>
-
     </div>
 
 {% endblock %}
 
 {% block addtl_footer %}
-    <div class="row">
-      <div class="col-md-6">
-        <p></p>
-      </div>
-      <div class="col-md-6 text-md-right">
-        {% if person_selected and person_is_mla %}
-          <p>Image from NI Assembly, licensed under the <a class='use-underline' href="http://data.niassembly.gov.uk/licence.aspx">Open Government Licence v3.0</a></p> 
-        {% elif person_selected and 'parliament.uk' in image_url %}
-          <p>Image from UK Parliament, licensed under the <a class='use-underline' href="https://www.parliament.uk/site-information/copyright-parliament/open-parliament-licence/">Open Government Licence v3.0</a></p> 
-        {% elif person_selected %}
-          <p>Image licensed under the <a class='use-underline' href="https://creativecommons.org/licenses/by/2.0/deed.en">Creative Commons Attribution 2.0 Generic Licence</a></p> 
-        {% endif %}
-      </div>
-    </div>
+    <p class='text-muted'>
+    {% if person_selected and person_is_mla %}
+      Image from NI Assembly, licensed under the <a class='use-underline' href="http://data.niassembly.gov.uk/licence.aspx">Open Government Licence v3.0</a> 
+    {% elif person_selected and 'parliament.uk' in image_url %}
+      Image from UK Parliament, licensed under the <a class='use-underline' href="https://www.parliament.uk/site-information/copyright-parliament/open-parliament-licence/">Open Government Licence v3.0</a>
+    {% elif person_selected %}
+      Image licensed under the <a class='use-underline' href="https://creativecommons.org/licenses/by/2.0/deed.en">Creative Commons Attribution 2.0 Generic Licence</a>
+    {% endif %}
+    </p>
 {% endblock %}
 
 {% block other_js %}
-
-    <!--
-    <script type="text/javascript" src="contrib/jquery.ui-1.6rc5/ui/ui.core.js"></script>
-    <script type="text/javascript" src="contrib/jquery.ui-1.6rc5/ui/ui.tabs.js"></script>
-    <script type="text/javascript" src="contrib/google-code-prettify/prettify.js"></script>
-    <script type="text/javascript" src="contrib/jpicker-1.1.6/jpicker-1.1.6.min.js"></script> 
-    <script type="text/javascript" src="assets/index.js"></script>
-    -->
 
     <script type="text/javascript" src="{{ url_for('static', filename='jquery.sparkline.2.1.2.js') }}"></script>
 
@@ -261,8 +265,8 @@
                 /** This code runs when everything has been loaded on the page */
                 /* Inline sparklines take their values from the contents of the tag */
                 $('.inlinesparkline').sparkline(); 
-                $('.newssparkline').sparkline(news_values, { width: '50px', height: '20px'}); 
-                $('.tweetssparkline').sparkline(tweets_values, { width: '75px', height: '20px'}); 
+                $('.newssparkline').sparkline(news_values, { width: '80%', height: '25px'}); 
+                $('.tweetssparkline').sparkline(tweets_values, { width: '80%', height: '25px'}); 
         });
 
         var dataSet = {{mla_votes_list | tojson }};
@@ -331,6 +335,12 @@
           "autosize": "fit-x",
           "data": {"name": "hello", "values": member_tweet_volumes},
           "mark": {"type": "tick", "thickness": 3},
+          "background": "transparent",
+          "config": {
+            "view": {
+              "stroke": "grey"
+            }
+          },
           "encoding": {
             "x": {
               "field": "data", 
@@ -359,6 +369,12 @@
           "autosize": "fit-x",
           "data": {"name": "hello", "values": member_question_volumes},
           "mark": {"type": "tick", "thickness": 2},
+          "background": "transparent",
+          "config": {
+            "view": {
+              "stroke": "grey"
+            }
+          },
           "encoding": {
             "x": {
               "field": "data", 
@@ -387,6 +403,12 @@
           "autosize": "fit-x",
           "data": {"name": "hello", "values": member_contribs_volumes},
           "mark": {"type": "tick", "thickness": 2},
+          "background": "transparent",
+          "config": {
+            "view": {
+              "stroke": "grey"
+            }
+          },
           "encoding": {
             "x": {
               "field": "data", 
@@ -415,6 +437,12 @@
           "autosize": "fit-x",
           "data": {"name": "hello", "values": member_retweet_rates},
           "mark": {"type": "tick", "thickness": 2},
+          "background": "transparent",
+          "config": {
+            "view": {
+              "stroke": "grey"
+            }
+          },
           "encoding": {
             "x": {
               "field": "data", 
@@ -443,6 +471,12 @@
           "autosize": "fit-x",
           "data": {"name": "hello", "values": member_tweet_positivities},
           "mark": {"type": "tick", "thickness": 2},
+          "background": "transparent",
+          "config": {
+            "view": {
+              "stroke": "grey"
+            }
+          },
           "encoding": {
             "x": {
               "field": "data", 

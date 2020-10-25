@@ -20,22 +20,28 @@
 
     <div class='container-xl'>
 
-        <div class="row mb-2">
+        <div class="row mb-2 justify-content-md-center">
+
+          <div class="p-4 mb-3 bg-light rounded">
+            <h4><span class="badge badge-warning">NB:</span> NewsRiver is currently down, so news data have <b>not updated</b> since 25 September 2020.</h4>
+            <p class="mb-0"></p>
+          </div>
+
           <div class="col-lg-6">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col p-4 d-flex flex-column position-static">
-                <h4 class="mb-0">News article volume</h4>
-                <p class="card-text mb-auto">This tracks the number of online news articles each week (smoothed), as collected by <a class='use-underline' href='https://newsriver.io'>NewsRiver</a>, that include a mention of a member of one of the parties. See <i><a href='#Technical-stuff'>Technical Stuff</i></a> for more explanation.<br>Party leaders and Assembly Ministers tend to dominate the mentions, as can be seen in the list of articles <a href='#Article-list'>below</a>.</p>
-                <div id='vis3' style='padding-top:20px'></div>
+              <div class="col p-4 d-flex flex-column position-static data-panel-b">
+                <h4>News article volume</h4>
+                <p class="card-text mb-2 data-panel-card-border">This tracks the number of online news articles each week (smoothed), as collected by <a class='use-underline' href='https://newsriver.io'>NewsRiver</a>, that include a mention of a member of one of the parties. See <i><a href='#Technical-stuff'>Technical Stuff</i></a> for more explanation.<br>Party leaders and Assembly Ministers tend to dominate the mentions, as can be seen in the list of articles <a href='#Article-list'>below</a>.</p>
+                <div id='vis3'></div>
               </div>
             </div>
           </div>
           <div class="col-lg-6">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col p-4 d-flex flex-column position-static">
-                <h4 class="mb-0">News article sentiment</h4>
-                <p class="card-text mb-auto">Each news article mentioning a politician is measured for its sentiment, or positivity; results shown are from May 2020 onwards. The aim here is to identify parties that are reported in a more positive or negative light, on average; but note that some of the articles are directly related to Ministries held by each party, which will affect the estimation of sentiment. See <i><a href='#Technical-stuff'>Technical stuff</a></i> for more explanation.</p>
-                <div id='vis2' style='padding-top:20px; max-width: 500px'></div>
+              <div class="col py-4 pl-4 pr-2 d-flex flex-column position-static data-panel-a">
+                <h4>News article sentiment</h4>
+                <p class="card-text mb-2 data-panel-card-border">Each news article mentioning a politician is measured for its sentiment, or positivity; results shown are from May 2020 onwards. The aim here is to identify parties that are reported in a more positive or negative light, on average; but note that some of the articles are directly related to Ministries held by each party, which will affect the estimation of sentiment. See <i><a href='#Technical-stuff'>Technical stuff</a></i> for more explanation.</p>
+                <div id='vis2'></div>
               </div>
             </div>
           </div>
@@ -45,10 +51,10 @@
         <div class="row mb-2">
           <div class="col-lg-6">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col p-4 d-flex flex-column position-static">
-                <h4 class="mb-0">Frequently used sources</h4>
-                <p class="card-text mb-auto">These are the news sources in the NewsRiver search space that most frequently feature NI politicians. In general the outlets show surprisingly little unionist/nationalist bias.</p>
-                <div id='vis1' style='padding-top:20px; max-width: 500px'></div>
+              <div class="col p-4 d-flex flex-column position-static data-panel-a">
+                <h4>Frequently used sources</h4>
+                <p class="card-text mb-2 data-panel-card-border">These are the news sources in the NewsRiver search space that most frequently feature NI politicians. In general the outlets show surprisingly little unionist/nationalist bias.</p>
+                <div id='vis1'></div>
               </div>
             </div>
           </div>
@@ -76,8 +82,8 @@
           <div class="col-md-10">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column position-static" id='Article-list'>
-                <h4 class="mb-0">Most recent news articles</h4>
-                <table id="example" class="table table-striped table-bordered" style="width:100%">
+                <h4>Most recent news articles</h4>
+                <table id="example" class="table table-striped table-bordered" width='100%'>
                   <thead>
                     <tr>
                       <th>Date</th>
@@ -99,7 +105,7 @@
 {% endblock %}
 
 {% block addtl_footer %}
-    <div class="col-3 text-md-right"></div>
+    <p class='text-muted'>Artwork by <a class='use-underline' href="http://ellistration.co.uk/">Ellistration</a></p> 
 {% endblock %}
 
 {% block other_js %}

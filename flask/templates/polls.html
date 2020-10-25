@@ -24,8 +24,8 @@
           <div class="col-md-10">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column position-static">
-                <h4 class="mb-0">Polling averages</h4>
-                <p class="card-text mb-auto">The running average percentages of the vote by party are updated when a new poll or election occurs. The values at present day give a prediction of vote share at the next Assembly election. Click on the <b>'show...'</b> part of the legend to highlight either polls <i>(circles)</i> or elections <i>(diamonds)</i>.</p>
+                <h4>Polling averages</h4>
+                <p class="card-text mb-2 data-panel-card-border">The running average percentages of the vote by party are updated when a new poll or election occurs. Their values at present day are a projection of vote share at the next Assembly election. Click on the <b>'show...'</b> part of the legend to highlight either polls <i>(circles)</i> or elections <i>(diamonds)</i>.</p>
                 <div id='poll-tracker-vis'></div>
               </div>
             </div>
@@ -45,8 +45,8 @@
           <div class="col-md-7">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column position-static">
-                <h4 class="mb-0">All poll data</h4>
-                <table id="poll_results" class="table table-striped table-bordered"  style="width:100%">
+                <h4>All poll data</h4>
+                <table id="poll_results" class="table table-striped table-bordered" style="width:100%">
                   <thead>
                     <tr>
                       <th>Date</th>
@@ -69,7 +69,7 @@
 {% endblock %}
 
 {% block addtl_footer %}
-    <div class="col-3 text-md-right"></div>
+    <p class='text-muted'>Artwork by <a class='use-underline' href="http://ellistration.co.uk/">Ellistration</a></p> 
 {% endblock %}
 
 {% block other_js %}

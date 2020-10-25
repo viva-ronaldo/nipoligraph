@@ -12,28 +12,80 @@
     <div class='container-xl'>
 
         <div class="row my-4 mx-1 justify-content-md-center">
+            <h1>About</h1>
+        </div>
 
-            <div class='col-lg-8 col-md-10'>
-                <h1>About</h1>
-                <p>Data are updated roughly every week, using sources:</p>
-                    <ul>
-                        <li>Assembly details from <a class='use-underline' href="http://www.niassembly.gov.uk/">the official NI Assembly site</a>; in particular, the <a class='use-underline' href="http://aims.niassembly.gov.uk/default.aspx">AIMS Portal</a></li>
-                        <li>Tweets from <a class='use-underline' href="https://twitter.com/"><i class='fab fa-twitter'></i> Twitter</a>, gathered using <a class='use-underline' href="https://github.com/ropensci/rtweet">rtweet</a></li>
-                        <li>News articles from <a class='use-underline' href="https://newsriver.io/">NewsRiver</a></li>
-                        <li>Polling data from any relevant source, which for Northern Ireland is almost exclusively <a class='use-underline' href="https://www.lucidtalk.co.uk/">LucidTalk</a></li>
-                    </ul>
+            <!-- <div class='col-lg-8 col-md-10'> -->
                 
-                <p>Plots are created with <a class='use-underline' href="https://altair-viz.github.io/">Altair</a>, a Python interface to <a class='use-underline' href="https://vega.github.io/vega-lite/">Vega-Lite</a>. Other displays use a few JavaScript/jQuery libraries, including <a class='use-underline' href="https://cdn.datatables.net">DataTables</a>, <a class='use-underline' href="https://omnipotent.net/jquery.sparkline/#s-about">Sparklines</a>, and <a class='use-underline' href="https://www.isg-software.de/progresspie/indexe.html">ProgressPieSVG</a>. The data science parts of the site use a little <a class='use-underline' href="https://cran.r-project.org/"></a>, and more Python: <a class='use-underline' href="https://numpy.org/">NumPy</a>, <a class='use-underline' href="https://pandas.pydata.org/">pandas</a>, <a class='use-underline' href="https://radimrehurek.com/gensim/">Gensim</a>, <a class='use-underline' href="https://www.nltk.org/">NLTK</a>, <a class='use-underline' href="https://scikit-learn.org/">scikit-learn,</a> and <a class='use-underline' href="#">SOMETHING</a> FOR GPT-2?</p>
-
-                <p>The site is built with Python and <a class='use-underline' href='https://palletsprojects.com/p/flask/'>Flask</a> and is hosted on <a class='use-underline' href='https://eu.pythonanywhere.com/'></a>.</p>
-
+        <div class='row'>
+            <div class='col-md-6'>
+                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+                    <div class="col p-4 d-flex flex-column justify-content-center">
+                        <p>Data are updated roughly every week, using sources:</p>
+                        <ul>
+                            <li>Assembly details from <a class='use-underline' href="http://www.niassembly.gov.uk/">the official NI Assembly site</a>; in particular, the <a class='use-underline' href="http://aims.niassembly.gov.uk/default.aspx">AIMS Portal</a></li>
+                            <li>Tweets from <a class='use-underline' href="https://twitter.com/"><i class='fab fa-twitter'></i> Twitter</a>, gathered using <a class='use-underline' href="https://github.com/ropensci/rtweet">rtweet</a></li>
+                            <li>News articles from <a class='use-underline' href="https://newsriver.io/">NewsRiver</a></li>
+                            <li>Polling data from any relevant source, which for Northern Ireland is almost exclusively <a class='use-underline' href="https://www.lucidtalk.co.uk/">LucidTalk</a></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
+
+            <div class='col-md-6'>
+                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+                    <div class="col p-4 d-flex flex-column justify-content-center">
+                
+                        <p>Plots are created with <a class='use-underline' href="https://altair-viz.github.io/">Altair</a>, a Python interface to <a class='use-underline' href="https://vega.github.io/vega-lite/">Vega-Lite</a>. Other displays use a few JavaScript/jQuery libraries, including <a class='use-underline' href="https://cdn.datatables.net">DataTables</a>, <a class='use-underline' href="https://omnipotent.net/jquery.sparkline/#s-about">Sparklines</a>, <a class='use-underline' href="https://www.isg-software.de/progresspie/indexe.html">ProgressPieSVG</a>, and <a class='use-underline' href='https://goodies.pixabay.com/jquery/auto-complete/demo.html'>autoComplete</a>. The data science parts of the site use a little <a class='use-underline' href="https://cran.r-project.org/"></a>, and more Python: <a class='use-underline' href="https://numpy.org/">NumPy</a>, <a class='use-underline' href="https://pandas.pydata.org/">pandas</a>, <a class='use-underline' href="https://radimrehurek.com/gensim/">Gensim</a>, <a class='use-underline' href="https://www.nltk.org/">NLTK</a>, and <a class='use-underline' href="https://scikit-learn.org/">scikit-learn</a>.</p>
+
+                        <p>The site is built with Python and <a class='use-underline' href='https://palletsprojects.com/p/flask/'>Flask</a> and is hosted on <a class='use-underline' href='https://eu.pythonanywhere.com/'></a>.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class='row'>
+
+            <div class='col-md-6'>
+                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-120 position-relative">
+                    <div class="col p-4 d-flex flex-column justify-content-center">
+
+                        <div class='row justify-content-start align-items-center py-3'>
+                            <div class='col-3 text-center'>
+                                <a href='http://ellistration.co.uk/'>
+                                    <img src="{{ url_for('static', filename='ellistrations-logo-header.png') }}" width='100%' alt='Ellistration logo' style='vertical-align: middle'>
+                                </a>
+                            </div>
+                            <div class='col-9 text-left'>
+                                <p>Original artwork is by <a class='use-underline' href='http://ellistration.co.uk/'>Ellistration</a>.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class='col-md-6'>
+                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+                    <div class="col p-4 d-flex flex-column justify-content-center">
+
+                        <p style='margin-bottom: 0'>Other sites in this niche to check out:</p>
+                        <ul>
+                            <li><a class='use-underline' href='https://www.theyworkforyou.com/'>They Work For You</a>: includes full Plenary debate proceedings</li>
+                            <li><a class='use-underline' href='https://www.publicwhip.org.uk/index.php'>The Public Whip</a>: detailed voting data for the UK Parliament</li>
+                            <li><a class='use-underline' href='https://www.voteview.com'>Vote View</a>: UCLA site covering votes in the USA; uses a similar method of positioning members of Congress in space based on their voting record</li>
+                            <li><a class='use-underline' href='https://politwoops.co.uk'>PolitWoops</a>: records tweets that are posted and deleted</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- </div> -->
         </div>
 
         <div class="row mb-4 justify-content-md-center">
             <div class="col-12 text-center">
                 
-                <p>---</p>
                 <img src='https://cdn.images.express.co.uk/img/dynamic/40/590x/Good-Friday-agreement-945030.jpg' alt='Trimble, Bono, and Hume, 1998' class='responsive' title='Good days'>
             </div>
         </div>

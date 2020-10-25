@@ -1,41 +1,34 @@
 <nav id="sidebar" class="hiddenondesktop">
-    <!-- <div class="dismiss">
-        <i class="fas fa-arrow-left"></i>
-    </div> -->
-    <div class="sidebar-header mt-4">
-        <!-- <h3><a href="{{ url_for('index') }}">NI PoliGraph</a></h3> -->
+        
+    <!-- <div class="sidebar-header mt-4">
         <img src="{{ url_for('static', filename='ni_poligraph_logo_mountains_grey.png') }}" style='width: 100%'>
-    </div>
+    </div> -->
+
     <ul id='sidebar-list' class="list-unstyled components">
         <li>
+            <div class="dismiss">
+                <i class="fas fa-arrow-left fa-lg"></i>
+            </div>
+        </li>
+        <li class='blue-link'>
             <a href="{{ url_for('twitter') }}">What They <b>Say</b></a>
         </li>
-        <li>
+        <li class='red-link'>
             <a href="{{ url_for('news') }}">What We <b>Report</b></a>
         </li>
-        <li>
+        <li class='green-link'>
             <a href="{{ url_for('assembly') }}">What They <b>Do</b></a>
         </li>
-        <li>
+        <li class='yellow-link'>
             <a href="{{ url_for('polls') }}">How We <b>Vote</b></a>
         </li>
         <li>
-            <a href="#pageSubmenu" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">Find a politician</a>
-
-            <ul class="collapse list-unstyled" id="pageSubmenu">
-                <li>
-                    <form action="{{ url_for('indiv') }}" method="get">
-                      <div class="form-group">
-                        <select class="form-control" name="mla_name" onchange="this.form.submit()">
-                            <option value="" selected disabled hidden >Choose MLA/MP...</option>
-                            {% for mla in full_mla_list %}
-                                <option value="{{mla}}">{{mla}}</option>
-                            {% endfor %}  
-                        </select>
-                      </div>
-                    </form>
-                </li>
-           </ul>
+            <div class="politician-list-search-container" width=50%>
+                <form action="{{ url_for('indiv') }}" method="GET" > 
+                    <input id='politician-list-search-sidebar' type="text" name="mla_name" placeholder="Find a politician" style='width: 170px; font-size: 0.8em'>
+                    <button type="submit" style='padding: 5px 8px; margin: 0;'><i class="fa fa-search"></i></button>
+                </form>
+            </div>
         </li>
         <li>
             <a href="{{ url_for('about') }}">About</a>

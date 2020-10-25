@@ -25,24 +25,24 @@
 
           <div class="col-lg-6">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col p-4 d-flex flex-column position-static">
-                <h4 class="mb-0">Top tweeters</h4>
-                <div style='min-height: 100px'>
-                  <p class="card-text mb-auto">These are the most active politicians on Twitter, by <b>total tweets</b> in the past month.</p>
+              <div class="col p-4 d-flex flex-column position-static data-panel-a" >
+                <h4>Top tweeters</h4>
+                <div style='min-height: 200px'>
+                  <p class="card-text mb-2 data-panel-card-border">These are the most active politicians on Twitter, by <b>total tweets</b> in the past month.</p>
                 </div>
-                <div id='vis2' style='max-width: 600px'></div>
+                <div id='vis2'></div>
               </div>
             </div>
           </div>
 
           <div class="col-lg-6">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col p-4 d-flex flex-column position-static">
-                <h4 class="mb-0">Most impactful tweeters</h4>
-                <div style='min-height: 100px'>
-                  <p class="card-text mb-auto">This plot shows the politicians with the <b>biggest impact</b> on Twitter, as measured by the average number of retweets received by each of their <i>original tweets</i> in the past month (measured after around one week, so an underestimate of the true retweet rate).</p>
+              <div class="col p-4 d-flex flex-column position-static data-panel-a">
+                <h4>Most impactful tweeters</h4>
+                <div style='min-height: 200px'>
+                  <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians with the <b>biggest impact</b> on Twitter, as measured by the average number of retweets received by each of their <i>original tweets</i> in the past month (measured after around one week, so an underestimate of the true retweet rate).</p>
                 </div>
-                <div id='vis3' style='max-width: 600px'></div>
+                <div id='vis3'></div>
               </div>
             </div>
           </div>
@@ -50,13 +50,13 @@
         </div>
 
         <div class="row mb-2 justify-content-center">
-          <div class="col-lg-8" style='max-width: 750px'>
+          <div class="col-lg-8">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col p-4 d-flex flex-column position-static">
-                <h4 class="mb-0">Retweet networks</h4>
-                <p class="card-text mb-auto">This network plot shows how 'connected' the politicians are to one another, measured through Twitter retweets, since 1 July 2020. Connections are drawn in both directions (giving and receiving retweets), but you can hover on a politician to show only the connections for retweets that they received from others. See <i><a href='#Technical-stuff'>Technical Stuff</a></i> for more explanation. <br/>Sinn Fein members form a much more active tweet-and-retweet network than do DUP members - many of the latter's older MLAs rarely or never use Twitter.</p>
+              <div class="col py-4 px-4 d-flex flex-column position-static data-panel-b">
+                <h4>Retweet networks</h4>
+                <p class="card-text mb-2 data-panel-card-border">This network plot shows how 'connected' the politicians are to one another, measured through Twitter retweets, since 1 July 2020. Connections are drawn in both directions (giving and receiving retweets), but you can hover on a politician to show only the connections for retweets that they received from others. See <i><a href='#Technical-stuff'>Technical Stuff</a></i> for more explanation. <br/>Sinn Fein members form a much more active tweet-and-retweet network than do DUP members - many of the latter's older MLAs rarely or never use Twitter.</p>
                 <!--<img src="{{url_for('static', filename='example_tweet_graph_plot.png')}}" style='width:100%'>-->
-                <div id="tweet-network-plot" class="view" style='max-width: 650px'></div>
+                <div id="tweet-network-plot" class="view" ></div>
               </div>
             </div>
           </div>
@@ -66,10 +66,10 @@
 
           <div class="col-lg-7">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col p-4 d-flex flex-column position-static">
-                <h4 class="mb-0">Most positive, negative tweeters</h4>
-                <p class="card-text mb-auto">This plot shows the politicians whose tweets (including retweets) scored highest and lowest, on average, for <b>positive sentiment</b> (calculated as the <a class='use-underline' href="https://github.com/cjhutto/vaderSentiment">VADER</a> 'compound' score), in the past month.</p>
-                <div id='vis4' style='max-width: 600px'></div>
+              <div class="col p-4 d-flex flex-column position-static data-panel-a">
+                <h4>Most positive, negative tweeters</h4>
+                <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians whose tweets (including retweets) scored highest and lowest, on average, for <b>positive sentiment</b> (calculated as the <a class='use-underline' href="https://github.com/cjhutto/vaderSentiment">VADER</a> 'compound' score), in the past month.</p>
+                <div id='vis4'></div>
               </div>
             </div>
           </div>
@@ -103,8 +103,8 @@
           <div class="col-lg-8">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column position-static">
-                <h4 class="mb-0">Party tweet volume and impact</h4>
-                <p class="card-text mb-auto">This plot shows the total number of <b>original tweets</b> (not retweets) by each party in the past month (horizontal axis), and the <b>average number of retweets</b> on each of those tweets, measured after around a week (vertical axis).</p>
+                <h4>Party tweet volume and impact</h4>
+                <p class="card-text mb-2">This plot shows the total number of <b>original tweets</b> (not retweets) by each party in the past month (horizontal axis), and the <b>average number of retweets</b> on each of those tweets, measured after around a week (vertical axis).</p>
                 <div id='vis1' style='padding-top:20px; padding-bottom:20px'></div>
                 <p>Parties far to the right of the panel tweet often (it helps if they have more MLAs), but parties to the top of the panel seem to have more impact when they do tweet.</p>
               </div>
@@ -125,10 +125,10 @@
 
           <div class="col-lg-8">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col p-4 d-flex flex-column justify-content-center">
-                <h4 class="mb-0">Tweet content</h4>
-                <p class="card-text mb-auto">This plot positions tweeters relative to one another based on the content of their tweets: those close together tend to tweet 'about the same things', in a simplified sense. See <i><a href='#Technical-stuff'>Technical Stuff</a></i> for more explanation. Circles are sized proportional to number of tweets. Unlike other plots on this page, this plot considers all tweets since July 2020, including retweets, but plots only politicians with at least 20 tweets in this period.</p>
-                <div id='vis5' style='max-width: 600px'></div>
+              <div class="col p-4 d-flex flex-column justify-content-center data-panel-b">
+                <h4>Tweet content</h4>
+                <p class="card-text mb-2 data-panel-card-border">This plot positions tweeters relative to one another based on the content of their tweets: those close together tend to tweet 'about the same things', in a simplified sense. See <i><a href='#Technical-stuff'>Technical Stuff</a></i> for more explanation. Circles are sized proportional to number of tweets. Unlike other plots on this page, this plot considers all tweets since July 2020, including retweets, but plots only politicians with at least 20 tweets in this period. On web, click to go to the individual's page.</p>
+                <div id='vis5'></div>
               </div>
             </div>
           </div>
@@ -143,7 +143,7 @@
 {% endblock %}
 
 {% block addtl_footer %}
-    <div class="col-3 text-md-right"></div>
+    <p class='text-muted'>Artwork by <a class='use-underline' href="http://ellistration.co.uk/">Ellistration</a></p> 
 {% endblock %}
 
 {% block other_js %}
