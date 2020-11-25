@@ -12,7 +12,7 @@
     <div class="jumbotron" style="background-image: url('{{ url_for('static', filename='HOW WE VOTE.jpg') }}'); background-size: cover">
       <div class="row d-flex ml-4 justify-content-start">
         <div class="col-md-6 ml-4 my-3" style='color: black'>
-          <h1>How We <b>Vote</b></h1>
+          <h1 class='display-3'>How We <b>Vote</b></h1>
           <p>All nationwide polls and election results are recorded here, starting in 2016. In the future, this may evolve into proper constituency-based predictions for an upcoming election.</p>
         </div>
       </div>
@@ -36,9 +36,9 @@
           <aside class="col-md-5 blog-sidebar">
             <div class="p-4 mb-3 bg-light rounded">
               <h4 class="font-italic">Technical Stuff</h4>
-              <p class="mb-0">The 'polling average' lines shown here are based on both poll and election data up to and including that point in time. Each new data point affects the moving average by different amounts depending on its poll or election type, and (for polls) the poll sample size. Each point has a weaker effect on the averages as time goes on, reaching zero at 1000 days (i.e., the averages depend most strongly on the most recent data).</p>
-              <p>I chose the weights to try to optimise the fit of the moving averages to <i>Assembly election</i> results. Since the number of elections in the period covered by documented polling is small, this very likely means that the lines are over-fitted to the 2016 and 2017 Assembly elections. Election results are weighted equally to polls with sample size 50,000, 5000, and 500, for Assembly, local, and general elections, respectively. UK general election results are biased against the smaller parties, so are allowed to have only a weak impact on the moving averages.</p>
-              <p>With these caveats, the moving averages can be taken as a best, purely data-driven, estimate of the Assembly election results that would be expected if an election were held at that point in time (a 'nowcast'). For 2016 and 2017, this model has a root-mean-square error of about <b>1.5%</b>. This reflects the inaccuracy of polling just before the elections; for examples, see UUP in 2016 or Sinn Fein in 2017: these results could not have been anticipated, based solely on prior election and polling data. In future years, using the information gathered on this site, I hope to explore whether news or social media data could prove to be predictive, in addition to polls.</p>
+              <p class="mb-0 small">The 'polling average' lines shown here are based on both poll and election data up to and including that point in time. Each new data point affects the moving average by different amounts depending on its poll or election type, and (for polls) the poll sample size. Each point has a weaker effect on the averages as time goes on, reaching zero at 1000 days (i.e., the averages depend most strongly on the most recent data).</p>
+              <p class='small'>I chose the weights to try to optimise the fit of the moving averages to <i>Assembly election</i> results. Since the number of elections in the period covered by documented polling is small, this very likely means that the lines are over-fitted to the 2016 and 2017 Assembly elections. An election result is weighted equally to a hypothetical poll of sample size 50,000, 5000, and 500, for Assembly, local, and general elections, respectively. UK general election results are biased against the smaller parties, so are allowed to have only a weak impact on the moving averages.</p>
+              <p class='small'>With these caveats, the moving averages can be taken as a best, purely data-driven, estimate of the Assembly election results that would be expected if an election were held at that point in time (a 'nowcast'). For 2016 and 2017, this model has a root-mean-square error of about <b>1.5%</b>. This reflects the inaccuracy of polling just before the elections; for examples, see UUP in 2016 or Sinn Fein in 2017: these results could not have been anticipated, based solely on prior election and polling data. In future years, using the information gathered on this site, I hope to explore whether news or social media data could prove to be predictive, in addition to polls.</p>
             </div>
           </aside>
 
@@ -69,7 +69,7 @@
 {% endblock %}
 
 {% block addtl_footer %}
-    <p class='text-muted'>Artwork by <a class='use-underline' href="http://ellistration.co.uk/">Ellistration</a></p> 
+    <p>Artwork by <a class='use-underline' href="http://ellistration.co.uk/">Ellistration</a></p> 
 {% endblock %}
 
 {% block other_js %}

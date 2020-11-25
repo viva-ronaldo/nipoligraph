@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    {% include 'sidebar.html' %}
+
+    {% include 'nav.html' %}
+    
+    <div class='container-xl' style='min-height: 800px'>
+
+        <div class="row my-4 mx-1 justify-content-md-center">
+            <h1 class='display-3'>Blog</h1>
+        </div>
+                
+        <div class="more-content-grid col-lg-8 col-md-10 mx-auto">
+            <div class="row">
+                {% for row in blog_pieces.itertuples() %}
+                    <div class="col-md-6">
+                        <div class="card simple-overlay-card mt-2">
+                            {% if row.category=='news' %}
+                                <a href="blog/{{row.link}}"><img src="{{url_for('static', filename='WHAT WE REPORT.jpg')}}" class="card-img" alt="What We Report background" /></a>
+                            {% elif row.category=='assembly' %}
+                                <a href="blog/{{row.link}}"><img src="{{url_for('static', filename='WHAT THEY DO.jpg')}}" class="card-img" alt="What They Do background" /></a>
+                            {% elif row.category=='twitter' %}
+                                <a href="blog/{{row.link}}"><img src="{{url_for('static', filename='WHAT THEY SAY.jpg')}}" class="card-img" alt="What They Say background" /></a>
+                            {% elif row.category=='polls' %}
+                                <a href="blog/{{row.link}}"><img src="{{url_for('static', filename='HOW WE VOTE.jpg')}}" class="card-img" alt="How We Vote background" /></a>
+                            {% else %}
+                                <a href="blog/{{row.link}}"><img src="{{ url_for('static', filename='ni_poligraph_logo_mountains_grey.png') }}" class="card-img" alt='NI PoliGraph logo' /></a>
+                            {% endif %}
+                            <div class="card-img-overlay">
+                              <h5 class="card-title title-font">
+                                <a href="blog/{{row.link}}">{{row.title}}</a>
+                              </h5>
+                              <p><i>{{row.date_added}}</i></p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    {% include 'sidebar.html' %}
+
+    {% include 'nav.html' %}
+
+    <article>
+      <div class='container-xl' style='min-height: 800px'>
+
+        <div class="row">
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <div class="post-heading">
+              <h1>Voting blocs and vetos</h1>
+              <!--<h2 class="subheading">And subtitle</h2>-->
+            </div>
+          </div>
+        </div>
+
+        <div class='row mb-4'>
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <p>This post looks at the Assembly division vote records from 2007 to present (which can be seen in full at <a href="{{ url_for('assembly') }}">What They Do</a>). We use the designation, required of each member, as one of 'Unionist', 'Nationalist', or 'Other', to separate both votes cast and motions proposed into the three main ideological groups, to understand how membership of these groups affects voting behaviour.</p>
+
+            <h2 class='section-heading'>Passing motions has not got easier</h2>
+
+            <p>Overall, members with 'Other' designation have approached division voting more positively than Unionists and Nationalists, as they have voted 'Aye' on 59% of occasions, compared to 54% for Unionists and 46% for Nationalists. Over time, there has been an upward trend in 'Aye' voting from Others and Nationalists. We cannot easily determine whether or not this is partly due to 'better' motions (more deserving of an 'Aye' vote) being proposed in recent years.</p>
+
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/aye-fraction-votes-1.png')}}"/>
+
+            <p>This increased positivity <i>has</i> translated into an increase in the frequency of votes receiving support of 50% or more (<span style='color: blue'>blue points and line</span> below), but this has been partly countered by an increase in the use of the cross-community support requirement (a.k.a. the 'petition of concern' blocker) (<span style='color: green'>green</span>), with the net result being that the fraction of votes passing each year has increased (<b>black</b>), but at a lower rate than the fraction of motions earning majority support.</p>
+
+            TODO call out circle sizes again
+
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/votes-passed-3-trend-lines-1.png')}}"/>
+
+            <p>Unsurprisingly, members and parties are more likely to support motions that are proposed by members of the same designation than those proposed by different designations.</p>
+
+            TODO continue
+
+            <h2 class='section-heading'>Alliance really are in the centre</h2>
+
+            <p>The two parties that use the 'Other' designation in the current session and have been present in the Assembly since 2007 are Alliance and Green (the latter albeit with only a single member for most of that time). Although these parties are officially, and intentionally, affiliated with neither the Nationalist nor the Unionist viewpoints, their voting record may reveal some preference one way or the other.</p>
+
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/alliance-split-vote-dots-1.png')}}"/>
+
+            <p>Alliance have been positioned firmly in the centre of the Unionist-Nationalist dimension over the period 2007-2020: they have sided with Nationalists only slightly more often than with Unionists (53% of the occasions where their vote aligned with one bloc or other). In the current session, however, they have tended to vote with Nationalists, which partly reflects the Brexit party alignment that has been a deciding factor in some of the votes in the last few years.</p>
+
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/green-split-vote-dots-1.png')}}"/>
+
+            <p>Green have voted much more consistently (69%) with Nationalists, particularly in the <a href="{{ url_for('assembly', assembly_session='2011-2016') }}">2011-2016 session</a>, although the party vote consisted of a single member from 2007 until 2016. Voting with Nationalists is probably reflective of the Green Party's leftist position on social issues.</p>
+
+          </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[0] is not none %}
+              <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+            {% endif %}
+          </div>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[1] is not none %}
+              <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}

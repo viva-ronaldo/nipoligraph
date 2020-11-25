@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    {% include 'sidebar.html' %}
+
+    {% include 'nav.html' %}
+
+    <article>
+      <div class='container-xl' style='min-height: 800px'>
+        <div class="row">
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <div class="post-heading">
+              <h1>Hello, World</h1>
+              <h2 class="subheading">A manifesto for the site</h2>
+              <h3><i>2020-11-20</i></h3>
+            </div>
+          </div>
+        </div>
+
+        <div class='row mb-4'>
+          <div class="col-lg-8 col-md-10 mx-auto">
+
+            <p>Welcome to NI PoliGraph!</p>
+
+            <img style='width: 80%; display: block; margin: 20px auto' src="{{ url_for('static', filename='ni_poligraph_logo_mountains_grey.png') }}" alt='NI PoliGraph logo' />
+
+            <h2 class='section-heading'>What the site contains</h2>
+            <h4>Tweets ('<a href="{{ url_for('twitter') }}">What They Say</a>')</h4>
+            <p>Twitter is used to some degree by the majority of MLAs and MPs, and although there is a considerable amount of 'noise' in the content of what members post or retweet, we can nevertheless learn something by tracking this activity: who is using Twitter the most, who is having the biggest impact, how party members are interacting with one another, and (to an extent) what is being tweeted. It is my hope, over time, that improved machine learning methods allow greater insight to be generated on the content of the tweets, and that having access to this data over a long timespan will demonstrate trends in how social media is used by politicians and may reveal correlations with the party standing or electoral fortunes of members.</p>
+
+            <figure>
+              <img style='width: 80%; display: block; margin: 20px auto' src="{{url_for('static', filename='blog_plots/tweet_impacts_plot_screenshot22nov2020.png')}}"/>
+              <figcaption>The tweeter impact rankings, as of 20 November 2020. The rankings can change quite a bit from month to month, if one or two of a member's tweets have a particularly big impact</figcaption>
+            </figure>
+            
+            <h4>News articles ('<a href="{{ url_for('news') }}">What We Report</a>')</h4>
+            <p>Monitoring the online news media for mentions of NI politicians by name can help to indicate which members have the highest profiles, and spikes in volume for individuals can be seen when a some scandal or controversy has occurred (<a href='http://www.nipoligraph.co.uk/individual?mla_name=Edwin+Poots'>here</a> is an early example, from October 2020). Limitations at present are that <a class='use-underline' href='https://newscatcherapi.com'>the news scraping service that I am using</a> only returns a summary of the article rather than the full text, which limits the effectiveness of the sentiment estimation, and results are quite heavily dominated by The Belfast Telegraph (NewsCatcher does not appear to track The Irish News, for example).</p>
+
+            <h4>Assembly business ('<a href="{{ url_for('assembly') }}">What They Do</a>')</h4>
+            <p>The richest set of data on the site, as a lot of detail on Assembly business (questions and answers, committee activity, transcripts of debates, and votes) is available through the <a href="http://aims.niassembly.gov.uk/default.aspx" class='use-underline'>AIMS Portal</a>. A nice feature here is that the political positions of the parties relative to one another can be calculated from the members' voting records.</p>
+
+            <figure>
+              <img style='width: 60%; display: block; margin: 20px auto' src="{{url_for('static', filename='blog_plots/votes_princomp_plot_screenshot22nov2020.png')}}"/>
+              <figcaption>The votes principal components plot for the 2020-2022 session, as of 20 November 2020. Alliance and SDLP have voted effectively as one unit in this session, although this has not always been the case in the past</figcaption>
+            </figure>
+
+            <p>This section includes the option of viewing previous Assembly sessions, back to 2007, for the chance to be reacquainted with some forgotten names from the recent past.</p>
+
+            <h4>Polls and elections ('<a href="{{ url_for('polls') }}">How We Vote</a>')</h4>
+            <p>Polling numbers and election results for all of the major local parties are collected here, to create a running measure of each party's popularity, set up in such a way that it should be a reasonable projection of the parties' vote share at an upcoming Assembly election. This is inspired by polling averages calculated by <a class='use-underline' href='https://projects.fivethirtyeight.com/polls/'>Five Thirty Eight</a>, but is less sophisticated, mainly because of the scarcity of polls in Northern Ireland: there really is not much information to go on, outside of election periods.</p>
+
+            <h4>Individual member profiles</h4>
+            <p>Perhaps the most useful part of the site for the casual visitor. This collects the information shown on the other pages and puts an individual member's overall activity in context, relative to their peers: how effectively they use Twitter, how often they are mentioned in the media, and the amount and nature of their contributions to the Assembly, including their voting record in the current session (for MLAs). This profile pages also include a quick link to <a class='use-underline' href='https://www.theyworkforyou.com/'>They Work For You</a>, where a full record of an MLA's contributions to Assembly plenary debates can be found. I intend to add more analytics to this page in time.</p>
+
+            <figure>
+              <img style='width: 80%; display: block; margin: 20px auto' src="{{url_for('static', filename='blog_plots/indiv_contribs_card_paulfrew_screenshot22nov20.png')}}"/>
+              <figcaption>The Assembly activity report cards can highlight a member's favoured topics of discussion, and, to some extent, the tone of their debate contributions, as seen in this example (Paul Frew)</figcaption>
+            </figure>
+
+            <p>It is not necessarily my intention to 'name and shame' members who have attended fewer votes than average or made contributions to debates less frequently than others, but it may be useful to have these statistics available for quick reference. Similar information is tracked for Westminster by They Work For You, and for the US Congress by <a class='use-underline' href='https://www.govtrack.us'>GovTrack</a>.</p> 
+
+            <h2 class='section-heading'>What it is for</h2>
+
+            <p>Through the individual member report cards, in particular, I hope that this site increases the scrutiny that our elected representatives receive. We should not be satisfied simply to vote for the people on which our favourite party has pinned a rosette: some will be better publc servants than others. Reporting on the Assembly usually, understandably, is limited to actions taken or comments made by one of the ministers or party leaders. Like They Work For You, this tool makes it easier to get a sense of what a particular MLA has been doing during their time in the Assembly.</p>
+            
+            <p>At the party level, the voting records and social media use can clarify what each party 'means' and how they relate to one another. We are fortunate to have a <a class='use-underline' href='https://en.wikipedia.org/wiki/Single_transferable_vote'>ranked choice voting system</a> in Northern Ireland, and it behooves us as voters to form opinions on more than a couple of the parties, in order to use the preferential system effectively.</p>
+
+            <p>Finally, it is for people like me that like looking at graphs and are curious about long- and short-term trends in politics that might be uncovered through data.</p>
+
+          </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[0] is not none %}
+              <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+            {% endif %}
+          </div>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[1] is not none %}
+              <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}

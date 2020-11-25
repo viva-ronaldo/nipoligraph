@@ -9,15 +9,15 @@
 
     <div class="overlay"></div>
 
-    <div class="jumbotron" style="display: flex; align-items: end; background-image: url('{{ url_for('static', filename='WHAT THEY DO.jpg') }}'); background-size: cover; filter: grayscale({{0 if session_to_plot=='2020-2022' else (0.8 if session_to_plot<='2007-2011' else 0.6)}})">
+    <div class="jumbotron" style="display: flex; align-items: end; background-image: url('{{ url_for('static', filename='WHAT THEY DO.jpg') }}'); background-size: cover; filter: grayscale({{0 if session_to_plot=='2020-2022' else (0.3 if session_to_plot=='2016-2017' else (0.6 if session_to_plot=='2011-2016' else 0.8))}})">
 
       <div class="row d-flex ml-4 justify-content-start">
         <div class="col-md-6 ml-4 py-3" style='color: white'>
           {% if session_to_plot == '2020-2022' %}
-            <h1>What They <b>Do</b></h1>
-            <p>This page is focused on the current Assembly session, which started on 11 January 2020, and tracks the activity of members and ministers via questions asked and answered, contributes to debates, and votes.</p>
+            <h1 class='display-3'>What They <b>Do</b></h1>
+            <p>This page is focused on the current Assembly session, which started on 11 January 2020, and tracks the activity of members and ministers via questions asked and answered, contributions to debates, and votes.</p>
           {% else %}
-            <h1>What They <span style='text-decoration: line-through;'>Do</span> <b>Did Previously</b></h1>
+            <h1 class='display-3'>What They <span style='text-decoration: line-through;'>Do</span> <b>Did</b></h1>
             <p>This page shows historical Assembly data from the <b>{{session_to_plot}} session</b>, and tracks the activity of members and ministers via questions asked and answered, contributes to debates, and votes.</p>
           {% endif %}
         </div>      
@@ -59,25 +59,16 @@
       {% endif %}
 
       <div class="row mb-2 justify-content-md-center">
-        <div class="col-lg-7">
+        <div class="col-lg-8">
           <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
             <div class="col p-4 d-flex flex-column justify-content-center data-panel-a">
               <h4>Voting records</h4>
-              <p class="card-text mb-2 data-panel-card-border">The <b>voting patterns</b> of {{n_mlas}} MLAs over {{n_votes}} votes (those voting in at least 70% of the votes) are visualised using dimensionality reduction: there is no explicit meaning to the two graph axes, but circles that are close together represent MLAs that vote in similar ways. Parties cluster strongly together because they often each vote as a bloc. See <i><a href='#Technical-stuff'>Technical Stuff</i></a> for more explanation.</p>
+              <p class="card-text mb-2 data-panel-card-border">The <b>voting patterns</b> of {{n_mlas}} MLAs over {{n_votes}} votes <span title='those voting in at least {{pca_votes_threshold_pct}}% of the votes' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> are visualised using dimensionality reduction <span title="converting each member's sequence of votes into two coordinates, for the purpose of visualisation" data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>. There is no explicit meaning to the two graph axes, but circles that are close together represent MLAs that vote in similar ways. Parties cluster strongly together because they often each vote as a bloc.</p>
               <div id='vis3'></div>
             </div>
           </div>
         </div>
 
-        <div class="col-lg-5">
-          <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-            <div class="col p-4 d-flex flex-column position-static data-panel-b">
-              <h4>Party voting unity</h4>
-              <p class="card-text mb-2 data-panel-card-border">Shows the percentage of votes in which all of a party's votes were in the same direction. Only considers motions on which at least five members of the party voted. 'Abstain' is treated as a separate vote direction. <b>TODO possibly remove this one.</b></p>
-              <div id='vis6'></div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="row mb-2 justify-content-md-center">
@@ -86,7 +77,7 @@
             <div class="col p-4 d-flex flex-column position-static data-panel-b">
               <h4>Member questions asked</h4>
               <div>
-                <p class="card-text mb-2 data-panel-card-border">Shows the most prolific <b>question askers</b> among MLAs in the current session.</p>
+                <p class="card-text mb-2 data-panel-card-border">Shows the most prolific <b>question askers</b> among MLAs in the selected Assembly session.</p>
               </div>
               <div id='vis4'></div>
             </div>
@@ -94,11 +85,11 @@
         </div>
         <div class="col-xl-6 col-lg-6">
           <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-            <div class="col p-4 d-flex flex-column position-static data-panel-a">
+            <div class="col p-4 d-flex flex-column position-static data-panel-c">
               <!--<strong class="d-inline-block mb-2 text-primary">Optional category</strong>-->
               <h4>Ministerial answers</h4>
               <div>
-                <p class="card-text mb-2 data-panel-card-border">Shows the <b>number of questions (written and oral) answered</b> by each minister in the current session (bar lengths), and the <b>average time taken</b> to do so (circle sizes). The First and Deputy First Ministers respond to questions as a pair.</p>  
+                <p class="card-text mb-2 data-panel-card-border">Shows the <b>number of questions <span title='written and oral combined; the majority are written' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> answered</b> by each minister in the selected session (line lengths), and the <b>average time taken</b> to do so (circle sizes). Ministers are supposed to respond to questions within ten working days (numbers here are <i>calendar</i> days). The First and Deputy First Ministers respond to questions as a pair.</p>  
               </div>
               <div id='vis2'></div>
             </div>
@@ -112,7 +103,7 @@
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column position-static data-panel-a">
                 <h4>Plenary discussion topics</h4>
-                <p class="card-text mb-2 data-panel-card-border">A model is used to assign a 'topic' label to all Plenary session member 'contributions' (a speech by a member, or part of a speech, if interrupted), based on the words featured. These are the frequencies of each topic in the current Assembly session. Hover over the bars to see the key words that define each topic. See <i><a href='#Technical-stuff'>Technical Stuff</i></a> for more explanation.<br />These labels are used in the <a href="{{ url_for('indiv') }}">Individual page</a> to describe what subjects each member tends to talk about in plenary sessions.</p>
+                <p class="card-text mb-2 data-panel-card-border">A model is used to assign a 'topic' label to all Plenary session member contributions <span title='a speech by a member, or part of a speech, if interrupted' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>, based on the words used. These are the frequencies of each topic in the selected Assembly session. Hover over the bars to see the key words that define each topic. <br />These labels are used in the individual member pages to describe what subjects each member tends to speak about in plenary sessions.</p>
                 <div id='vis5'></div>
               </div>
             </div>
@@ -122,9 +113,9 @@
         <aside class="col-lg-5 blog-sidebar" id='Technical-stuff'>
           <div class="p-4 mb-3 bg-light rounded">
             <h4 class="font-italic">Technical Stuff</h4>
-            <ul class="nav nav-tabs" id="myTab" role="tablist" style="margin-bottom:15px; font-size: 0.9em">
+            <ul class="nav nav-tabs tab-headings" id="myTab" role="tablist">
               <li class="nav-item" role="presentation">
-                <a class="nav-link active" id="one-tab" data-toggle="tab" href="#one" role="tab" aria-controls="one" aria-selected="true">Assembly data</a>
+                <a class="nav-link active" id="one-tab" data-toggle="tab" href="#one" role="tab" aria-controls="one" aria-selected="true">Assembly questions</a>
               </li>
               <li class="nav-item" role="presentation">
                 <a class="nav-link" id="three-tab" data-toggle="tab" href="#three" role="tab" aria-controls="three" aria-selected="false">Voting records</a>
@@ -136,11 +127,21 @@
                 <a class="nav-link" id="four-tab" data-toggle="tab" href="#four" role="tab" aria-controls="four" aria-selected="false">Plenary emotions</a>
               </li>
             </ul>
-            <div class="tab-content" id="myTabContent">
-              <div class="tab-pane fade show active" id="one" role="tabpanel" aria-labelledby="one-tab">The data on this page apply to the current Assembly session, starting on 11 January 2020. Data are obtained from the <a class='use-underline' href="http://data.niassembly.gov.uk/">NI Assembly Open Data API</a>.</div>
-              <div class="tab-pane fade" id="two" role="tabpanel" aria-labelledby="two-tab">Using all Hansard records from Assembly Plenary sessions from 2015 to present, an <a class='use-underline' href="https://radimrehurek.com/gensim/auto_examples/tutorials/run_lda.html#sphx-glr-auto-examples-tutorials-run-lda-py">LDA model</a> was trained, to cluster the contributions based on their content (the words spoken by the member, excluding some procedural terms). This creates a set of 14 recognisable 'topics'. Each contribution in the current session was then assigned one of these labels. Some contributions are only one sentence long, so it is not always reliable to make these assignments, and these topics are not tied to the overall subject of the debate in which the contribution was made.</div>
-              <div class="tab-pane fade" id="three" role="tabpanel" aria-labelledby="three-tab">The votes scatter plot uses <a class='use-underline' href="https://en.wikipedia.org/wiki/Principal_component_analysis">Principal Component Analysis</a> to reduce each member's voting record into two numerical dimensions. The closer together two members are in the plot, the more similar are their voting records. The horizontal and vertical axes carry information about the patterns of voting, but the axes may not be perfectly aligned with our notions of what 'controls' voting. Here, the horizontal axis (the more important of the two) represents a combination of 'nationalist-unionist' and economic and/or social left-right dimensions (members situated on the right side of the plot tend to be more conservative and/or more unionist), while the y-axis seems to be related to voting with or against the First and Deputy First Ministers (members of the two biggest parties are located in the lower half of the plot).</div>
-              <div class="tab-pane fade" id="four" role="tabpanel" aria-labelledby="four-tab">Emotion scores for plenary contributions are calculated using the <b>R</b> package <a class='use-underline' href="https://github.com/trinker/sentimentr">sentimentr</a>, which does so by counting words marked as being indicative of each of the emotions, while accounting for negations and other speech modifiers. You can explore the NRC lexicon, to see which words are linked to which emotion, <a class='use-underline' href='https://www.saifmohammad.com/WebPages/NRC-Emotion-Lexicon.htm'>here</a>.</div>
+            <div class="tab-content small" id="myTabContent">
+              <div class="tab-pane fade show active" id="one" role="tabpanel" aria-labelledby="one-tab">
+                <p>Members can put <a class='use-underline' href='http://www.niassembly.gov.uk/assembly-business/questions/'>questions to ministers</a> either orally, at the weekly Question Time session (if the question is submitted in advance and selected in a random ballot), or in writing (up to five questions per member per day). There is a lot of detail and some interesting observations on the questions process in <a class='use-underline' href='http://archive.niassembly.gov.uk/procedures/2007mandate/reports/report_24_08_09R.htm'>this Assembly report</a>.</p>
+              </div>
+              <div class="tab-pane fade" id="two" role="tabpanel" aria-labelledby="two-tab">
+                <p>Using all <a class='use-underline' href='http://aims.niassembly.gov.uk/officialreport/officialreport.aspx'>Hansard records</a> from Assembly Plenary sessions from 2015 to present, an <a class='use-underline' href="https://radimrehurek.com/gensim/auto_examples/tutorials/run_lda.html#sphx-glr-auto-examples-tutorials-run-lda-py">LDA model</a> was trained, to cluster the contributions based on their content (the words spoken by the member, excluding some procedural terms). This creates a set of 14 recognisable 'topics'. Each contribution in the current session was then assigned one of these labels. Some contributions are only one sentence long, so it is not always reliable to make these assignments, and these topics are not tied to the overall subject of the debate in which the contribution was made.</p>
+              </div>
+              <div class="tab-pane fade" id="three" role="tabpanel" aria-labelledby="three-tab">
+                <p>The votes scatter plot uses <a class='use-underline' href="https://en.wikipedia.org/wiki/Principal_component_analysis">Principal Component Analysis</a> to reduce each member's voting record into two numerical dimensions. The closer together two members are in the plot, the more similar are their voting records.</p> 
+                <p>The horizontal and vertical axes carry information about the patterns of voting, but the axes may not be perfectly aligned with our notions of what 'controls' voting. Here, in the 2020-2022 session, the horizontal axis (the more impactful of the two) represents a combination of 'nationalist-unionist' and economic and/or social left-right dimensions (members situated on the right side of the plot tend to be more conservative and/or more unionist), while the y-axis seems to be related to voting with or against the First and Deputy First Ministers (members of the two biggest parties are located in the lower half of the plot). In past sessions, the axes may have different meanings: positions on the plot cannot be directly compared between sessions.</p>
+                <p>This method relies on comparing members across the same set of votes. To facilitate this, the plot is limited to the members that voted in at least {{pca_votes_threshold_pct}}% of the divisions in the session, and where a member did not vote, a value equivalent to 'ABSTAIN' is used, although not being present for a vote is not quite the same as abstaining. Where a member was only active for part of a session, this approach would assume that they actively chose to abstain/not vote more often than they did, which has the effect of pushing them towards the centre of the plot. Assembly membership <a class='use-underline' href='https://en.wikipedia.org/wiki/List_of_members_of_the_4th_Northern_Ireland_Assembly#Changes'>does change during a five-year session</a>, so this would be an issue, but it is mostly avoided by using the {{pca_votes_threshold_pct}}% cut-off.</p>
+              </div>
+              <div class="tab-pane fade" id="four" role="tabpanel" aria-labelledby="four-tab">
+                <p>Emotion scores for plenary contributions are calculated using the <b>R</b> package <a class='use-underline' href="https://github.com/trinker/sentimentr">sentimentr</a>, which does so by counting words marked as being indicative of each of the emotions, while accounting for negations and other speech modifiers. You can explore the NRC lexicon, to see which words are linked to which emotion, <a class='use-underline' href='https://www.saifmohammad.com/WebPages/NRC-Emotion-Lexicon.htm'>here</a>.</p>
+              </div>
             </div>
             <p class="mb-0"></p>
           </div>
@@ -154,7 +155,7 @@
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column position-static data-panel-b">
                 <h4>Plenary discussion emotions</h4>
-                <p class="card-text mb-2 data-panel-card-border">Plenary contributions from the current session are scored for the extent to which they express one of five different emotions, and scores are averaged by party. See <i><a href='#Technical-stuff'>Technical Stuff</i></a> for more explanation.</p>
+                <p class="card-text mb-2 data-panel-card-border">Plenary contributions from the selected session are scored for the extent to which they express one of five different emotions, and scores are averaged by party.</p>
                 <div id='vis7'></div>
               </div>
             </div>
@@ -168,7 +169,7 @@
             <div class="col py-4 pl-2 pr-4 d-flex flex-column position-static">
               <h4>Votes in this session</h4>
 
-              <table style="max-width:700px; border-collapse: separate; border-spacing: 15px 15px; table-layout: fixed">
+              <table style="max-width:700px; border-collapse: separate; border-spacing: 15px 15px; table-layout: fixed; margin-bottom: 20px; margin-top: -20px">
 
                 <tr><td width='80%'></td><td width='20%'></td></tr>
                 <tr>
@@ -176,27 +177,27 @@
                   <td><span id='votes_passed_sparkline'></span></td>
                 </tr>
                 <tr>
-                  <td><b>{{uni_tabled_passed_details[2]}}</b> ({{uni_tabled_passed_details[0]}}/{{uni_tabled_passed_details[1]}}) motions proposed by <b>unionists</b> have passed</td>
+                  <td><b>{{uni_tabled_passed_details[2]}}</b> ({{uni_tabled_passed_details[0]}}/{{uni_tabled_passed_details[1]}}) motions tabled by <b>unionists</b> have passed</td>
                   <td><span id='uni_votes_passed_sparkline'></span></td>
                 </tr>
                 <tr>
-                  <td><b>{{nat_tabled_passed_details[2]}}</b> ({{nat_tabled_passed_details[0]}}/{{nat_tabled_passed_details[1]}}) motions proposed by <b>nationalists</b> have passed</td>
+                  <td><b>{{nat_tabled_passed_details[2]}}</b> ({{nat_tabled_passed_details[0]}}/{{nat_tabled_passed_details[1]}}) motions tabled by <b>nationalists</b> have passed</td>
                   <td><span id='nat_votes_passed_sparkline'></span></td>
                 </tr>
 
                 <tr>
-                  <td colspan='2'><b>{{mix_tabled_passed_string}}</b> motions proposed by more than one group have passed</td>
+                  <td colspan='2'><b>{{mix_tabled_passed_details[2]}}</b> ({{mix_tabled_passed_details[0]}}/{{mix_tabled_passed_details[1]}}) motions tabled by more than one group have passed</td>
                 </tr>
                 <tr>
-                  <td colspan='2'><b>{{uni_nat_split_details[0]}}</b> votes were split unionist/nationalist (<b>{{num_uni_nat_split_passes}}</b> passed)</td>
+                  <td colspan='2'><b>{{uni_nat_split_details[0]}}</b> ({{(100*uni_nat_split_details[0]/votes_passed_details[1]) |round|int}}%) votes were split unionist/nationalist (<b>{{num_uni_nat_split_passes}}</b> passed)</td>
                 </tr>
 
                 <tr>
-                  <td>In <b>{{alli_like_uni_details[1]}}</b> split votes, Alliance have voted with unionists in <b>{{alli_like_uni_details[0]}}</b> votes and with nationalists in <b>{{alli_like_nat_details[0]}}</b> votes</td>
+                  <td>In <b>{{alli_like_uni_details[1]}}</b> split votes, Alliance have voted with unionists in <b>{{alli_like_uni_details[0]}}</b> vote{{'s' if alli_like_uni_details[0] > 1 else ''}} and with nationalists in <b>{{alli_like_nat_details[0]}}</b> vote{{'s' if alli_like_nat_details[0] > 1 else ''}}</td>
                   <td><span id='alli_split_sparkline'></span></td>
                 </tr>
                 <tr>
-                  <td>In <b>{{green_like_uni_details[1]}}</b> split votes, Green have voted with unionists in <b>{{green_like_uni_details[0]}}</b> votes and with nationalists in <b>{{green_like_nat_details[0]}}</b> votes</td>
+                  <td>In <b>{{green_like_uni_details[1]}}</b> split votes, Green have voted with unionists in <b>{{green_like_uni_details[0]}}</b> vote{{'s' if green_like_uni_details[0] > 1 else ''}} and with nationalists in <b>{{green_like_nat_details[0]}}</b> vote{{'s' if green_like_nat_details[0] > 1 else ''}}</td>
                   <td><span id='green_split_sparkline'></span></td>
                 </tr>
 
@@ -229,8 +230,8 @@
 {% endblock %}
 
 {% block addtl_footer %}
-      <p class='text-muted'>Artwork by <a class='use-underline' href="http://ellistration.co.uk/">Ellistration</a></p> 
-      <p class='text-muted'>Contains Parliamentary information licensed under the <a class='use-underline' href="http://data.niassembly.gov.uk/licence.aspx">Open Government Licence v3.0</a></p>
+      <p>Artwork by <a class='use-underline' href="http://ellistration.co.uk/">Ellistration</a></p> 
+      <p>Contains Parliamentary information licensed under the <a class='use-underline' href="http://data.niassembly.gov.uk/licence.aspx">Open Government Licence v3.0</a></p>
 {% endblock %}
 
 {% block other_js %}
@@ -288,7 +289,7 @@
                       render: function(data) {return '<b>'+data+'</b>'},
                       responsivePriority: 2 },
                     { title: "Unionist vote", responsivePriority: 4 },
-                    { title: "Natonalist vote", responsivePriority: 5 },
+                    { title: "Nationalist vote", responsivePriority: 5 },
                     { title: "Alliance vote", responsivePriority: 7 },
                     { title: "Green vote", responsivePriority: 8 },
                     { title: "Sectarian split?", responsivePriority: 9 }

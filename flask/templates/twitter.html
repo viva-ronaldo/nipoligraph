@@ -13,7 +13,7 @@
       <div class="row d-flex justify-content-start">
         <!-- <div style='position: absolute; top: 50%; left'> -->
         <div class="col-md-6 ml-5 my-3" style='color: white'>
-          <h1>What They <b>Say</b></h1>
+          <h1 class='display-3'>What They <b>Say</b></h1>
           <p>Most of the NI MLAs and MPs are active on Twitter, so tracking this activity can provide some insight into their political outlook, and their engagement with the public and their colleagues. Tweets are collected weekly, starting from July 2020.</p>
         </div>
       </div>
@@ -27,7 +27,7 @@
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column position-static data-panel-a" >
                 <h4>Top tweeters</h4>
-                <div style='min-height: 200px'>
+                <div style='min-height: 150px'>
                   <p class="card-text mb-2 data-panel-card-border">These are the most active politicians on Twitter, by <b>total tweets</b> in the past month.</p>
                 </div>
                 <div id='vis2'></div>
@@ -37,10 +37,10 @@
 
           <div class="col-lg-6">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col p-4 d-flex flex-column position-static data-panel-a">
+              <div class="col p-4 d-flex flex-column position-static data-panel-c">
                 <h4>Most impactful tweeters</h4>
-                <div style='min-height: 200px'>
-                  <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians with the <b>biggest impact</b> on Twitter, as measured by the average number of retweets received by each of their <i>original tweets</i> in the past month (measured after around one week, so an underestimate of the true retweet rate).</p>
+                <div style='min-height: 150px'>
+                  <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians with the <b>biggest impact</b> on Twitter, as measured by the average number of retweets received by each of their <i>original tweets</i> in the past month <span title='Retweet counts are measured a few days after the tweet is sent, so will be underestimates of the true retweet rate.' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>.</p>
                 </div>
                 <div id='vis3'></div>
               </div>
@@ -54,8 +54,7 @@
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col py-4 px-4 d-flex flex-column position-static data-panel-b">
                 <h4>Retweet networks</h4>
-                <p class="card-text mb-2 data-panel-card-border">This network plot shows how 'connected' the politicians are to one another, measured through Twitter retweets, since 1 July 2020. Connections are drawn in both directions (giving and receiving retweets), but you can hover on a politician to show only the connections for retweets that they received from others. See <i><a href='#Technical-stuff'>Technical Stuff</a></i> for more explanation. <br/>Sinn Fein members form a much more active tweet-and-retweet network than do DUP members - many of the latter's older MLAs rarely or never use Twitter.</p>
-                <!--<img src="{{url_for('static', filename='example_tweet_graph_plot.png')}}" style='width:100%'>-->
+                <p class="card-text mb-2 data-panel-card-border">This network plot shows how 'connected' the politicians are to one another, measured through Twitter retweets, since 1 July 2020. Connections are drawn in both directions (giving and receiving retweets), but you can hover on a politician to show only the connections for retweets that they <i>received</i> from others. Thicker connecting lines mean more retweets.</p>
                 <div id="tweet-network-plot" class="view" ></div>
               </div>
             </div>
@@ -66,9 +65,9 @@
 
           <div class="col-lg-7">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col p-4 d-flex flex-column position-static data-panel-a">
-                <h4>Most positive, negative tweeters</h4>
-                <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians whose tweets (including retweets) scored highest and lowest, on average, for <b>positive sentiment</b> (calculated as the <a class='use-underline' href="https://github.com/cjhutto/vaderSentiment">VADER</a> 'compound' score), in the past month.</p>
+              <div class="col p-4 d-flex flex-column position-static data-panel-c">
+                <h4>Most positive and negative tweeters</h4>
+                <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians whose tweets (including retweets) scored highest and lowest, on average, for <b>positive sentiment</b> <span title="calculated as the VADER 'compound' score, relative to the mean for all tweets (see Technical stuff)" data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> in the past month.</p>
                 <div id='vis4'></div>
               </div>
             </div>
@@ -77,21 +76,34 @@
           <aside class="col-lg-5 blog-sidebar" id='Technical-stuff'>
             <div class="p-4 mb-3 bg-light rounded">
               <h4 class="font-italic">Technical Stuff</h4>
-              <ul class="nav nav-tabs" id="myTab" role="tablist" style="margin-bottom:15px">
+              <ul class="nav nav-tabs tab-headings" id="myTab" role="tablist" style="margin-bottom:15px">
                 <li class="nav-item" role="presentation">
                   <a class="nav-link active" id="one-tab" data-toggle="tab" href="#one" role="tab" aria-controls="one" aria-selected="true">Twitter data</a>
                 </li>
                 <li class="nav-item" role="presentation">
-                  <a class="nav-link" id="two-tab" data-toggle="tab" href="#two" role="tab" aria-controls="two" aria-selected="false">Tweet content map</a>
+                  <a class="nav-link" id="two-tab" data-toggle="tab" href="#two" role="tab" aria-controls="two" aria-selected="false">Tweet sentiment</a>
                 </li>
                 <li class="nav-item" role="presentation">
                   <a class="nav-link" id="three-tab" data-toggle="tab" href="#three" role="tab" aria-controls="three" aria-selected="false">Network plot</a>
                 </li>
+                <li class="nav-item" role="presentation">
+                  <a class="nav-link" id="four-tab" data-toggle="tab" href="#four" role="tab" aria-controls="four" aria-selected="false">Tweet content map</a>
+                </li>
               </ul>
-              <div class="tab-content" id="myTabContent">
-                <div class="tab-pane fade show active" id="one" role="tabpanel" aria-labelledby="one-tab">Tweets are collected from Twitter once a week using the <b>R</b> package <a class='use-underline' href="https://github.com/ropensci/rtweet">rtweet</a>. The number of retweets for each tweet is recorded at this time, so some tweets will have had a full week to collect retweets, while others will have had only a day or less. The retweet rates should therefore be taken as the average number of retweets obtained in the first 3-4 days of a tweet's lifetime.</div>
-                <div class="tab-pane fade" id="two" role="tabpanel" aria-labelledby="two-tab">The tweet content plot uses, first, word embeddings (<a class='use-underline' href="https://radimrehurek.com/gensim/auto_examples/tutorials/run_word2vec.html">Word2Vec</a>, with 50 dimensions, trained on 180,000 tweets), and then <a class='use-underline' href="https://en.wikipedia.org/wiki/Principal_component_analysis">Principal Component Analysis</a>, to reduce the content of each tweet into two numerical dimensions. These co-ordinates are averaged for each tweeter. Tweeters that are positioned close together on the plot tend to use similar words in their tweets. Note however that, as can be expected, reducing the complexity of hundreds of tweets into two numbers is a big over-simplification, as indicated on the axis labels: the position of the politicians on these two axes only explains 25% of the <i>variance</i>, or differences, in the content of their tweets.</div>
-                <div class="tab-pane fade" id="three" role="tabpanel" aria-labelledby="three-tab">Point positions for the tweet network plot were calculated with the <b>R</b> package <a class='use-underline' href="https://briatte.github.io/ggnet/">ggnet2</a>. Each tweeter is positioned near to those that they frequently <i>retweet</i> or <i>are retweeted by</i>, and the thickness of the <i>edge</i> (line) connecting two tweeters is proportional to the number of times they retweeted one another (whichever is the larger of the two directions), in the past month. The size of each <i>node</i> (circle) is proportional to the total number of retweets <i>received</i>. Note that due to the weekly data collection frequency, these are underestimates of the true, 'final', retweet numbers. <br />Hovering over a node highlights the incoming edges, which are the retweets <i>received</i> by that politician. The most influential politicians - those who are frequently retweeted - tend to appear near the centre of a cluster, with large nodes and many connecting edges. Politicians positioned near the middle of the plot are those that get some retweets from outside their party.</div>
+              <div class="tab-content small" id="myTabContent">
+                <div class="tab-pane fade show active" id="one" role="tabpanel" aria-labelledby="one-tab">
+                  <p>Tweets are collected from Twitter once a week using the <b>R</b> package <a class='use-underline' href="https://github.com/ropensci/rtweet">rtweet</a>. The number of retweets for each tweet is recorded at this time, so some tweets will have had a full week to collect retweets, while others will have had only a day or less. The retweet rates should therefore be taken as the average number of retweets obtained in the first 3-4 days of a tweet's lifetime.</p>
+                </div>
+                <div class="tab-pane fade" id="two" role="tabpanel" aria-labelledby="two-tab">
+                  <p>Tweet sentiment is calculated using the <a class='use-underline' href="https://github.com/cjhutto/vaderSentiment">VADER</a> algorithm, which is specifically geared towards social media content. These raw values are usually positive, but the overall mean is removed, to leave the scores for the most positive and negative tweeters as positive and negative deviations of comparable magnitude.</p>
+                </div>
+                <div class="tab-pane fade" id="three" role="tabpanel" aria-labelledby="three-tab">
+                  <p>Point positions for the tweet network plot were calculated with the <b>R</b> package <a class='use-underline' href="https://briatte.github.io/ggnet/">ggnet2</a>. Each tweeter is positioned near to those that they frequently <i>retweet</i> or <i>are retweeted by</i>, and the thickness of the <i>edge</i> (line) connecting two tweeters is proportional to the number of times they retweeted one another (whichever is the larger of the two directions), in the past month. The size of each <i>node</i> (circle) is proportional to the total number of retweets <i>received</i>. Note that due to the weekly data collection frequency, these are underestimates of the true, 'final', retweet numbers.</p>
+                  <p>Hovering over a node highlights the incoming edges, which are the retweets <i>received</i> by that politician. The most influential politicians - those who are frequently retweeted - tend to appear near the centre of a cluster, with large nodes and many connecting edges. Politicians positioned near the middle of the plot are those that get some retweets from outside their party.</p>
+                </div>
+                <div class="tab-pane fade" id="four" role="tabpanel" aria-labelledby="four-tab">
+                  <p>The tweet content plot uses, first, word embeddings (<a class='use-underline' href="https://radimrehurek.com/gensim/auto_examples/tutorials/run_word2vec.html">Word2Vec</a>, with 50 dimensions, trained on 180,000 tweets), and then <a class='use-underline' href="https://en.wikipedia.org/wiki/Principal_component_analysis">Principal Component Analysis</a>, to reduce the content of each tweet into two numerical dimensions. These co-ordinates are averaged for each tweeter. Tweeters that are positioned close together on the plot tend to use similar words in their tweets. Note however that, as can be expected, reducing the complexity of hundreds of tweets into two numbers is a big over-simplification: the position of the politicians on these two axes only explains 25% of the <i>variance</i>, or differences, in the content of their tweets.</p>
+                </div>
               </div>
             </div>
           </aside>
@@ -127,7 +139,7 @@
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column justify-content-center data-panel-b">
                 <h4>Tweet content</h4>
-                <p class="card-text mb-2 data-panel-card-border">This plot positions tweeters relative to one another based on the content of their tweets: those close together tend to tweet 'about the same things', in a simplified sense. See <i><a href='#Technical-stuff'>Technical Stuff</a></i> for more explanation. Circles are sized proportional to number of tweets. Unlike other plots on this page, this plot considers all tweets since July 2020, including retweets, but plots only politicians with at least 20 tweets in this period. On web, click to go to the individual's page.</p>
+                <p class="card-text mb-2 data-panel-card-border">This plot positions tweeters relative to one another based on the content of their tweets: those close together tend to tweet 'about the same things', in a simplified sense. Circles are sized proportional to number of tweets <span title='all tweets since July 2020, including retweets, but only showing politicians with at least 20 tweets' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>. On web, click a circle to go to the individual's page.</p>
                 <div id='vis5'></div>
               </div>
             </div>
@@ -143,7 +155,7 @@
 {% endblock %}
 
 {% block addtl_footer %}
-    <p class='text-muted'>Artwork by <a class='use-underline' href="http://ellistration.co.uk/">Ellistration</a></p> 
+    <p>Artwork by <a class='use-underline' href="http://ellistration.co.uk/">Ellistration</a></p> 
 {% endblock %}
 
 {% block other_js %}
@@ -323,7 +335,7 @@
             {
               "name": "color",
               "type": "ordinal",
-              "domain": ["UUP","Sinn Fein","Alliance","DUP","Independent","Green","SDLP","TUV","PBP"],
+              "domain": ["UUP","Sinn Fein","Alliance","DUP","Independent","Green","SDLP","TUV","PBPA"],
               "range": ["navy","darkgreen","gold","maroon","grey","seagreen","lawngreen","purple","red"]
             },
             {

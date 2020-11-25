@@ -23,7 +23,7 @@ app.secret_key = 'dont_need_one'
 #- mp_api_numbers.json
 #- member_other_photo_links.json
 #- party_colours.csv
-#- mlas_2019_twitter_accounts_toJuly2020_incMPs.csv
+#- politicians_twitter_accounts_ongoing.csv
 #- contribs_lda_model.pkl
 #- newsriver_articles_[may,june,july]2020.feather
 #- election_details.csv
@@ -52,6 +52,90 @@ if getpass.getuser() == 'david':
 else:
     data_dir = '/home/vivaronaldo/nipol/data/'
     test_mode = False
+
+pca_votes_threshold_fraction = 0.70
+news_volume_average_window_weeks = 7
+poll_track_timestep = 100 if test_mode else 10
+valid_session_names = ['2020-2022','2016-2017','2011-2016','2007-2011'] #order for dropdown menu
+#Some plot settings 
+hover_exclude_opacity_value = 0.4  #when hovered case goes to 1.0, what do rest go to
+larger_tick_label_size = 14  #for web mode, on some/all plots
+
+
+#use the colours we get from 'tableau20' but make repeatable and for reuse on indiv page
+plenary_contribs_colour_dict = {
+    'finance': '#88d27a',
+    'justice & legislation': '#e45756',
+    'infrastructure & investment': '#83bcb6',
+    'government business': '#b79a20',
+    'health & social care': '#f2cf5b',
+    'education': '#54a24b',
+    'politics/parties': '#ff9d98',
+    'public sector & unions': '#79706e',
+    'brexit/trade': '#f58518',
+    'economy': '#ffbf79',
+    'agriculture, prisons, industry': '#4c78a8',
+    'belfast city': '#9ecae9',
+    'housing': '#439894'
+}
+
+diary_colour_dict = defaultdict(lambda: 'Black')
+diary_colour_dict.update(
+    {'Committee for Agriculture, Environment and Rural Affairs Meeting': 'SeaGreen',
+    'Committee for Communities Meeting': 'DeepSkyBlue',
+    'Committee for Education Meeting': 'Salmon',
+    'Committee for Finance Meeting': 'Purple',
+    'Committee for Health Meeting': 'MediumVioletRed',
+    'Committee for Infrastructure Meeting': 'Olive',
+    'Committee for Justice Meeting': 'MidnightBlue',
+    'Committee for the Economy Meeting': 'DarkSlateGrey',
+    'Business Committee Meeting':  'Brown',
+    'Sitting of the Assembly': 'Black'}
+)
+
+#TODO put into file. Only need any that will appear in the top sources plot.
+news_source_pprint_dict = {
+    'agriland.ie': 'AgriLand',
+    'bbc.co.uk': 'BBC',
+    'belfastlive.co.uk': 'Belfast Live',
+    'belfasttelegraph.co.uk': 'Belfast Telegraph',
+    'breakingnews.ie': 'Breaking News.ie',
+    'dailymail.co.uk': 'The Daily Mail',
+    'dailystar.co.uk': 'The Daily Star',
+    'express.co.uk': 'Daily Express',
+    'forexlive.com': 'Forex Live',
+    'google.com': 'Google',
+    'highlandradio.com': 'Highland Radio',
+    'hortweek.com': 'Horticulture Week',
+    'huffingtonpost.co.uk': 'Huffington Post',
+    'independent.co.uk': 'The Independent',
+    'independent.ie': 'Irish Independent',
+    'inews.co.uk': 'i News',
+    'irishcentral.com': 'Irish Central',
+    'irishmirror.ie': 'The Irish Mirror',
+    'irishtimes.com': 'The Irish Times',
+    'limerickleader.ie': 'Limerick Leader',
+    'kfgo.com': 'KFGO',
+    'macaubusiness.com': 'Macau Business',
+    'metro.co.uk': 'Metro',
+    'mirror.co.uk': 'Daily Mirror',
+    'qub.ac.uk': 'Queen\'s University Belfast',
+    'reuters.com': 'Reuters',
+    'rte.ie': 'RTÉ',
+    'sportsmole.co.uk': 'Sports Mole',
+    'standard.co.uk': 'London Evening Standard',
+    'talkingretail.com': 'Talking Retail',
+    'telegraph.co.uk': 'The Telegraph',
+    'the42.ie': 'The42',
+    'theguardian.com': 'The Guardian',
+    'thejournal.ie': 'The Journal.ie',
+    'thestandard.com.hk': 'Hong Kong Standard',
+    'thesun.co.uk': 'The Sun',
+    'thesun.ie': 'The Irish Sun',
+    'thetimes.co.uk': 'The Times',
+    'wkzo.com': 'WKZO',
+    'yahoo.com': 'Yahoo'
+}
 
 mla_ids = pd.read_csv(data_dir + 'all_politicians_list.csv', dtype = {'PersonId': object})
 #If have too many non-MLA/MPs, could become unreliable over time, so limit to active here
@@ -100,7 +184,7 @@ print('Done ids')
 #Twitter
 #-------
 tweets_df = feather.read_dataframe(data_dir + 'mlas_2019_tweets_apr2019min_to_present_slim.feather')
-twitter_ids = pd.read_csv(data_dir + 'mlas_2019_twitter_accounts_toJuly2020_incMPs.csv',
+twitter_ids = pd.read_csv(data_dir + 'politicians_twitter_accounts_ongoing.csv',
     dtype = {'user_id': object})
 tweets_df = tweets_df.merge(twitter_ids[['user_id','mla_party','mla_name']].rename(index=str, columns={'mla_name':'normal_name'}), 
     on='user_id', how='left')
@@ -110,19 +194,24 @@ tweets_df = tweets_df[tweets_df.created_ym >= '202007']
 tweets_df = tweets_df[tweets_df['normal_name'].isin(mla_ids['normal_name'])]
 tweets_df['tweet_type'] = tweets_df.is_retweet.apply(lambda b: 'retweet' if b else 'original')
 tweets_df['created_weeksfromJan2020'] = tweets_df['created_at'].dt.week
-max_week_tweets = tweets_df['created_weeksfromJan2020'].max()
+tweets_df['created_at_week'] = tweets_df['created_at'].dt.week
+tweets_df['created_at_yweek'] = tweets_df.apply(
+    lambda row: '{:s}-{:02g}'.format(row['created_ym'][:4], row['created_at_week']), axis=1)
+
+last_5_yweeks_tweets = tweets_df.created_at_yweek.sort_values().unique()[-5:]
+
 tweet_sentiment = pd.read_csv(data_dir + 'vader_scored_tweets_apr2019min_to_present.csv', dtype={'status_id': object})
 tweets_df = tweets_df.merge(tweet_sentiment, on='status_id', how='left')
 
 #Which people tweet the most
-top_tweeters = tweets_df[tweets_df.created_weeksfromJan2020 >= max_week_tweets-5].groupby(['normal_name','mla_party','tweet_type']).status_id.count()\
+top_tweeters = tweets_df[tweets_df.created_at_yweek.isin(last_5_yweeks_tweets)].groupby(['normal_name','mla_party','tweet_type']).status_id.count()\
     .reset_index().rename(index=str, columns={'status_id':'n_tweets'})
 #(now filter to top 10/15 in function below)
 top_tweeters['tooltip_text'] = top_tweeters.apply(
     lambda row: f"{row['normal_name']} ({row['mla_party']}): {row['n_tweets']} {'original tweets' if row['tweet_type'] == 'original' else 'retweets'}", axis=1
 )
 
-member_retweets = tweets_df[(~tweets_df.is_retweet) & (tweets_df.created_weeksfromJan2020 >= max_week_tweets-5)]\
+member_retweets = tweets_df[(~tweets_df.is_retweet) & (tweets_df.created_at_yweek.isin(last_5_yweeks_tweets))]\
     .groupby(['normal_name','mla_party'])\
     .agg({'retweet_count': np.mean, 'status_id': len}).reset_index()\
     .query('status_id >= 10')\
@@ -132,16 +221,18 @@ member_retweets['tooltip_text'] = member_retweets.apply(
     lambda row: f"{row['normal_name']}: {row['retweets_per_tweet']:.1f} retweets per original tweet (from {row['n_original_tweets']} tweets)", axis=1
 )
 
-member_tweet_sentiment = tweets_df[(tweets_df.created_weeksfromJan2020 >= max_week_tweets-5) & (tweets_df.sentiment_vader_compound.notnull())]\
+member_tweet_sentiment = tweets_df[(tweets_df.created_at_yweek.isin(last_5_yweeks_tweets)) & (tweets_df.sentiment_vader_compound.notnull())]\
     .groupby(['normal_name','mla_party'])\
     .agg({'sentiment_vader_compound': np.mean, 'status_id': len}).reset_index()\
     .query('status_id >= 10').sort_values('sentiment_vader_compound', ascending=False)
+#Normalise here - only using for one plot (and rankings on indiv pages)
+member_tweet_sentiment['sentiment_vader_compound'] = member_tweet_sentiment['sentiment_vader_compound'] - member_tweet_sentiment['sentiment_vader_compound'].mean()
 member_tweet_sentiment['tooltip_text'] = member_tweet_sentiment.apply(
-    lambda row: f"{row['normal_name']}: mean sentiment score = {row['sentiment_vader_compound']:.2f} ({row['status_id']} tweets)", 
+    lambda row: f"{row['normal_name']}: mean score rel. to avg. = {row['sentiment_vader_compound']:+.2f} ({row['status_id']} tweets)", 
     axis=1
 )
 
-retweet_rate_last_month = tweets_df[(~tweets_df.is_retweet) & (tweets_df.created_weeksfromJan2020 >= max_week_tweets-5)]\
+retweet_rate_last_month = tweets_df[(~tweets_df.is_retweet) & (tweets_df.created_at_yweek.isin(last_5_yweeks_tweets))]\
     .groupby('mla_party')\
     .agg({'retweet_count': np.mean, 'status_id': len}).reset_index()\
     .query('status_id >= 10')\
@@ -154,7 +245,6 @@ retweet_rate_last_month['tooltip_text'] = retweet_rate_last_month.apply(
 #Average tweet PCA position
 tweets_w_wv_pcas = pd.read_csv(data_dir + 'wv_pca_scored_tweets_apr2019min_to_present.csv',
     dtype={'status_id': object})
-#tweet_pca_positions = tweets_df[tweets_df.created_weeksfromJan2020 >= max_week_tweets-5]\
 tweet_pca_positions = tweets_df\
     .merge(tweets_w_wv_pcas, on='status_id')\
     .groupby(['normal_name','mla_party'])\
@@ -256,8 +346,8 @@ votes_df['vote_num'] = votes_df.Vote.apply(lambda v: {'NO':-1, 'AYE':1, 'ABSTAIN
 votes_pca_df = votes_df[['normal_name','EventId','vote_num']]\
     .pivot(index='normal_name',columns='EventId',values='vote_num').fillna(0) 
 tmp = votes_df.normal_name.value_counts()
-those_in_70pc_votes = tmp[tmp >= votes_df.EventId.nunique()*0.70].index
-votes_pca_df = votes_pca_df[votes_pca_df.index.isin(those_in_70pc_votes)]
+those_in_threshold_pct_votes = tmp[tmp >= votes_df.EventId.nunique()*pca_votes_threshold_fraction].index
+votes_pca_df = votes_pca_df[votes_pca_df.index.isin(those_in_threshold_pct_votes)]
 
 my_pca = PCA(n_components=2, whiten=True)  #doesn't change results but axis units closer to 1
 my_pca.fit(votes_pca_df)
@@ -269,15 +359,15 @@ mlas_2d_rep = pd.DataFrame({'x': [el[0] for el in my_pca.transform(votes_pca_df)
                             'party': [mla_ids.loc[mla_ids.normal_name == n].PartyName.iloc[0] for n in votes_pca_df.index]})
 
 #Votes party unity 
-votes_party_unity = votes_df.groupby(['PartyName','EventId'])\
-    .agg({'Vote': lambda v: len(np.unique(v)),'normal_name': len}).reset_index()\
-    .query('normal_name >= 5')\
-    .groupby('PartyName').agg({'Vote': lambda v: 100*np.mean(v==1), 'EventId': len}).reset_index()
-votes_party_unity.columns = ['PartyName', 'Percent voting as one', 'n_votes']
-votes_party_unity['tooltip_text'] = votes_party_unity.apply(
-    lambda row: f"{row['PartyName']} voted as one in {row['Percent voting as one']:.0f}% of {row['n_votes']} votes",
-    axis=1
-)
+# votes_party_unity = votes_df.groupby(['PartyName','EventId'])\
+#     .agg({'Vote': lambda v: len(np.unique(v)),'normal_name': len}).reset_index()\
+#     .query('normal_name >= 5')\
+#     .groupby('PartyName').agg({'Vote': lambda v: 100*np.mean(v==1), 'EventId': len}).reset_index()
+# votes_party_unity.columns = ['PartyName', 'Percent voting as one', 'n_votes']
+# votes_party_unity['tooltip_text'] = votes_party_unity.apply(
+#     lambda row: f"{row['PartyName']} voted as one in {row['Percent voting as one']:.0f}% of {row['n_votes']} votes",
+#     axis=1
+# )
 
 #Vote commentary - pre-computed
 v_comms = feather.read_dataframe(data_dir + 'division_votes_v_comms.feather')
@@ -302,22 +392,6 @@ plenary_contribs_topic_counts = plenary_contribs_topic_counts.merge(
 plenary_contribs_topic_counts['tooltip_text'] = plenary_contribs_topic_counts.apply(
     lambda row: f"{row['topic_name']}: strongest words are {row['top5_words']}", axis=1
 )
-#use the colours we get from 'tableau20' but make repeatable and for reuse on indiv page
-plenary_contribs_colour_dict = {
-    'finance': '#88d27a',
-    'justice & legislation': '#e45756',
-    'infrastructure & investment': '#83bcb6',
-    'government business': '#b79a20',
-    'health & social care': '#f2cf5b',
-    'education': '#54a24b',
-    'politics/parties': '#ff9d98',
-    'public sector & unions': '#79706e',
-    'brexit/trade': '#f58518',
-    'economy': '#ffbf79',
-    'agriculture, prisons, industry': '#4c78a8',
-    'belfast city': '#9ecae9',
-    'housing': '#439894'
-}
 
 #plenary contrib emotions
 emotions_df = feather.read_dataframe(data_dir + 'plenary_hansard_contribs_emotions_averaged_201920sessions_topresent.feather')
@@ -339,26 +413,15 @@ diary_df['EventName'] = diary_df.apply(
     lambda row: row['OrganisationName']+' Meeting' if row['EventType']=='Committee Meeting' else row['EventType'], 
     axis=1
 )
-diary_colour_dict = defaultdict(lambda: 'Black')
-diary_colour_dict.update(
-    {'Committee for Agriculture, Environment and Rural Affairs Meeting': 'SeaGreen',
-    'Committee for Communities Meeting': 'DeepSkyBlue',
-    'Committee for Education Meeting': 'Salmon',
-    'Committee for Finance Meeting': 'Purple',
-    'Committee for Health Meeting': 'MediumVioletRed',
-    'Committee for Infrastructure Meeting': 'Olive',
-    'Committee for Justice Meeting': 'MidnightBlue',
-    'Committee for the Economy Meeting': 'DarkSlateGrey',
-    'Business Committee Meeting':  'Brown',
-    'Sitting of the Assembly': 'Black'}
-)
 diary_df['EventHTMLColour'] = diary_df.EventName.apply(lambda e: diary_colour_dict[e])
 
 #Assembly historical
 #-------------------
 #Session dates 
 def assign_session_name(date_string):
-    if date_string < '2011-05-05':
+    if date_string < '2007-03-07':
+        session_name = 'pre-2007'
+    elif date_string < '2011-05-05':
         session_name = '2007-2011'
     elif date_string < '2016-05-05':
         session_name = '2011-2016'
@@ -370,7 +433,6 @@ def assign_session_name(date_string):
         session_name = '2020-2022'
     return session_name
 #There were some questions submitted in the 2017-2019 period but don't plot this session
-valid_session_names = ['2020-2022','2016-2017','2011-2016','2007-2011'] #order for dropdown menu
 
 #TODO this is the slowest read in section
 
@@ -401,16 +463,16 @@ hist_questioners['tooltip_text'] = hist_questioners.apply(
 
 #Historical answers
 hist_answers_df = feather.read_dataframe(data_dir + 'historical_niassembly_answers.feather')
-hist_answers_df = hist_answers_df.merge(hist_mla_ids[['PersonId','normal_name','PartyName']]\
+hist_answers_df['session_name'] = hist_answers_df.AnsweredOnDate.apply(assign_session_name)
+hist_answers_df = hist_answers_df.merge(hist_mla_ids[['PersonId','normal_name','PartyName','session_name']]\
         .rename(index=str, columns={'normal_name': 'Tabler_normal_name', 
             'PersonId': 'TablerPersonId',' PartyName': 'Tabler_party_name'}), 
-    on='TablerPersonId', how='inner')
-hist_answers_df = hist_answers_df.merge(hist_mla_ids[['PersonId','normal_name','PartyName']]\
+    on=['TablerPersonId','session_name'], how='inner')
+hist_answers_df = hist_answers_df.merge(hist_mla_ids[['PersonId','normal_name','PartyName','session_name']]\
         .rename(index=str, columns={'normal_name': 'Minister_normal_name', 
             'PersonId': 'MinisterPersonId', 'PartyName': 'Minister_party_name'}), 
-    on='MinisterPersonId', how='left')
+    on=['MinisterPersonId','session_name'], how='left')
 hist_answers_df['Days_to_answer'] = (pd.to_datetime(hist_answers_df['AnsweredOnDate']) - pd.to_datetime(hist_answers_df['TabledDate'])).dt.days 
-hist_answers_df['session_name'] = hist_answers_df.TabledDate.apply(assign_session_name)
 
 hist_minister_time_to_answer = hist_answers_df[hist_answers_df.MinisterTitle != 'Assembly Commission']\
     .groupby(['session_name','Minister_normal_name','Minister_party_name'])\
@@ -437,6 +499,8 @@ hist_vote_results_df = feather.read_dataframe(data_dir + 'historical_division_vo
 hist_votes_df = hist_votes_df.merge(hist_vote_results_df, on='EventId', how='inner')
 
 hist_votes_df['session_name'] = hist_votes_df.DivisionDate.apply(assign_session_name)
+hist_votes_df = hist_votes_df[hist_votes_df.session_name.isin(valid_session_names)].copy()
+#don't use pre-2007
 
 hist_votes_df = hist_votes_df.merge(hist_mla_ids[['PersonId','PartyName','normal_name','session_name']], 
     on=['PersonId','session_name'], how='left')
@@ -449,7 +513,7 @@ hist_votes_df = hist_votes_df.sort_values('DivisionDate')
 #now simplify to print nicer
 hist_votes_df['DivisionDate'] = hist_votes_df['DivisionDate'].dt.date
 #To pass all votes list, create a column with motion title and url 
-#  joined by | so that I can split on this inside the datatable
+#  joined by | so that I can split ont this inside the datatable
 hist_votes_df['motion_plus_url'] = hist_votes_df.apply(
     lambda row: f"{row['Title']}|http://aims.niassembly.gov.uk/plenary/details.aspx?&ses=0&doc={row['DocumentID']}&pn=0&sid=vd", axis=1)
 
@@ -465,8 +529,8 @@ for session_name in hist_votes_df.session_name.unique():
     hist_votes_pca_df = hist_votes_one_session[['normal_name','EventId','vote_num']]\
         .pivot(index='normal_name', columns='EventId', values='vote_num').fillna(0) 
     tmp = hist_votes_one_session.normal_name.value_counts()
-    those_in_70pc_votes = tmp[tmp >= hist_votes_one_session.EventId.nunique()*0.70].index
-    hist_votes_pca_df = hist_votes_pca_df[hist_votes_pca_df.index.isin(those_in_70pc_votes)]
+    those_in_threshold_pct_votes = tmp[tmp >= hist_votes_one_session.EventId.nunique()*pca_votes_threshold_fraction].index
+    hist_votes_pca_df = hist_votes_pca_df[hist_votes_pca_df.index.isin(those_in_threshold_pct_votes)]
 
     hist_my_pca = PCA(n_components=2, whiten=True)  #doesn't change results but axis units closer to 1
     hist_my_pca.fit(hist_votes_pca_df)
@@ -480,15 +544,15 @@ for session_name in hist_votes_df.session_name.unique():
         (100*hist_my_pca.explained_variance_ratio_[0], 100*hist_my_pca.explained_variance_ratio_[1]))
 
 #Hist votes party unity 
-hist_votes_party_unity = hist_votes_df.groupby(['session_name','PartyName','EventId'])\
-    .agg({'Vote': lambda v: len(np.unique(v)),'normal_name': len}).reset_index()\
-    .query('normal_name >= 5')\
-    .groupby(['session_name','PartyName']).agg({'Vote': lambda v: 100*np.mean(v==1), 'EventId': len}).reset_index()
-hist_votes_party_unity.columns = ['session_name','PartyName', 'Percent voting as one', 'n_votes']
-hist_votes_party_unity['tooltip_text'] = hist_votes_party_unity.apply(
-    lambda row: f"{row['PartyName']} voted as one in {row['Percent voting as one']:.0f}% of {row['n_votes']} votes",
-    axis=1
-)
+# hist_votes_party_unity = hist_votes_df.groupby(['session_name','PartyName','EventId'])\
+#     .agg({'Vote': lambda v: len(np.unique(v)),'normal_name': len}).reset_index()\
+#     .query('normal_name >= 5')\
+#     .groupby(['session_name','PartyName']).agg({'Vote': lambda v: 100*np.mean(v==1), 'EventId': len}).reset_index()
+# hist_votes_party_unity.columns = ['session_name','PartyName', 'Percent voting as one', 'n_votes']
+# hist_votes_party_unity['tooltip_text'] = hist_votes_party_unity.apply(
+#     lambda row: f"{row['PartyName']} voted as one in {row['Percent voting as one']:.0f}% of {row['n_votes']} votes",
+#     axis=1
+# )
 
 #hist votes commentary - can do all at once and filter later by column vote_date
 hist_v_comms = feather.read_dataframe(data_dir + 'historical_division_votes_v_comms.feather')
@@ -521,37 +585,47 @@ print('Done historical contributions')
 #News 
 #----
 news_df = pd.concat([
-    feather.read_dataframe(data_dir + 'newsriver_articles_maytojuly2020.feather'),
-    feather.read_dataframe(data_dir + 'newsriver_articles_ongoing2020.feather')
-])
-news_df['discoverDate'] = pd.to_datetime(news_df['discoverDate'])
-news_df['discoverDate_week'] = news_df.discoverDate.dt.week
+    feather.read_dataframe(data_dir + 'newscatcher_articles_slim_w_sentiment_julaugsep2020.feather'),
+    feather.read_dataframe(data_dir + 'newscatcher_articles_slim_w_sentiment_sep2020topresent.feather')
+]).drop_duplicates()
+#Don't trust the consistency of results before 2020w34
+news_df = news_df[news_df.published_date >= '2020-08-17'].copy()
+
+for source in news_df.source.unique():
+    if source not in news_source_pprint_dict.keys():
+        news_source_pprint_dict[source] = source
+news_df['source'] = news_df.source.map(news_source_pprint_dict)
+
+#
+news_df['published_date'] = pd.to_datetime(news_df['published_date'])
+news_df['published_date_week'] = news_df.published_date.dt.week
+news_df['published_date_year'] = news_df.published_date.dt.year
+news_df['published_date_yweek'] = news_df.apply(
+    lambda row: '{:04g}-{:02g}'.format(row['published_date_year'], row['published_date_week']), axis=1)
 news_df = news_df.merge(mla_ids[['normal_name','PartyName','PartyGroup']],
     how = 'inner', on = 'normal_name')
 #drop the first and last weeks which could be partial
-#news_df = news_df[(news_df.discoverDate_week > news_df.discoverDate_week.min()) &
-#    (news_df.discoverDate_week < news_df.discoverDate_week.max())]
-news_df = news_df.sort_values('discoverDate', ascending=False)
-news_df['date_pretty'] = pd.to_datetime(news_df.discoverDate).dt.strftime('%Y-%m-%d')
-news_df['title_plus_url'] = news_df.apply(lambda row: f"{row['title']}|{row['url']}", axis=1)
+#news_df = news_df[(news_df.published_date_week > news_df.published_date_week.min()) &
+#    (news_df.published_date_week < news_df.published_date_week.max())]
+news_df = news_df.sort_values('published_date', ascending=False)
+news_df['date_pretty'] = pd.to_datetime(news_df.published_date).dt.strftime('%Y-%m-%d')
+news_df['title_plus_url'] = news_df.apply(lambda row: f"{row['title']}|{row['link']}", axis=1)
 
-news_sources = news_df[['url','source','PartyGroup']].drop_duplicates()\
-    .groupby(['source','PartyGroup']).url.count().reset_index()\
-    .rename(index=str, columns={'url':'News articles'})\
+news_sources = news_df[['link','source','PartyGroup']].drop_duplicates()\
+    .groupby(['source','PartyGroup']).link.count().reset_index()\
+    .rename(index=str, columns={'link':'News articles'})\
     .sort_values('News articles', ascending=False)
 #(now filtering to top 10/15 below in function)
 news_sources['tooltip_text'] = news_sources.apply(
     lambda row: f"{row['source']}: {row['News articles']} article{'s' if row['News articles'] != 1 else ''} about {row['PartyGroup'].lower()}s", 
     axis=1
 )
-#Now trim long names for the axis labels
-news_sources['source'] = news_sources.source.apply(lambda n: n if len(n) <= 17 else n[:17]+'...')
 
 #dedup articles by party before calculating averages by party - doesn't make a big difference
-news_sentiment_by_party_week = news_df[['discoverDate_week','url','PartyName','sr_sentiment_score']].drop_duplicates()\
-    .groupby(['discoverDate_week','PartyName'])\
-    .agg({'url': len, 'sr_sentiment_score': np.nanmean}).reset_index()
-#news_sentiment_by_party_week = news_sentiment_by_party_week.sort_values(['PartyName','discoverDate_week'], ignore_index=True)
+news_sentiment_by_party_week = news_df[['published_date_year','published_date_week','link','PartyName','sr_sentiment_score']].drop_duplicates()\
+    .groupby(['published_date_year','published_date_week','PartyName'])\
+    .agg({'link': len, 'sr_sentiment_score': np.nanmean}).reset_index()
+#news_sentiment_by_party_week = news_sentiment_by_party_week.sort_values(['PartyName','published_date_week'], ignore_index=True)
 #news_sentiment_by_party_week = news_sentiment_by_party_week[news_sentiment_by_party_week.sr_sentiment_score.notnull()]
 #news_sentiment_by_party_week = news_sentiment_by_party_week[news_sentiment_by_party_week.url >= 3]  #OK to keep in now because using smoothing
 news_sentiment_by_party_week = news_sentiment_by_party_week[news_sentiment_by_party_week.PartyName.isin(
@@ -562,23 +636,29 @@ news_sentiment_by_party_week = news_sentiment_by_party_week[news_sentiment_by_pa
 #        .rolling(7, min_periods=1, center=True).mean().reset_index(0),  #the 0 is vital here
 #    rsuffix='_smooth')
 #fill in missing weeks before averaging - works for volume only
-uniques = [news_sentiment_by_party_week[c].unique().tolist() for c in ['discoverDate_week','PartyName']] 
-news_sentiment_by_party_week = pd.DataFrame(product(*uniques), columns=['discoverDate_week','PartyName'])\
-    .merge(news_sentiment_by_party_week, on=['discoverDate_week','PartyName'], how='left')
+uniques = [news_sentiment_by_party_week[c].unique().tolist() for c in ['published_date_year','published_date_week','PartyName']] 
+news_sentiment_by_party_week = pd.DataFrame(product(*uniques), columns=['published_date_year','published_date_week','PartyName'])\
+    .merge(news_sentiment_by_party_week, on=['published_date_year','published_date_week','PartyName'], how='left')
 #keep missing sentiment weeks as NA but can fill volumes as zero
-news_sentiment_by_party_week['url'] = news_sentiment_by_party_week['url'].fillna(0)
+news_sentiment_by_party_week['link'] = news_sentiment_by_party_week['link'].fillna(0)
 
 news_sentiment_by_party_week = news_sentiment_by_party_week.join(
-    news_sentiment_by_party_week.groupby('PartyName', sort=False).url\
-        .rolling(7, min_periods=1, center=True).mean().reset_index(0),  #the 0 is vital here
-    rsuffix='_smooth')
-
-news_sentiment_by_party_week['tooltip_text'] = news_sentiment_by_party_week.apply(
-    lambda row: f"{row['PartyName']}: {row['url']:g} articles in week (avg = {row['url_smooth']:.1f})", axis=1
-)
+    news_sentiment_by_party_week.groupby('PartyName', sort=False).link\
+        .rolling(news_volume_average_window_weeks, min_periods=1, center=True).mean().reset_index(0),  #the 0 is vital here
+    rsuffix='_smooth').rename(index=str, columns={'link_smooth':'vol_smooth'})
+#print(news_sentiment_by_party_week.head())
 #drop first and last weeks here instead, so that table still shows the most recent articles
-news_sentiment_by_party_week = news_sentiment_by_party_week[(news_sentiment_by_party_week.discoverDate_week > news_sentiment_by_party_week.discoverDate_week.min()) &
-    (news_sentiment_by_party_week.discoverDate_week < news_sentiment_by_party_week.discoverDate_week.max())]
+news_sentiment_by_party_week['yearweekcomb'] = news_sentiment_by_party_week['published_date_year'] + news_sentiment_by_party_week['published_date_week']
+news_sentiment_by_party_week = news_sentiment_by_party_week[(news_sentiment_by_party_week.yearweekcomb > news_sentiment_by_party_week.yearweekcomb.min()) &
+    (news_sentiment_by_party_week.yearweekcomb < news_sentiment_by_party_week.yearweekcomb.max())]
+#This is used for the boxplot - need mean value by party for tooltip
+news_sentiment_by_party_week = news_sentiment_by_party_week.merge(
+    news_sentiment_by_party_week.groupby('PartyName').agg( 
+        tooltip_text = pd.NamedAgg('sr_sentiment_score', lambda s: f"Mean sentiment score = {np.mean(s):.3f}")
+    ), on = 'PartyName', how = 'inner')
+#news_sentiment_by_party_week['tooltip_text'] = news_sentiment_by_party_week.apply(
+#    lambda row: f"{row['PartyName']}: {row['link']:g} articles in week (avg = {row['vol_smooth']:.1f})", axis=1
+#)
 print('Done news')
 
 #Polls 
@@ -647,7 +727,6 @@ def get_current_avg_poll_pct(polls_df, elections_df, party, current_dt,
         else:
             return np.average(past_party_points.pct, weights=past_party_points.wt_factor)
 
-poll_track_timestep = 100 if test_mode else 10
 poll_avgs_track = []
 earliest_poll_or_election_date = min(polls_df.date.min(), elections_df.date.min())
 poll_track_date_range = [datetime.datetime.today() - pd.to_timedelta(i, unit='day') \
@@ -658,6 +737,10 @@ for party in polls_df[polls_df.party != 'Other'].party.unique():
         'pred_pct': [get_current_avg_poll_pct(polls_df, elections_df, party, d) for d in poll_track_date_range]}))
 poll_avgs_track = pd.concat(poll_avgs_track)
 print('Done polls')
+
+#Blog articles list
+blog_pieces = pd.read_csv(data_dir + 'blog_pieces_list.psv', sep='|').iloc[-1::-1]
+print('Done blog')
 
 #Totals for front page
 #---------------------
@@ -674,17 +757,13 @@ totals_dict = {
     'n_votes': f"{pd.concat([votes_df, hist_votes_df]).EventId.nunique():,}",
     'n_contributions': f"{pd.concat([scored_plenary_contribs_df, hist_plenary_contribs_df]).shape[0]:,}",
     'n_tweets': f"{tweets_df.status_id.nunique():,}",
-    'n_news': f"{news_df.url.nunique():,}",
+    'n_news': f"{news_df.link.nunique():,}",
     'n_polls': f"{polls_df.poll_id.nunique():,}",
     'last_updated_date': tweets_df.created_at.max().strftime('%A, %-d %B')
 }
 
 #Tidy up
 del answers_df, hist_answers_df, hist_questions_df, vote_results_df, hist_vote_results_df, hist_emotions_df
-
-#Some plot settings 
-hover_exclude_opacity_value = 0.4  #when hovered case goes to 1.0, what do rest go to
-larger_tick_label_size = 14  #for web mode, on some/all plots
 
 #----
 
@@ -696,52 +775,8 @@ def index():
 
 @app.route('/what-they-say', methods=['GET'])
 def twitter():
-    #with open('./static/test_network.json', 'r') as f:
-    #    tmp = json.load(f)
     return render_template('twitter.html',
         full_mla_list = sorted(mla_ids.normal_name.tolist()))
-
-# @app.route('/what-they-do', methods=['GET'])
-# def assembly():
-
-#     args = request.args
-#     print(args)
-
-#     #Exclude events that have now happened
-#     #diary_df_filtered = diary_df[diary_df['EventDate'] >= datetime.date.today().strftime('%Y-%m-%d')]
-#     diary_df_filtered = diary_df[diary_df['EndTime'] >= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')]
-#     #But not more than 6 items, so as not to clutter page
-#     diary_df_filtered = diary_df_filtered.head(6)
-
-#     votes_list = [e[1].values.tolist() for e in v_comms[['vote_date','vote_subject','vote_tabler_group','vote_result',
-#         'uni_bloc_vote','nat_bloc_vote','alli_vote','green_vote','uni_nat_split']].iterrows()]
-#     chances_to_take_a_side = v_comms[(v_comms.uni_nat_split=='Yes')].shape[0]
-#     alli_num_votes_with_uni = v_comms[(v_comms.uni_nat_split=='Yes') &
-#         (v_comms.alli_vote==v_comms.uni_bloc_vote)].shape[0]
-#     alli_num_votes_with_nat = v_comms[(v_comms.uni_nat_split=='Yes') & 
-#         (v_comms.alli_vote==v_comms.nat_bloc_vote)].shape[0]
-#     green_num_votes_with_uni = v_comms[(v_comms.uni_nat_split=='Yes') &
-#         (v_comms.green_vote==v_comms.uni_bloc_vote)].shape[0]
-#     green_num_votes_with_nat = v_comms[(v_comms.uni_nat_split=='Yes') & 
-#         (v_comms.green_vote==v_comms.nat_bloc_vote)].shape[0]
-
-#     return render_template('assembly.html',
-#         session_to_plot = '2020-2022',
-#         diary = diary_df_filtered, 
-#         n_mlas = mlas_2d_rep.shape[0], 
-#         n_votes = votes_df.EventId.nunique(),
-#         full_mla_list = sorted(mla_ids.normal_name.tolist()),
-#         votes_list = votes_list,
-#         votes_passed_string = f"{(v_comms.vote_result=='PASS').sum()} / {v_comms.shape[0]}",
-#         uni_nat_split_string = f"{(v_comms.uni_nat_split=='Yes').sum()} / {v_comms.shape[0]}",
-#         num_uni_nat_split_passes = ((v_comms.uni_nat_split=='Yes') & (v_comms.vote_result=='PASS')).sum(),
-#         uni_tabled_passed_string = f"{((v_comms.vote_tabler_group=='Unionist') & (v_comms.vote_result=='PASS')).sum()} / {(v_comms.vote_tabler_group=='Unionist').sum()}",
-#         nat_tabled_passed_string = f"{((v_comms.vote_tabler_group=='Nationalist') & (v_comms.vote_result=='PASS')).sum()} / {(v_comms.vote_tabler_group=='Nationalist').sum()}",
-#         mix_tabled_passed_string = f"{((v_comms.vote_tabler_group=='Mixed') & (v_comms.vote_result=='PASS')).sum()} / {(v_comms.vote_tabler_group=='Mixed').sum()}",
-#         alli_like_uni_string = f"{alli_num_votes_with_uni} / {chances_to_take_a_side}",
-#         alli_like_nat_string = f"{alli_num_votes_with_nat} / {chances_to_take_a_side}",
-#         green_like_uni_string = f"{green_num_votes_with_uni} / {chances_to_take_a_side}",
-#         green_like_nat_string = f"{green_num_votes_with_nat} / {chances_to_take_a_side}")
 
 @app.route('/what-they-do', methods=['GET'])
 def assembly():
@@ -787,6 +822,7 @@ def assembly():
         n_votes = n_votes,
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
         votes_list = votes_list,
+        pca_votes_threshold_pct = int(pca_votes_threshold_fraction*100),
         votes_passed_details = [(v_comms_tmp.vote_result=='PASS').sum(), v_comms_tmp.shape[0], f"{100*(v_comms_tmp.vote_result=='PASS').mean():.0f}%"],
         #f"{(v_comms_tmp.vote_result=='PASS').sum()} / {v_comms_tmp.shape[0]}",
         uni_nat_split_details = [(v_comms_tmp.uni_nat_split=='Yes').sum(), v_comms_tmp.shape[0], f"{100*(v_comms_tmp.uni_nat_split=='Yes').mean():.0f}%"],
@@ -800,7 +836,10 @@ def assembly():
         nat_tabled_passed_details = [((v_comms_tmp.vote_tabler_group=='Nationalist') & (v_comms_tmp.vote_result=='PASS')).sum(),
             (v_comms_tmp.vote_tabler_group=='Nationalist').sum(),
             f"{100*(((v_comms_tmp.vote_tabler_group=='Nationalist') & (v_comms_tmp.vote_result=='PASS')).sum() / (v_comms_tmp.vote_tabler_group=='Nationalist').sum()):.0f}%"],
-        mix_tabled_passed_string = f"{((v_comms_tmp.vote_tabler_group=='Mixed') & (v_comms_tmp.vote_result=='PASS')).sum()} / {(v_comms_tmp.vote_tabler_group=='Mixed').sum()}",
+        #mix_tabled_passed_string = f"{((v_comms_tmp.vote_tabler_group=='Mixed') & (v_comms_tmp.vote_result=='PASS')).sum()} / {(v_comms_tmp.vote_tabler_group=='Mixed').sum()}",
+        mix_tabled_passed_details = [((v_comms_tmp.vote_tabler_group=='Mixed') & (v_comms_tmp.vote_result=='PASS')).sum(),
+            (v_comms_tmp.vote_tabler_group=='Mixed').sum(),
+            f"{100*(((v_comms_tmp.vote_tabler_group=='Mixed') & (v_comms_tmp.vote_result=='PASS')).sum() / (v_comms_tmp.vote_tabler_group=='Mixed').sum()):.0f}%"],
         alli_like_uni_details = [alli_num_votes_with_uni, chances_to_take_a_side],
         alli_like_nat_details = [alli_num_votes_with_nat, chances_to_take_a_side],
         green_like_uni_details = [green_num_votes_with_uni, chances_to_take_a_side],
@@ -812,11 +851,12 @@ def news():
     if test_mode:
         articles_list = [e[1].values.tolist() for e in news_df.head(50)[['date_pretty','title_plus_url','source','normal_name']].iterrows()]
     else:
-        articles_list = [e[1].values.tolist() for e in news_df.head(300)[['date_pretty','title_plus_url','source','normal_name']].iterrows()]
+        articles_list = [e[1].values.tolist() for e in news_df.head(1000)[['date_pretty','title_plus_url','source','normal_name']].iterrows()]
 
     return render_template('news.html',         
         articles_list = articles_list,
-        full_mla_list = sorted(mla_ids.normal_name.tolist()))
+        full_mla_list = sorted(mla_ids.normal_name.tolist()),
+        news_volume_average_window_weeks = news_volume_average_window_weeks)
 
 @app.route('/how-we-vote', methods=['GET'])
 def polls():
@@ -834,11 +874,39 @@ def about():
     return render_template('about.html',
         full_mla_list = sorted(mla_ids.normal_name.tolist()))
 
+@app.route('/blog', methods=['GET'])
+def blog():
+    return render_template('blog.html', 
+        full_mla_list = sorted(mla_ids.normal_name.tolist()),
+        blog_pieces = blog_pieces)
+
+@app.route('/blog/<post_name>', methods=['GET'])
+def blog_item(post_name):
+    blog_links = blog_pieces['link'].tolist()
+    blog_titles = blog_pieces['title'].tolist()
+    if post_name in blog_links:
+        place_in_blog_list = blog_links.index(post_name)
+        print(blog_titles)
+        print(place_in_blog_list)
+
+        return render_template('blog-'+post_name+'.html',
+            full_mla_list = sorted(mla_ids.normal_name.tolist()),
+            prev_and_next_article_title = (
+                None if place_in_blog_list==blog_pieces.shape[0]-1 else blog_titles[place_in_blog_list+1],
+                None if place_in_blog_list==0 else blog_titles[place_in_blog_list-1]),
+            prev_and_next_article_link = (
+                None if place_in_blog_list==blog_pieces.shape[0]-1 else blog_links[place_in_blog_list+1],
+                None if place_in_blog_list==0 else blog_links[place_in_blog_list-1])
+            )
+    else:
+        return blog()        
+
 @app.route('/individual', methods=['GET'])
 def indiv():
 
     args = request.args
-    if 'mla_name' in args and args.get('mla_name') != 'Choose MLA...':
+    if 'mla_name' in args and args.get('mla_name') != 'Choose MLA...' \
+        and args.get('mla_name') in mla_ids.normal_name.unique():
         person_selected = True
         person_choice = args.get('mla_name')                
         person_choice_party = mla_ids[mla_ids.normal_name==person_choice].PartyName_long.iloc[0]
@@ -880,6 +948,12 @@ def indiv():
             (tweets_df.created_at.dt.date > datetime.date.today()-datetime.timedelta(days=30))].shape[0]
 
         tweets_by_week = tweets_df[tweets_df.normal_name==row['normal_name']].created_at.dt.week.value_counts().sort_index().tolist()
+        tmp = tweets_df[tweets_df.normal_name==row['normal_name']].created_at_yweek.value_counts()
+        tmp = pd.DataFrame({'created_at_yweek': tmp.index, 'n_tweets': tmp.values})
+        tweets_by_week = tweets_df[['created_at_yweek']].drop_duplicates()\
+            .merge(tmp, on='created_at_yweek', how='left')\
+            .fillna(0).sort_values('created_at_yweek')['n_tweets'].astype(int).to_list()
+
 
         sample_recent_tweets = tweets_df[(tweets_df.normal_name==row['normal_name']) &
             (~tweets_df.is_retweet)].sort_values('created_at', ascending=False).head(15)[['created_at','text','quoted_status_id']]
@@ -949,11 +1023,13 @@ def indiv():
         member_tweet_positivities = member_tweet_sentiment['sentiment_vader_compound'].tolist()
 
         news_articles_last_month = news_df[(news_df.normal_name==row['normal_name']) &
-            (news_df.discoverDate.dt.date > datetime.date.today()-datetime.timedelta(days=30))].shape[0]
+            (news_df.published_date.dt.date > datetime.date.today()-datetime.timedelta(days=30))].shape[0]
 
-        news_articles_by_week = news_df[news_df.normal_name==row['normal_name']].discoverDate.dt.week.value_counts().sort_index().tolist()
-
-        #TODO last 5 news articles
+        tmp = news_df[news_df.normal_name==row['normal_name']].published_date_yweek.value_counts()
+        tmp = pd.DataFrame({'published_date_yweek': tmp.index, 'n_mentions': tmp.values})
+        news_articles_by_week = news_df[['published_date_yweek']].drop_duplicates()\
+            .merge(tmp, on='published_date_yweek', how='left')\
+            .fillna(0).sort_values('published_date_yweek')['n_mentions'].astype(int).to_list()
 
         mla_votes_list = []
         tmp = votes_df.loc[votes_df['normal_name'] == row['normal_name'], ['DivisionDate','motion_plus_url','Vote']].sort_values('DivisionDate', ascending=False)
@@ -1211,7 +1287,7 @@ def plot_questions_asked_fn(session_to_plot, mobile_mode = False):
     plot = altair.Chart(plot_df).mark_bar(opacity=1)\
         .encode(
             y=altair.Y('Questions asked'),
-            x=altair.Y('normal_name', sort='-y', axis = altair.Axis(title=None)),
+            x=altair.X('normal_name', sort='-y', title=None),
             color = altair.Color('PartyName', 
                 scale=altair.Scale(
                     domain=party_colours[party_colours.party_name.isin(plot_df.PartyName)]['party_name'].tolist(), 
@@ -1221,7 +1297,7 @@ def plot_questions_asked_fn(session_to_plot, mobile_mode = False):
             tooltip='tooltip_text:N')\
         .resolve_scale(x='independent', y = 'independent')\
         .properties(title = '', 
-            width = 260 if mobile_mode else 440, 
+            width = 220 if mobile_mode else 440, 
             height = 250,
             background = 'none')
     #plot = plot.configure_title(fontSize=20, font='Courier')
@@ -1243,9 +1319,8 @@ def plot_questions_asked_fn(session_to_plot, mobile_mode = False):
 def plot_party_tweets_scatter_fn():
 
     plot = altair.Chart(retweet_rate_last_month).mark_circle(size=140, opacity=1)\
-        .encode(x=altair.X('n_original_tweets', 
-                    axis=altair.Axis(title='Number of original tweets')),
-            y=altair.Y('retweets_per_tweet', axis=altair.Axis(title='Retweets per tweet')),
+        .encode(x=altair.X('n_original_tweets', title='Number of original tweets'),
+            y=altair.Y('retweets_per_tweet', title='Retweets per tweet'),
             color = altair.Color('mla_party', 
                 scale=altair.Scale(
                     domain=party_colours[party_colours.party_name.isin(retweet_rate_last_month.mla_party)]['party_name'].tolist(), 
@@ -1282,7 +1357,7 @@ def plot_user_tweetnum_fn_mobile():
     return plot_user_tweetnum_fn(mobile_mode = True)
 
 def plot_user_tweetnum_fn(mobile_mode = False):
-    top_n_tweeters = tweets_df[tweets_df.created_weeksfromJan2020 >= max_week_tweets-5].groupby('normal_name').status_id.count()\
+    top_n_tweeters = tweets_df[tweets_df.created_at_yweek.isin(last_5_yweeks_tweets)].groupby('normal_name').status_id.count()\
         .reset_index().sort_values('status_id')\
         .tail(10 if mobile_mode else 15)\
         .normal_name.tolist()
@@ -1292,8 +1367,8 @@ def plot_user_tweetnum_fn(mobile_mode = False):
     plot = altair.Chart(top_tweeters_plot_df).mark_bar()\
         .add_selection(selection)\
         .encode(
-            y=altair.Y('n_tweets', axis=altair.Axis(title='Number of tweets')),
-            x=altair.Y('normal_name', sort='-y', axis = altair.Axis(title=None)),
+            y=altair.Y('n_tweets', title='Number of tweets'),
+            x=altair.Y('normal_name', sort='-y', title=None),
             color = altair.Color('tweet_type', 
                 scale=altair.Scale(
                     domain=['original','retweet'],
@@ -1327,8 +1402,8 @@ def plot_user_retweet_fn(mobile_mode = False):
     plot = altair.Chart(plot_df).mark_bar()\
         .add_selection(selection)\
         .encode(
-            y=altair.Y('retweets_per_tweet', axis=altair.Axis(title='Retweets per tweet')),
-            x=altair.Y('normal_name', sort='-y', axis = altair.Axis(title=None)),
+            y=altair.Y('retweets_per_tweet', title='Retweets per tweet'),
+            x=altair.Y('normal_name', sort='-y', title=None),
             color = altair.Color('mla_party', 
                 scale=altair.Scale(
                     domain=party_colours[party_colours.party_name.isin(plot_df.mla_party)]['party_name'].tolist(), 
@@ -1359,24 +1434,26 @@ def plot_user_tweet_sentiment_fn(mobile_mode = False):
         member_tweet_sentiment.sort_values('sentiment_vader_compound').head(n_of_each_to_plot).normal_name.tolist() +
         member_tweet_sentiment.sort_values('sentiment_vader_compound').tail(n_of_each_to_plot).normal_name.tolist()
     )].sort_values('sentiment_vader_compound')
-    #df_to_plot['group'] = ['+ve']*n_of_each_to_plot + ['-ve']*n_of_each_to_plot
-    
-    most_pos_text_y2 = df_to_plot.sentiment_vader_compound.min()*0.22 #some way below the zero line relative to the lowest point drawn
-    most_neg_text_y2 = df_to_plot.sentiment_vader_compound.iloc[int(0.5*n_of_each_to_plot)]+0.04
+    df_to_plot['rank_group'] = ['highest']*n_of_each_to_plot + ['lowest']*n_of_each_to_plot
+
+    #overall_av_sentiment_score = member_tweet_sentiment.sentiment_vader_compound.mean()
+    #df_to_plot['sentiment_vader_compound'] = df_to_plot['sentiment_vader_compound'] - overall_av_sentiment_score    
+
+    #most_pos_text_y2 = df_to_plot.sentiment_vader_compound.min()*0.22 #some way below the zero line relative to the lowest point drawn
+    #most_neg_text_y2 = df_to_plot.sentiment_vader_compound.iloc[int(0.5*n_of_each_to_plot)]+0.04
+    most_pos_text_y2 = df_to_plot.sentiment_vader_compound.min()*0.15
+    most_neg_text_y2 = df_to_plot.sentiment_vader_compound.max()*0.15
+    print(most_pos_text_y2, most_neg_text_y2)
+
     df_to_plot['y2'] = [most_neg_text_y2]*n_of_each_to_plot + [most_pos_text_y2]*n_of_each_to_plot
     df_to_plot['text'] = ['']*df_to_plot.shape[0]
     df_to_plot.iloc[int(n_of_each_to_plot/2-1), df_to_plot.columns.get_loc('text')] = 'Most negative'
     df_to_plot.iloc[df_to_plot.shape[0]-int(n_of_each_to_plot/2), df_to_plot.columns.get_loc('text')] = 'Most positive'
     df_to_plot['names_numbered'] = range(df_to_plot.shape[0])
 
-    selection = altair.selection_single(on='mouseover', empty='all')
-    #size = 280/n_of_each_to_plot)\
-    plot = altair.Chart(df_to_plot).mark_bar()\
-        .add_selection(selection)\
+    base = altair.Chart(df_to_plot)\
         .encode(
-            y=altair.Y('sentiment_vader_compound', 
-                axis=altair.Axis(title='Mean tweet sentiment score')),
-                #scale=altair.Scale(domain=[-1,1])),
+            y=altair.Y('sentiment_vader_compound', title='Mean tweet sentiment score'),
             x=altair.X('normal_name', sort=altair.EncodingSortField(field='sentiment_vader_compound', op='max'), axis = altair.Axis(title=None)),
             color = altair.Color('mla_party',
                 scale=altair.Scale(
@@ -1384,7 +1461,13 @@ def plot_user_tweet_sentiment_fn(mobile_mode = False):
                     range=party_colours[party_colours.party_name.isin(df_to_plot.mla_party)]['colour'].tolist()
                     ),
                 legend = altair.Legend(title = '')),
-            tooltip='tooltip_text:N')        
+            tooltip='tooltip_text:N')
+    
+    plot = base.mark_bar(size=3) + base.mark_circle(size=200, opacity=1)
+
+    dividing_line = altair.Chart(pd.DataFrame({'anything': [0]})).mark_rule(yOffset=0, strokeDash=[2,2])\
+       .encode(y=altair.Y('anything'))
+    plot += dividing_line
 
     text = altair.Chart(df_to_plot).mark_text(
         align='center',
@@ -1397,17 +1480,9 @@ def plot_user_tweet_sentiment_fn(mobile_mode = False):
     ).transform_filter(altair.datum.text != '')
     plot += text
 
-    plot = plot.properties(title = '', 
-            width = 'container', 
-            height = 250 if mobile_mode else 400, 
-            background = 'none')
-    #Can't find a way to have the line offset correctly on all display sizes
-    #dividing_line = altair.Chart(df_to_plot).mark_rule(xOffset=-0.6*280/n_of_each_to_plot, strokeDash=[10,3])\
-    #    .encode(x=altair.X('normal_name', sort=altair.EncodingSortField(field='sentiment_vader_compound', op='max')))\
-    #    .transform_filter(altair.datum.names_numbered == n_of_each_to_plot)
-    #dividing_line = altair.Chart(pd.DataFrame({'names_numbered': [9.5]})).mark_rule(xOffset=0, strokeDash=[10,3])\
-    #    .encode(x=altair.X('names_numbered', sort=altair.EncodingSortField(field='sentiment_vader_compound', op='max')))
-    #plot += dividing_line
+    plot = plot.properties(width = 'container', 
+        height = 250 if mobile_mode else 400,
+        background = 'none')
 
     plot = add_grey_legend(plot, orient = 'top-left', mobile_mode = mobile_mode)
 
@@ -1474,7 +1549,7 @@ def plot_news_sources_fn(mobile_mode = False):
         .add_selection(selection)\
         .encode(#x='Minister_normal_name', 
             y=altair.Y('News articles'),
-            x=altair.Y('source', sort='-y', axis = altair.Axis(title=None)),
+            x=altair.X('source', sort='-y', title=None),
             color = altair.Color('PartyGroup', 
                 scale=altair.Scale(
                     domain=['Unionist','Other','Nationalist'],
@@ -1488,47 +1563,42 @@ def plot_news_sources_fn(mobile_mode = False):
             background = 'none')
     plot = add_grey_legend(plot, mobile_mode = mobile_mode)
 
-    print(plot.to_json())
     return plot.to_json() 
 
 #News sentiment by party and week
 @app.route('/data/plot_news_volume_web')
 def plot_news_volume_fn_web():
-    return shared_plot_news_fn(news_sentiment_by_party_week, 'url_smooth', 'Number of mentions', '')
+    return shared_plot_news_fn(news_sentiment_by_party_week, 'vol_smooth', 'Number of mentions', '')
 
 @app.route('/data/plot_news_volume_mobile')
 def plot_news_volume_fn_mobile():
-    return shared_plot_news_fn(news_sentiment_by_party_week, 'url_smooth', 'Number of mentions', '', mobile_mode=True)
+    return shared_plot_news_fn(news_sentiment_by_party_week, 'vol_smooth', 'Number of mentions', '', mobile_mode=True)
 
 def shared_plot_news_fn(news_sentiment_by_party_week, y_variable, y_title, title, mobile_mode=False):
-    x_ticks = news_sentiment_by_party_week.discoverDate_week.nunique()
-    x_range = (news_sentiment_by_party_week.discoverDate_week.min(),
-        news_sentiment_by_party_week.discoverDate_week.max())
+    #x_ticks = news_sentiment_by_party_week.published_date_week.nunique()
+    #x_range = (news_sentiment_by_party_week.published_date_week.min(),
+    #    news_sentiment_by_party_week.published_date_week.max())
+    news_sentiment_by_party_week['plot_date'] = news_sentiment_by_party_week.apply(
+        lambda row: pd.to_datetime('{}-01-01'.format(row['published_date_year'])) + pd.to_timedelta(7*(row['published_date_week']-1), unit='days'),
+        axis=1)
 
     plot = altair.Chart(news_sentiment_by_party_week).mark_line(size=5)\
-        .encode(x=altair.X('discoverDate_week', 
-                    scale=altair.Scale(domain=x_range),
-                    axis=altair.Axis(title='2020 week number')),
+        .encode(x=altair.X('plot_date:T', title=None),
             y=altair.Y(y_variable, axis=altair.Axis(title=y_title, minExtent=10, maxExtent=100)),
             color = altair.Color('PartyName', 
                 scale=altair.Scale(
                     domain=party_colours[party_colours.party_name.isin(news_sentiment_by_party_week.PartyName)]['party_name'].tolist(), 
                     range=party_colours[party_colours.party_name.isin(news_sentiment_by_party_week.PartyName)]['colour'].tolist()
                     ),
-                legend=altair.Legend(title='')),
-            tooltip='tooltip_text:N')\
+                legend=altair.Legend(title='')))\
         .properties(title = title,
             width = 'container', 
             height = 200 if mobile_mode else 300,
             background = 'none')
 
-    #plot = add_grey_legend(plot, orient='top')
     if not mobile_mode:
         plot = plot.configure_axis(labelFontSize = larger_tick_label_size)
-        plot = plot.configure_axisX(tickCount = x_ticks)
-    #To line up the two plots vertically on page, assuming sentiment one has -0.01 values
-    #if y_variable == 'url_smooth':
-    #    plot = plot.configure_axisY(titlePadding=20, labelPadding=10)
+
     plot = plot.configure_legend(
         direction='horizontal', 
         orient='top',
@@ -1545,21 +1615,22 @@ def shared_plot_news_fn(news_sentiment_by_party_week, y_variable, y_title, title
 def plot_news_sentiment_fn(mobile_mode = False):
     #There seems to be a bug in Vega boxplot continuous title, possibly 
     #  related to it being a layered plot - gives title of 'variable, mytitle, mytitle'
-    #Can't avoid printing the variable name!
-    news_sentiment_by_party_week['Mean sentiment score'] = news_sentiment_by_party_week.sr_sentiment_score
+    #title=None gives no title; title='' gives title=variable name
+    #news_sentiment_by_party_week['Sentiment score'] = news_sentiment_by_party_week.sr_sentiment_score
     #work out order manually - easier than figuring out the altair method
     party_order = news_sentiment_by_party_week.groupby('PartyName').sr_sentiment_score.mean().sort_values(ascending=False).index.tolist()
 
     plot = altair.Chart(news_sentiment_by_party_week).mark_boxplot(size=30)\
-        .encode(y = altair.Y('PartyName:N', axis=altair.Axis(title=''), sort=party_order),
-            x = altair.X('Mean sentiment score:Q', axis=altair.Axis(title='')),
+        .encode(y = altair.Y('PartyName:N', title=None, sort=party_order),
+            #x = altair.X('Sentiment score:Q', title=''),
+            x = altair.X('sr_sentiment_score', title=None),
             color = altair.Color('PartyName', 
                 scale=altair.Scale(
                     domain=party_colours[party_colours.party_name.isin(news_sentiment_by_party_week.PartyName)]['party_name'].tolist(), 
                     range=party_colours[party_colours.party_name.isin(news_sentiment_by_party_week.PartyName)]['colour'].tolist()
                     ),
                 legend=None),
-            tooltip=altair.Tooltip(field='Mean sentiment score', type='quantitative', aggregate='mean', format='.3'))\
+            tooltip=altair.Tooltip(field='tooltip_text', type='nominal', aggregate='max'))\
         .properties(title = '',
             width='container', 
             height = 200 if mobile_mode else 300,
@@ -1724,32 +1795,32 @@ def plot_vote_pca_all_mlas_fn(session_to_plot, mobile_mode = False):
     return plot.to_json()
 
 #How often party votes as one
-@app.route('/data/plot_party_unity_bars_<session_to_plot>')
-def plot_party_unity_bars_fn(session_to_plot):
+# @app.route('/data/plot_party_unity_bars_<session_to_plot>')
+# def plot_party_unity_bars_fn(session_to_plot):
 
-    if session_to_plot in ['2020-2022']:
-        plot_df = votes_party_unity
-    else:
-        plot_df = hist_votes_party_unity[hist_votes_party_unity.session_name==session_to_plot]
+#     if session_to_plot in ['2020-2022']:
+#         plot_df = votes_party_unity
+#     else:
+#         plot_df = hist_votes_party_unity[hist_votes_party_unity.session_name==session_to_plot]
 
-    selection = altair.selection_single(on='mouseover', empty='all')
-    plot = altair.Chart(plot_df).mark_bar()\
-        .add_selection(selection)\
-        .encode(y='Percent voting as one',
-            x=altair.Y('PartyName', sort='-y', axis = altair.Axis(title=None)),
-            color = altair.Color('PartyName', 
-                scale=altair.Scale(
-                    domain=party_colours[party_colours.party_name.isin(plot_df.PartyName)]['party_name'].tolist(), 
-                    range=party_colours[party_colours.party_name.isin(plot_df.PartyName)]['colour'].tolist()
-                    )),
-            tooltip = 'tooltip_text')\
-        .properties(title = ' ', 
-            width = 'container', 
-            height = 300,
-            background = 'none')
-    plot = plot.configure_legend(disable=True)
+#     selection = altair.selection_single(on='mouseover', empty='all')
+#     plot = altair.Chart(plot_df).mark_bar()\
+#         .add_selection(selection)\
+#         .encode(y = 'Percent voting as one',
+#             x = altair.Y('PartyName', sort='-y', title=None),
+#             color = altair.Color('PartyName', 
+#                 scale=altair.Scale(
+#                     domain=party_colours[party_colours.party_name.isin(plot_df.PartyName)]['party_name'].tolist(), 
+#                     range=party_colours[party_colours.party_name.isin(plot_df.PartyName)]['colour'].tolist()
+#                     )),
+#             tooltip = 'tooltip_text')\
+#         .properties(title = ' ', 
+#             width = 'container', 
+#             height = 300,
+#             background = 'none')
+#     plot = plot.configure_legend(disable=True)
  
-    return plot.to_json()
+#     return plot.to_json()
 
 #Top plenary topics
 @app.route('/data/plot_plenary_topics_overall_<session_to_plot>')
@@ -1766,8 +1837,8 @@ def plot_plenary_topics_overall_fn(session_to_plot):
     plot = altair.Chart(plot_df).mark_bar(size=25)\
         .add_selection(selection)\
         .encode(
-            x=altair.Y('n_contribs', axis=altair.Axis(title='Number of instances')),
-            y=altair.Y('topic_name', sort='-x', axis = altair.Axis(title=None)),
+            x=altair.X('n_contribs', title='Number of instances'),
+            y=altair.Y('topic_name', sort='-x', title=None),
             color=altair.Color('topic_name', 
                 scale=altair.Scale(
                     domain=topic_names, 
@@ -1818,10 +1889,9 @@ def plot_plenary_emotions_fn(session_to_plot, mobile_mode = False):
     plot = altair.Chart(emotions_party_to_plot).mark_point(size=120 if mobile_mode else 200, strokeWidth=5 if mobile_mode else 6)\
         .add_selection(selection_by_party)\
         .encode(
-            x = altair.X('ave_emotion', axis=altair.Axis(title='Fraction words scoring')),
-            y = altair.Y('emotion_type', 
-                sort=altair.EncodingSortField(order='ascending', field='order'),
-                axis=altair.Axis(title='')),
+            x = altair.X('ave_emotion', title='Fraction words scoring'),
+            y = altair.Y('emotion_type', title=None,
+                sort=altair.EncodingSortField(order='ascending', field='order')),
             color = altair.Color('PartyName', 
                 scale=altair.Scale(
                     domain=party_colours[party_colours.party_name.isin(emotions_party_to_plot.PartyName)]['party_name'].tolist(), 

@@ -105,56 +105,64 @@
 
         <div class="row justify-content-center mt-4">
 
-            <div class='col-xl-5 px-2 py-1 image-link'>
+            <div class='col-xl-5 px-2 py-1'>
+              <div class='container image-link image-link-zoom'>
                 <a href="{{ url_for('twitter') }}">
                   <img src="{{ url_for('static', filename='WHAT THEY SAY.jpg') }}" width='100%' alt="Twitter feature">
                   <div class="container">
-                    <div class='col-8 '>
-                      <div class="carousel-caption text-center d-none d-md-block pt-2 pb-1 mx-1 mb-4">
+                    <div class='col-8'>
+                      <div class="carousel-caption text-center d-md-block pt-2 pb-1 mx-1 mb-2">
                         <h3>NI politicians on Twitter</h3>
                       </div>
                     </div>
                   </div>
                 </a>
+              </div>
             </div>
-            <div class='col-xl-5 px-2 py-1 image-link'>
+            <div class='col-xl-5 px-2 py-1'>
+              <div class='container image-link image-link-zoom'>
                 <a href="{{ url_for('news') }}">
                   <img src="{{ url_for('static', filename='WHAT WE REPORT.jpg') }}" width='100%' alt="News feature">
                   <div class="container">
                     <div class='col-8'>
-                      <div class="carousel-caption text-center d-none d-md-block pt-2 pb-1 mx-1 mb-4">
+                      <div class="carousel-caption text-center d-md-block pt-2 pb-1 mx-1 mb-2">
                         <h3>Online news monitoring</h3>
                       </div>
                     </div>
                   </div>
                 </a> 
+              </div>
             </div>
         </div>
 
         <div class="row justify-content-center mb-3">
-            <div class='col-xl-5 px-2 py-1 image-link'>
+            <div class='col-xl-5 px-2 py-1'>
+              <div class='container image-link image-link-zoom'>
                 <a href="{{ url_for('assembly') }}">
                   <img src="{{ url_for('static', filename='WHAT THEY DO.jpg') }}" width='100%' alt="Assembly feature">
                   <div class="container">
                     <div class='col-8'>
-                      <div class="carousel-caption text-center d-none d-md-block pt-2 pb-1 mx-1 mb-2">
+                      <div class="carousel-caption text-center d-md-block pt-2 pb-1 mx-1 mb-2">
                         <h3>Assembly debate and vote analysis</h3>
                       </div>
                     </div>
                   </div>
                 </a>
+              </div>
             </div>
-            <div class='col-xl-5 px-2 py-1 image-link'>
+            <div class='col-xl-5 px-2 py-1'>
+              <div class='container image-link image-link-zoom'>
                 <a href="{{ url_for('polls') }}">
                   <img src="{{ url_for('static', filename='HOW WE VOTE.jpg') }}" width='100%' alt="Polls feature">
                   <div class="container">
                     <div class='col-8'>
-                      <div class="carousel-caption d-none d-md-block pt-2 pb-1 mx-1 mb-4">
+                      <div class="carousel-caption d-md-block pt-2 pb-1 mx-1 mb-2">
                         <h3>Polls tracker</h3>
                       </div>
                     </div>
                   </div>
                 </a>
+              </div>
             </div>
         </div>
         <br/>
@@ -166,6 +174,6 @@
 {% endblock %}
 
 {% block addtl_footer %}
-    <p class='text-muted'>Artwork by <a class='use-underline' href="http://ellistration.co.uk/">Ellistration</a></p> 
-    <p class='text-muted'>Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a>, <a href="https://www.flaticon.com/authors/pixel-perfect" title="Pixel perfect">Pixel perfect</a>, and <a href="https://www.flaticon.com/free-icon/politician_2388829?term=politician&page=1&position=32" title="surang">surang</a>, from <a class='use-underline' href="https://www.flaticon.com/">flaticon.com</a></p> 
+    <p>Artwork by <a class='use-underline' href="http://ellistration.co.uk/">Ellistration</a></p> 
+    <p>Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a>, <a href="https://www.flaticon.com/authors/pixel-perfect" title="Pixel perfect">Pixel perfect</a>, and <a href="https://www.flaticon.com/free-icon/politician_2388829?term=politician&page=1&position=32" title="surang">surang</a>, from <a class='use-underline' href="https://www.flaticon.com/">flaticon.com</a></p> 
 {% endblock %}

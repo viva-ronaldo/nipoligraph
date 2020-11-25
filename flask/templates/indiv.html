@@ -26,10 +26,10 @@
                 
                 <ul>
                   {% if twitter_handle is not none %}
-                    <li style='display: inline'><i class='fab fa-twitter'></i> <a class='use-underline' target='_blank' href='https://www.twitter.com/{{twitter_handle}}'>{{twitter_handle}}</a></li> 
+                    <li style='list-style: none'><i class='fab fa-twitter'></i> <a class='use-underline' target='_blank' href='https://www.twitter.com/{{twitter_handle}}'>{{twitter_handle}}</a></li> 
                   {% endif %}
                   {% if email_address is not none %}
-                    <li style='display: inline'><i class='fas fa-envelope-open'></i> <span style='font-size: 0.8em'>{{email_address}}</span></li>
+                    <li style='list-style: none'><i class='fas fa-envelope-open'></i> <span style='font-size: 0.8em'>{{email_address}}</span></li>
                   {% endif %}
                 </ul>
                 
@@ -138,11 +138,11 @@
                     <tr><td width='70%'></td><td width='30%'></td></tr>
 
                     <tr>
-                      <td colspan='2'>Mentioned in {{news_articles_last_month}} news article{{'s' if news_articles_last_month != 1 else ''}} in the last month</td>
+                      <td>{{news_articles_by_week | sum}} news article mention{{'s' if (news_articles_by_week | sum) != 1 else ''}} since 1 June 2020</td>
+                      <td><span class="newssparkline"></span></td>
                     </tr>
                     <tr>
-                      <td>{{news_articles_by_week | sum}} news article mention{{'s' if (news_articles_by_week | sum) != 1 else ''}} since 1 May 2020</td>
-                      <td><span class="newssparkline"></span></td>
+                      <td colspan='2'>{{news_articles_last_month}} news article mention{{'s' if news_articles_last_month != 1 else ''}} in the last month</td>
                     </tr>
 
                   </table>
@@ -184,7 +184,7 @@
             {% if sample_recent_tweets.shape[0] > 0 %}
               <div class="col-xl-5">
                 <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-                  <div class="col p-4 d-flex flex-column position-static data-panel-a">
+                  <div class="col p-4 d-flex flex-column position-static data-panel-c">
                     <h4 class="mb-0">Sample of recent tweets from <i class='fab fa-twitter'></i><a target='_blank' class='use-underline' href='https://www.twitter.com/{{twitter_handle}}'>{{twitter_handle}}</a></h4>
                     <ul style='font-size: 0.9em'>
                         {% for row in sample_recent_tweets.itertuples() %}
