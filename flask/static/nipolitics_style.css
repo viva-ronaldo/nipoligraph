@@ -351,6 +351,11 @@ footer a:hover .fa-circle, footer a:focus .fa-circle {
     border: 3px solid rgba(188, 143, 143, 0.5); 
     color: white;
 }
+@media screen and (max-device-width: 632px){
+  .carousel-caption h4 {
+    font-size: 0.9em;
+  }
+}
 .image-link a, .image-link-zoom img {
     transition: all 0.3s;
 }
@@ -474,65 +479,54 @@ span[data-toggle="tooltip"] {
     color: var(--navbar-colour);
 }
 
-a[href*='twitter.com'] {
-    color: inherit;
-}
+/* link icons */
 a[href*='altair-viz'] {
     background: transparent url('/static/icon_altair.png') center left no-repeat;
     background-size: 16px 16px;
     padding-left: 20px;
-    color: inherit;
+    /*color: inherit;*/
 }
 a[href*='numpy'] {
     background: transparent url('/static/icon_numpy.png') center left no-repeat;
     background-size: 16px 16px;
     padding-left: 20px;
-    color: inherit;
 }
 a[href*='/vega-lite'] {
     background: transparent url('/static/icon64x48_vegalite.png') center left no-repeat;
     background-size: 20px 15px;
     padding-left: 20px;
-    color: inherit;
 }
 a[href*='pandas'] {
     background: transparent url('/static/icon_pandas.svg') center left no-repeat;
     background-size: 15px 20px;
     padding-left: 20px;
-    color: inherit;
 }
 a[href*='/rtweet'] {
     background: transparent url('/static/icon_rtweet.png') center left no-repeat;
     background-size: 20px 20px;
     padding-left: 22px;
-    color: inherit;
 }
 a[href*='r-project'] {
     background: transparent url('/static/icon_R.svg') center left no-repeat;
     background-size: 20px 20px;
     padding-left: 20px;
-    color: inherit;
 }
 a[href*='scikit'] {
     background: transparent url('/static/icon32x32_scikitlearn.ico') center left no-repeat;
     background-size: 16px 16px;
     padding-left: 20px;
-    color: inherit;
 }
 a[href*='pythonanywhere'] {
     background: transparent url('/static/icon_pythonanywhere.png') center left no-repeat;
     padding-left: 200px;
-    color: inherit;
 }
 a[href*='palletsprojects'] {
     background: transparent url('/static/icon_flask.png') center left no-repeat;
     background-size: 16px 16px;
     padding-left: 20px;
-    color: inherit;
 }
 a[href*='progresspie'] {
     background: transparent url('/static/icon_progresspie.svg') center left no-repeat;
     background-size: 16px 16px;
     padding-left: 20px;
-    color: inherit;
 }

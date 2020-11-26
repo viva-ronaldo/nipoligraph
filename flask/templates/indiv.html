@@ -13,7 +13,7 @@
 
           {% if person_selected %}
             <div class="col-lg-6 px-5 py-2 text-center">
-              <div class='col pt-3 pb-1' style='background: #e6e6e6'>
+              <div class='col pt-3 pb-3' style='background: #e6e6e6'>
                 <h1>{{person_name_string}}</h1>
                 <h2>{{person_party}}</h2>
                 {% if person_is_mla %}
@@ -21,17 +21,15 @@
                         <img src="{{image_url}}" alt="Portrait of MLA or MP" style="margin: 10px; width: 112px; height: 149px;" title="Click to open MLA profile on niassembly.gov.uk">
                     </a>
                 {% else %}
-                    <img src="{{image_url}}" alt="Portrait of MLA or MP" style="width: 112px; height: 149px;">
+                    <img src="{{image_url}}" alt="Portrait of MLA or MP" style="margin: 10px; width: 112px; height: 149px;">
                 {% endif %}
                 
-                <ul>
-                  {% if twitter_handle is not none %}
-                    <li style='list-style: none'><i class='fab fa-twitter'></i> <a class='use-underline' target='_blank' href='https://www.twitter.com/{{twitter_handle}}'>{{twitter_handle}}</a></li> 
-                  {% endif %}
-                  {% if email_address is not none %}
-                    <li style='list-style: none'><i class='fas fa-envelope-open'></i> <span style='font-size: 0.8em'>{{email_address}}</span></li>
-                  {% endif %}
-                </ul>
+                {% if twitter_handle is not none %}
+                  <p style='margin-bottom:0'><i class='fab fa-twitter'></i> <a class='use-underline' target='_blank' style='color: inherit;' href='https://www.twitter.com/{{twitter_handle}}'>{{twitter_handle}}</a></p> 
+                {% endif %}
+                {% if email_address is not none %}
+                  <p style='margin:0'><i class='fas fa-envelope-open'></i> <span style='font-size: 0.8em'>{{email_address}}</span></p>
+                {% endif %}
                 
               </div>
             </div>
@@ -138,7 +136,7 @@
                     <tr><td width='70%'></td><td width='30%'></td></tr>
 
                     <tr>
-                      <td>{{news_articles_by_week | sum}} news article mention{{'s' if (news_articles_by_week | sum) != 1 else ''}} since 1 June 2020</td>
+                      <td>{{news_articles_by_week | sum}} news article mention{{'s' if (news_articles_by_week | sum) != 1 else ''}} since August 2020</td>
                       <td><span class="newssparkline"></span></td>
                     </tr>
                     <tr>
@@ -153,10 +151,12 @@
 
                     <tr><td width='70%'></td><td width='30%'></td></tr>
 
-                    <tr>
-                      <td> <b>{{tweets_by_week | sum}}</b> tweet{{'s' if (tweets_by_week | sum) != 1 else ''}} since 1 July 2020</td>
-                      <td><span class="tweetssparkline"></span></td>
-                    </tr>
+                    {% if tweet_volume_rank_string|safe != "Doesn't tweet at all" %}
+                      <tr>
+                        <td> <b>{{tweets_by_week | sum}}</b> tweet{{'s' if (tweets_by_week | sum) != 1 else ''}} since July 2020</td>
+                        <td><span class="tweetssparkline"></span></td>
+                      </tr>
+                    {% endif %}
 
                     <tr>
                       <td> {{tweet_volume_rank_string | safe}} </td>
@@ -185,7 +185,7 @@
               <div class="col-xl-5">
                 <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
                   <div class="col p-4 d-flex flex-column position-static data-panel-c">
-                    <h4 class="mb-0">Sample of recent tweets from <i class='fab fa-twitter'></i><a target='_blank' class='use-underline' href='https://www.twitter.com/{{twitter_handle}}'>{{twitter_handle}}</a></h4>
+                    <h4 class="mb-0">Sample of recent tweets from <i class='fab fa-twitter'></i><a target='_blank' class='use-underline' style='color: inherit;' href='https://www.twitter.com/{{twitter_handle}}'>{{twitter_handle}}</a></h4>
                     <ul style='font-size: 0.9em'>
                         {% for row in sample_recent_tweets.itertuples() %}
                             {% if row.involves_quote %}

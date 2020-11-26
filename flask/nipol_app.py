@@ -1027,9 +1027,12 @@ def indiv():
 
         tmp = news_df[news_df.normal_name==row['normal_name']].published_date_yweek.value_counts()
         tmp = pd.DataFrame({'published_date_yweek': tmp.index, 'n_mentions': tmp.values})
+        print(tmp.published_date_yweek.tolist())
+        print(tmp.n_mentions.tolist())
         news_articles_by_week = news_df[['published_date_yweek']].drop_duplicates()\
             .merge(tmp, on='published_date_yweek', how='left')\
             .fillna(0).sort_values('published_date_yweek')['n_mentions'].astype(int).to_list()
+        print(news_articles_by_week)
 
         mla_votes_list = []
         tmp = votes_df.loc[votes_df['normal_name'] == row['normal_name'], ['DivisionDate','motion_plus_url','Vote']].sort_values('DivisionDate', ascending=False)
@@ -1484,7 +1487,7 @@ def plot_user_tweet_sentiment_fn(mobile_mode = False):
         height = 250 if mobile_mode else 400,
         background = 'none')
 
-    plot = add_grey_legend(plot, orient = 'top-left', mobile_mode = mobile_mode)
+    plot = add_grey_legend(plot, orient = 'bottom-right', mobile_mode = mobile_mode)
 
     return plot.to_json()
 

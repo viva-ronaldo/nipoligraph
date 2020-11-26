@@ -22,7 +22,7 @@
           <div class="col-lg-8 col-md-10 mx-auto">
             <p>This post looks at the Assembly division vote records from 2007 to present (which can be seen in full at <a href="{{ url_for('assembly') }}">What They Do</a>). We use the designation, required of each member, as one of 'Unionist', 'Nationalist', or 'Other', to separate both votes cast and motions proposed into the three main ideological groups, to understand how membership of these groups affects voting behaviour.</p>
 
-            <h2 class='section-heading'>Passing motions has not got easier</h2>
+            <h2 class='section-heading'>Passing motions has not got (much) easier</h2>
 
             <p>Overall, members with 'Other' designation have approached division voting more positively than Unionists and Nationalists, as they have voted 'Aye' on 59% of occasions, compared to 54% for Unionists and 46% for Nationalists. Over time, there has been an upward trend in 'Aye' voting from Others and Nationalists. We cannot easily determine whether or not this is partly due to 'better' motions (more deserving of an 'Aye' vote) being proposed in recent years.</p>
 
@@ -30,13 +30,17 @@
 
             <p>This increased positivity <i>has</i> translated into an increase in the frequency of votes receiving support of 50% or more (<span style='color: blue'>blue points and line</span> below), but this has been partly countered by an increase in the use of the cross-community support requirement (a.k.a. the 'petition of concern' blocker) (<span style='color: green'>green</span>), with the net result being that the fraction of votes passing each year has increased (<b>black</b>), but at a lower rate than the fraction of motions earning majority support.</p>
 
-            TODO call out circle sizes again
-
             <img class='blog-plot' src="{{url_for('static', filename='blog_plots/votes-passed-3-trend-lines-1.png')}}"/>
 
-            <p>Unsurprisingly, members and parties are more likely to support motions that are proposed by members of the same designation than those proposed by different designations.</p>
+            <h2 class='section-heading'>Parties vote for their own motions</h2>
 
-            TODO continue
+            <p>Unsurprisingly, members and parties are more likely to support motions that are proposed by members of the same party or designation than those proposed by different designations. In the plot below, which again covers the whole 2007-2020 period, MLAs in the lower right support almost all Unionist motions and few Nationalist motions, and for MLAs in the upper left, the reverse is true. Some notable outliers are labelled.</p>
+
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/uni-nat-motion-support-scatter-annotated-1.png')}}"/>
+            
+            <p>The plot is not quite symmetric: the DUP members lie closer to the bottom-right corner than Sinn Fein members are to the top-left corner, meaning that they more consistently voted to support 'their own' motions and reject those from the opposing side. Sinn Fein, and to a greater extent, SDLP, members lie above the diagonal line, which means that although they usually supported Nationalist motions (large <i>y</i> values), they also sometimes supported Unionist motions (moderately large <i>x</i> values). Alliance members are found in the centre of the grid, meaning that they were equally as likely to support a Unionist motion as a Nationalist motion (see below).</p>
+
+            <p>Overall, Unionist motions pass the frequently often (52%), followed by mixed (36%), Other (35%), and Nationalist (28%). Unionist motions have had an unusually low pass rate <a href="{{ url_for('assembly', assembly_session='2020-2022') }}">in this session</a> compared to previous years. It is interesting that mixed proposals do not have a significantly higher success rate. Further investigation reveals that a third of these motions were proposed by DUP and Sinn Fein, and these were relatively successful (passing 75% of the time). Most of the other motions did not involve DUP (the most common combinations were Alliance-SDLP and SDLP-UUP), and these were unlikely to succeed (passing only 10% of the time).</p>
 
             <h2 class='section-heading'>Alliance really are in the centre</h2>
 
