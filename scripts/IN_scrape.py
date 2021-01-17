@@ -47,4 +47,5 @@ def scrape():
             res = pd.concat(tmp)
     return res
 
-print(scrape())
+if __name__ == '__main__':
+    print(scrape())
