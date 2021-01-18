@@ -42,12 +42,13 @@ app.secret_key = 'dont_need_one'
 #- current_ministers_and_speakers.csv
 #- current_committee_memberships.csv
 #- newsriver_articles_ongoing2020.feather
-#- static/tweets_network_since1july2020_edges.csv
-#- static/tweets_network_since1july2020_nodes.json
+#- tweets_network_last3months_top5s.csv
+#- static/tweets_network_lastmonth_edges.csv
+#- static/tweets_network_lastmonth_nodes.json
 
 print('Starting...')
 if getpass.getuser() == 'david':
-    data_dir = '/home/david/projects/text-work/mla_tweets/data/'
+    data_dir = '/media/shared_storage/data/nipol_aws_copy/data/'
     test_mode = True
 else:
     data_dir = '/home/vivaronaldo/nipol/data/'
@@ -193,8 +194,9 @@ tweets_df['mla_party'] = tweets_df.mla_party.apply(lambda p: party_names_transla
 tweets_df = tweets_df[tweets_df.created_ym >= '202007']
 tweets_df = tweets_df[tweets_df['normal_name'].isin(mla_ids['normal_name'])]
 tweets_df['tweet_type'] = tweets_df.is_retweet.apply(lambda b: 'retweet' if b else 'original')
-tweets_df['created_weeksfromJan2020'] = tweets_df['created_at'].dt.week
 tweets_df['created_at_week'] = tweets_df['created_at'].dt.week
+#early Jan can be counted as week 53 by pd.week - messes things up
+tweets_df.loc[(tweets_df.created_at_week==53) & (tweets_df.created_at.dt.day <= 7), 'created_at_week'] = 1
 tweets_df['created_at_yweek'] = tweets_df.apply(
     lambda row: '{:s}-{:02g}'.format(row['created_ym'][:4], row['created_at_week']), axis=1)
 
@@ -232,15 +234,15 @@ member_tweet_sentiment['tooltip_text'] = member_tweet_sentiment.apply(
     axis=1
 )
 
-retweet_rate_last_month = tweets_df[(~tweets_df.is_retweet) & (tweets_df.created_at_yweek.isin(last_5_yweeks_tweets))]\
-    .groupby('mla_party')\
-    .agg({'retweet_count': np.mean, 'status_id': len}).reset_index()\
-    .query('status_id >= 10')\
-    .rename(index=str, columns={'status_id': 'n_original_tweets', 'retweet_count': 'retweets_per_tweet'})
-retweet_rate_last_month['tooltip_text'] = retweet_rate_last_month.apply(
-    lambda row: f"{row['mla_party']}: {row['n_original_tweets']} original tweets with average of {row['retweets_per_tweet']:.1f} retweets per tweet",
-    axis=1
-)
+# retweet_rate_last_month = tweets_df[(~tweets_df.is_retweet) & (tweets_df.created_at_yweek.isin(last_5_yweeks_tweets))]\
+#     .groupby('mla_party')\
+#     .agg({'retweet_count': np.mean, 'status_id': len}).reset_index()\
+#     .query('status_id >= 10')\
+#     .rename(index=str, columns={'status_id': 'n_original_tweets', 'retweet_count': 'retweets_per_tweet'})
+# retweet_rate_last_month['tooltip_text'] = retweet_rate_last_month.apply(
+#     lambda row: f"{row['mla_party']}: {row['n_original_tweets']} original tweets with average of {row['retweets_per_tweet']:.1f} retweets per tweet",
+#     axis=1
+# )
 
 #Average tweet PCA position
 tweets_w_wv_pcas = pd.read_csv(data_dir + 'wv_pca_scored_tweets_apr2019min_to_present.csv',
@@ -258,6 +260,9 @@ tweet_pca_positions['indiv_page_url'] = ['/individual?mla_name=' + n.replace(' '
 tweet_pca_positions['tooltip_text'] = tweet_pca_positions.apply(
     lambda row: f"{row['normal_name']} ({row['num_tweets']} tweets since July 2020)", axis=1
 )
+
+tweets_network_top5s = pd.read_csv(data_dir + 'tweets_network_last3months_top5s.csv')
+
 print('Done Twitter')
 
 #Assembly 
@@ -293,7 +298,7 @@ answers_df = answers_df.merge(mla_ids[['PersonId','normal_name','PartyName']]\
             'PersonId': 'MinisterPersonId', 'PartyName': 'Minister_party_name'}), 
     on='MinisterPersonId', how='left')
 answers_df['Days_to_answer'] = (pd.to_datetime(answers_df['AnsweredOnDate']) - pd.to_datetime(answers_df['TabledDate'])).dt.days 
-#Filtering to current session
+#Filtering to current session (there are some 2017-2019 entries but all have missing MinisterPersonId anyway)
 answers_df = answers_df.query("TabledDate > '2020-02-01'")
 
 # minister_answers = answers_df[answers_df.MinisterTitle != 'Assembly Commission']\
@@ -351,7 +356,7 @@ votes_pca_df = votes_pca_df[votes_pca_df.index.isin(those_in_threshold_pct_votes
 
 my_pca = PCA(n_components=2, whiten=True)  #doesn't change results but axis units closer to 1
 my_pca.fit(votes_pca_df)
-#my_pca.explained_variance_ratio_
+#print(my_pca.explained_variance_ratio_)
 mlas_2d_rep = pd.DataFrame({'x': [el[0] for el in my_pca.transform(votes_pca_df)],
                             'y': [el[1] for el in my_pca.transform(votes_pca_df)],
                             'normal_name': votes_pca_df.index,
@@ -534,7 +539,7 @@ for session_name in hist_votes_df.session_name.unique():
 
     hist_my_pca = PCA(n_components=2, whiten=True)  #doesn't change results but axis units closer to 1
     hist_my_pca.fit(hist_votes_pca_df)
-    #my_pca.explained_variance_ratio_
+    #print(hist_my_pca.explained_variance_ratio_)
     hist_mlas_2d_rep = pd.DataFrame({'x': [el[0] for el in hist_my_pca.transform(hist_votes_pca_df)],
                                 'y': [el[1] for el in hist_my_pca.transform(hist_votes_pca_df)],
                                 'normal_name': hist_votes_pca_df.index,
@@ -599,9 +604,12 @@ news_df['source'] = news_df.source.map(news_source_pprint_dict)
 #
 news_df['published_date'] = pd.to_datetime(news_df['published_date'])
 news_df['published_date_week'] = news_df.published_date.dt.week
+#early Jan can be counted as week 53 by pd.week - messes things up
+news_df.loc[(news_df.published_date_week==53) & (news_df.published_date.dt.day <= 7), 'published_date_week'] = 1
 news_df['published_date_year'] = news_df.published_date.dt.year
 news_df['published_date_yweek'] = news_df.apply(
     lambda row: '{:04g}-{:02g}'.format(row['published_date_year'], row['published_date_week']), axis=1)
+
 news_df = news_df.merge(mla_ids[['normal_name','PartyName','PartyGroup']],
     how = 'inner', on = 'normal_name')
 #drop the first and last weeks which could be partial
@@ -630,15 +638,10 @@ news_sentiment_by_party_week = news_df[['published_date_year','published_date_we
 #news_sentiment_by_party_week = news_sentiment_by_party_week[news_sentiment_by_party_week.url >= 3]  #OK to keep in now because using smoothing
 news_sentiment_by_party_week = news_sentiment_by_party_week[news_sentiment_by_party_week.PartyName.isin(
     ['DUP','Alliance','Sinn Fein','UUP','SDLP'])]
-#TODO change this part and do box plot instead
-#news_sentiment_by_party_week = news_sentiment_by_party_week.join(
-#    news_sentiment_by_party_week.groupby('PartyName', sort=False).sr_sentiment_score\
-#        .rolling(7, min_periods=1, center=True).mean().reset_index(0),  #the 0 is vital here
-#    rsuffix='_smooth')
 #fill in missing weeks before averaging - works for volume only
-uniques = [news_sentiment_by_party_week[c].unique().tolist() for c in ['published_date_year','published_date_week','PartyName']] 
-news_sentiment_by_party_week = pd.DataFrame(product(*uniques), columns=['published_date_year','published_date_week','PartyName'])\
-    .merge(news_sentiment_by_party_week, on=['published_date_year','published_date_week','PartyName'], how='left')
+uniques = news_sentiment_by_party_week[['published_date_year','published_date_week']].drop_duplicates()
+uniques = pd.concat([uniques.assign(PartyName = p) for p in news_sentiment_by_party_week.PartyName.unique()]).reset_index(drop=True)
+news_sentiment_by_party_week = uniques.merge(news_sentiment_by_party_week, on=['published_date_year','published_date_week','PartyName'], how='left')
 #keep missing sentiment weeks as NA but can fill volumes as zero
 news_sentiment_by_party_week['link'] = news_sentiment_by_party_week['link'].fillna(0)
 
@@ -776,7 +779,10 @@ def index():
 @app.route('/what-they-say', methods=['GET'])
 def twitter():
     return render_template('twitter.html',
-        full_mla_list = sorted(mla_ids.normal_name.tolist()))
+        full_mla_list = sorted(mla_ids.normal_name.tolist()),
+        info_centr_top5 = tweets_network_top5s['info_centr'].tolist(),
+        page_rank_top5 = tweets_network_top5s['page_rank'].tolist(),
+        betw_centr_top5 = tweets_network_top5s['betw_centr'].tolist())
 
 @app.route('/what-they-do', methods=['GET'])
 def assembly():
@@ -947,7 +953,7 @@ def indiv():
         tweets_last_month = tweets_df[(tweets_df.normal_name==row['normal_name']) &
             (tweets_df.created_at.dt.date > datetime.date.today()-datetime.timedelta(days=30))].shape[0]
 
-        tweets_by_week = tweets_df[tweets_df.normal_name==row['normal_name']].created_at.dt.week.value_counts().sort_index().tolist()
+        #tweets_by_week = tweets_df[tweets_df.normal_name==row['normal_name']].created_at.dt.week.value_counts().sort_index().tolist()
         tmp = tweets_df[tweets_df.normal_name==row['normal_name']].created_at_yweek.value_counts()
         tmp = pd.DataFrame({'created_at_yweek': tmp.index, 'n_tweets': tmp.values})
         tweets_by_week = tweets_df[['created_at_yweek']].drop_duplicates()\
@@ -1027,12 +1033,9 @@ def indiv():
 
         tmp = news_df[news_df.normal_name==row['normal_name']].published_date_yweek.value_counts()
         tmp = pd.DataFrame({'published_date_yweek': tmp.index, 'n_mentions': tmp.values})
-        print(tmp.published_date_yweek.tolist())
-        print(tmp.n_mentions.tolist())
         news_articles_by_week = news_df[['published_date_yweek']].drop_duplicates()\
             .merge(tmp, on='published_date_yweek', how='left')\
             .fillna(0).sort_values('published_date_yweek')['n_mentions'].astype(int).to_list()
-        print(news_articles_by_week)
 
         mla_votes_list = []
         tmp = votes_df.loc[votes_df['normal_name'] == row['normal_name'], ['DivisionDate','motion_plus_url','Vote']].sort_values('DivisionDate', ascending=False)
@@ -1318,38 +1321,38 @@ def plot_questions_asked_fn(session_to_plot, mobile_mode = False):
     return plot.to_json()
 
 #Tweet volume and retweets scatter of parties
-@app.route('/data/plot_party_tweets_scatter')
-def plot_party_tweets_scatter_fn():
+# @app.route('/data/plot_party_tweets_scatter')
+# def plot_party_tweets_scatter_fn():
 
-    plot = altair.Chart(retweet_rate_last_month).mark_circle(size=140, opacity=1)\
-        .encode(x=altair.X('n_original_tweets', title='Number of original tweets'),
-            y=altair.Y('retweets_per_tweet', title='Retweets per tweet'),
-            color = altair.Color('mla_party', 
-                scale=altair.Scale(
-                    domain=party_colours[party_colours.party_name.isin(retweet_rate_last_month.mla_party)]['party_name'].tolist(), 
-                    range=party_colours[party_colours.party_name.isin(retweet_rate_last_month.mla_party)]['colour'].tolist()
-                    )),
-                 #legend=altair.Legend(title="Party")),
-            tooltip = 'tooltip_text:N')\
-        .properties(title = '', width=500, height=500)        
+#     plot = altair.Chart(retweet_rate_last_month).mark_circle(size=140, opacity=1)\
+#         .encode(x=altair.X('n_original_tweets', title='Number of original tweets'),
+#             y=altair.Y('retweets_per_tweet', title='Retweets per tweet'),
+#             color = altair.Color('mla_party', 
+#                 scale=altair.Scale(
+#                     domain=party_colours[party_colours.party_name.isin(retweet_rate_last_month.mla_party)]['party_name'].tolist(), 
+#                     range=party_colours[party_colours.party_name.isin(retweet_rate_last_month.mla_party)]['colour'].tolist()
+#                     )),
+#                  #legend=altair.Legend(title="Party")),
+#             tooltip = 'tooltip_text:N')\
+#         .properties(title = '', width=500, height=500)        
 
-    #start fresh layer, otherwise fontSize is locked to size of points
-    text = altair.Chart(retweet_rate_last_month).mark_text(
-        align='left',
-        baseline='middle',
-        dx=6, dy=-6,
-        fontSize=11
-    ).encode(
-        text='mla_party', x='n_original_tweets', y='retweets_per_tweet'
-    )
-    plot += text
+#     #start fresh layer, otherwise fontSize is locked to size of points
+#     text = altair.Chart(retweet_rate_last_month).mark_text(
+#         align='left',
+#         baseline='middle',
+#         dx=6, dy=-6,
+#         fontSize=11
+#     ).encode(
+#         text='mla_party', x='n_original_tweets', y='retweets_per_tweet'
+#     )
+#     plot += text
 
-    plot = plot.configure_legend(disable=True)
-    plot = plot.configure_title(fontSize=20, font='Courier')
-    #plot = plot.configure_axis(labelFontSize=14)
-    #plot = plot.configure_axisX(tickCount = x_ticks)
+#     plot = plot.configure_legend(disable=True)
+#     plot = plot.configure_title(fontSize=20, font='Courier')
+#     #plot = plot.configure_axis(labelFontSize=14)
+#     #plot = plot.configure_axisX(tickCount = x_ticks)
 
-    return plot.to_json()
+#     return plot.to_json()
 
 #Most tweets by person
 @app.route('/data/plot_user_tweetnum_web')
@@ -1745,7 +1748,7 @@ def plot_vote_pca_all_mlas_fn_mobile(session_to_plot):
 def plot_vote_pca_all_mlas_fn(session_to_plot, mobile_mode = False):
     if session_to_plot in ['2020-2022']:
         plot_df = mlas_2d_rep
-        pct_explained = (100*hist_my_pca.explained_variance_ratio_[0], 100*hist_my_pca.explained_variance_ratio_[1])
+        pct_explained = (100*my_pca.explained_variance_ratio_[0], 100*my_pca.explained_variance_ratio_[1])
     else:
         plot_df = hist_votes_pca_res[session_to_plot][0]
         pct_explained = hist_votes_pca_res[session_to_plot][1]

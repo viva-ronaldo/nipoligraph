@@ -21,9 +21,9 @@
     
     <div class='container-fluid' id='page-top'>
         
-        <div class='row justify-content-center'>
+        <div class='row justify-content-center pt-4 pb-0'>
           <div class='col-lg-6 text-center'>
-            <img src="{{ url_for('static', filename='ni_poligraph_logo_mountains_grey.png') }}" alt='NI PoliGraph logo' width='100%'>
+            <img src="{{ url_for('static', filename='ni_poligraph_logo_transparent.png') }}" alt='NI PoliGraph logo' width='100%'>
           </div>
         </div>
 
@@ -45,28 +45,28 @@
 
                 <ul>
                   <li class='media'>
-                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_question.png')}}" alt="Generic placeholder image" style='height:50px;width:50px'>
+                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_question.png')}}" alt="question icon" style='height:50px;width:50px'>
                     <div class="media-body text-center text-sm-left ml-md-3 ml-0">
                         <p><b>{{totals_dict['n_questions']}}</b> Assembly questions and <b>{{totals_dict['n_answers']}}</b> answers,</p>
                     </div>
                   </li>
                  
                   <li class='media'>
-                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_hands.png')}}" alt="Generic placeholder image" style='height:50px;width:50px'>
+                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_hands.png')}}" alt="hands icon" style='height:50px;width:50px'>
                     <div class="media-body text-center text-sm-left ml-md-3 ml-0">
                         <p><b>{{totals_dict['n_votes']}}</b> division votes,</p>
                     </div>
                   </li>
 
                   <li class='media'>
-                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_speech.png')}}" alt="Generic placeholder image" style='height:50px;width:50px'>
+                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_speech.png')}}" alt="speech icon" style='height:50px;width:50px'>
                     <div class="media-body text-center text-sm-left ml-md-3 ml-0">
                         <p><b>{{totals_dict['n_contributions']}}</b> Hansard plenary contributions,</p>
                     </div>
                   </li>
 
                   <li class='media'>
-                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_twitter.png')}}" alt="Generic placeholder image" style='height:50px;width:50px'>
+                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_twitter.png')}}" alt="twitter icon" style='height:50px;width:50px'>
                     <div class="media-body text-center text-sm-left ml-md-3 ml-0">
                         <p><b>{{totals_dict['n_tweets']}}</b> tweets,</p>
                     </div>
@@ -79,19 +79,19 @@
 
                 <ul>
                   <li class='media'>
-                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_article.png')}}" alt="Generic placeholder image" style='height:50px;width:50px'>
+                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_article.png')}}" alt="article icon" style='height:50px;width:50px'>
                     <div class="media-body text-center text-sm-left ml-md-3 ml-0">
                         <p><b>{{totals_dict['n_news']}}</b> news articles, and</p>
                     </div>
                   </li>
                   <li class='media'>
-                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_poll.png')}}" alt="Generic placeholder image" style='height:50px;width:50px'>
+                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_poll.png')}}" alt="poll icon" style='height:50px;width:50px'>
                     <div class="media-body text-center text-sm-left ml-md-3 ml-0">
                         <p><b>{{totals_dict['n_polls']}}</b> opinion polls, for</p>
                     </div>
                   </li>
                   <li class='media'>
-                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_politician.png')}}" alt="Generic placeholder image" style='height:50px;width:50px'>
+                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_politician.png')}}" alt="politician icon" style='height:50px;width:50px'>
                     <div class="media-body text-center text-sm-left ml-md-3 ml-0">
                         <p><b>{{totals_dict['n_politicians']}}</b> MLAs and other politicians.</p>
                     </div>

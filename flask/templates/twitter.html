@@ -54,8 +54,26 @@
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col py-4 px-4 d-flex flex-column position-static data-panel-b">
                 <h4>Retweet networks</h4>
-                <p class="card-text mb-2 data-panel-card-border">This network plot shows how 'connected' the politicians are to one another, measured through Twitter retweets, since 1 July 2020. Connections are drawn in both directions (giving and receiving retweets), but you can hover on a politician to show only the connections for retweets that they <i>received</i> from others. Thicker connecting lines mean more retweets.</p>
-                <div id="tweet-network-plot" class="view" ></div>
+                <p class="card-text mb-2 data-panel-card-border">This network plot shows how 'connected' the politicians are to one another, measured through Twitter retweets from the past <i>three months</i>. Connections are drawn in both directions (giving and receiving retweets), but you can hover on a politician to show only the connections for retweets that they <i>received</i> from others. Thicker connecting lines mean more retweets.</p>
+                <div id="tweet-network-plot" class="view pb-4" ></div>
+                <p>Top five members by:</p>
+                <ul>
+                  <li>Information centrality (retweeting a variety of people): 
+                    {% for m in info_centr_top5 %}
+                      {{m}}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                  </li>
+                  <li>Page Rank (receiving a lot of retweets): 
+                    {% for m in page_rank_top5 %}
+                      {{m}}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                  </li>
+                  <li>Betweenness centrality (most 'connected'): 
+                    {% for m in betw_centr_top5 %}
+                      {{m}}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
@@ -190,7 +208,7 @@
           "data": [
             {
               "name": "node-data",
-              "url": "{{url_for('static', filename='tweets_network_since1july2020_nodes.json')}}",
+              "url": "{{url_for('static', filename='tweets_network_last3months_nodes.json')}}",
               "format": {"type": "json"},
               "transform": [
                 { 
@@ -207,7 +225,7 @@
             },
             {
               "name": "link-data-background",
-              "url": "{{url_for('static', filename='tweets_network_since1july2020_edges.csv')}}",
+              "url": "{{url_for('static', filename='tweets_network_last3months_edges.csv')}}",
               "format": {"type": "csv"},
               //input fields are source,target,value
               //use transform to change the meaning of source and target - 
@@ -236,7 +254,7 @@
             //edges seem to take the biggest size of the two directions            
             {
               "name": "link-data-select",
-              "url": "{{url_for('static', filename='tweets_network_since1july2020_edges.csv')}}",
+              "url": "{{url_for('static', filename='tweets_network_last3months_edges.csv')}}",
               "format": {"type": "csv"},
               "transform": [
                 {
