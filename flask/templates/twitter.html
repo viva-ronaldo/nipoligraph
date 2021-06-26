@@ -153,7 +153,7 @@
               </div>
           </aside>
 
-          <div class="col-lg-8">
+          <!--<div class="col-lg-8">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column justify-content-center data-panel-b">
                 <h4>Tweet content</h4>
@@ -161,7 +161,7 @@
                 <div id='vis5'></div>
               </div>
             </div>
-          </div>
+          </div>-->
 
         </div>
 
@@ -185,12 +185,12 @@
             parse("/data/plot_user_tweetnum_web", "vis2")
             parse("/data/plot_user_retweet_web", "vis3")
             parse("/data/plot_user_tweet_sentiment_web", "vis4")
-            parse("/data/plot_tweet_pca_all_mlas_web", "vis5")
+            //parse("/data/plot_tweet_pca_all_mlas_web", "vis5")
         } else {
             parse("/data/plot_user_tweetnum_mobile", "vis2")
             parse("/data/plot_user_retweet_mobile", "vis3")
             parse("/data/plot_user_tweet_sentiment_mobile", "vis4")
-            parse("/data/plot_tweet_pca_all_mlas_mobile", "vis5")
+            //parse("/data/plot_tweet_pca_all_mlas_mobile", "vis5")
         }
 
         const network_x_width = Math.min(650, window.innerWidth-100); //match the values used when saving in R

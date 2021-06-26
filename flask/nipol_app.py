@@ -135,7 +135,9 @@ news_source_pprint_dict = {
     'thesun.ie': 'The Irish Sun',
     'thetimes.co.uk': 'The Times',
     'wkzo.com': 'WKZO',
-    'yahoo.com': 'Yahoo'
+    'yahoo.com': 'Yahoo',
+    'newsletter.co.uk': 'News Letter',
+    'irishnews.com': 'The Irish News'
 }
 
 mla_ids = pd.read_csv(data_dir + 'all_politicians_list.csv', dtype = {'PersonId': object})
@@ -184,10 +186,15 @@ print('Done ids')
 
 #Twitter
 #-------
-tweets_df = feather.read_dataframe(data_dir + 'mlas_2019_tweets_apr2019min_to_present_slim.feather')
+#tweets_df = feather.read_dataframe(data_dir + 'mlas_2019_tweets_apr2019min_to_present_slim.feather')
+tweets_df = pd.concat([
+    feather.read_dataframe(data_dir + 'tweets_slim_apr2019min_to_3jun2021.feather'),
+    feather.read_dataframe(data_dir + 'tweets_slim_4jun2021_to_present.feather')
+])
 twitter_ids = pd.read_csv(data_dir + 'politicians_twitter_accounts_ongoing.csv',
     dtype = {'user_id': object})
-tweets_df = tweets_df.merge(twitter_ids[['user_id','mla_party','mla_name']].rename(index=str, columns={'mla_name':'normal_name'}), 
+#tweets_df = tweets_df.merge(twitter_ids[['user_id','mla_party','mla_name']].rename(index=str, columns={'mla_name':'normal_name'}), 
+tweets_df = tweets_df.merge(twitter_ids[['user_id','mla_party','normal_name']],
     on='user_id', how='left')
 tweets_df['mla_party'] = tweets_df.mla_party.apply(lambda p: party_names_translation[p])
 #Filter to 1 July onwards - fair comparison for all
@@ -245,21 +252,21 @@ member_tweet_sentiment['tooltip_text'] = member_tweet_sentiment.apply(
 # )
 
 #Average tweet PCA position
-tweets_w_wv_pcas = pd.read_csv(data_dir + 'wv_pca_scored_tweets_apr2019min_to_present.csv',
-    dtype={'status_id': object})
-tweet_pca_positions = tweets_df\
-    .merge(tweets_w_wv_pcas, on='status_id')\
-    .groupby(['normal_name','mla_party'])\
-    .agg(
-        mean_PC1 = pd.NamedAgg('wv_PC1', np.mean),
-        mean_PC2 = pd.NamedAgg('wv_PC2', np.mean),
-        num_tweets = pd.NamedAgg('status_id', len)
-    ).reset_index()
-tweet_pca_positions = tweet_pca_positions[tweet_pca_positions.num_tweets >= 20]
-tweet_pca_positions['indiv_page_url'] = ['/individual?mla_name=' + n.replace(' ','+') for n in tweet_pca_positions.normal_name]
-tweet_pca_positions['tooltip_text'] = tweet_pca_positions.apply(
-    lambda row: f"{row['normal_name']} ({row['num_tweets']} tweets since July 2020)", axis=1
-)
+# tweets_w_wv_pcas = pd.read_csv(data_dir + 'wv_pca_scored_tweets_apr2019min_to_present.csv',
+#     dtype={'status_id': object})
+# tweet_pca_positions = tweets_df\
+#     .merge(tweets_w_wv_pcas, on='status_id')\
+#     .groupby(['normal_name','mla_party'])\
+#     .agg(
+#         mean_PC1 = pd.NamedAgg('wv_PC1', np.mean),
+#         mean_PC2 = pd.NamedAgg('wv_PC2', np.mean),
+#         num_tweets = pd.NamedAgg('status_id', len)
+#     ).reset_index()
+# tweet_pca_positions = tweet_pca_positions[tweet_pca_positions.num_tweets >= 20]
+# tweet_pca_positions['indiv_page_url'] = ['/individual?mla_name=' + n.replace(' ','+') for n in tweet_pca_positions.normal_name]
+# tweet_pca_positions['tooltip_text'] = tweet_pca_positions.apply(
+#     lambda row: f"{row['normal_name']} ({row['num_tweets']} tweets since July 2020)", axis=1
+# )
 
 tweets_network_top5s = pd.read_csv(data_dir + 'tweets_network_last3months_top5s.csv')
 
@@ -594,7 +601,7 @@ news_df = pd.concat([
     feather.read_dataframe(data_dir + 'newscatcher_articles_slim_w_sentiment_sep2020topresent.feather')
 ]).drop_duplicates()
 #Don't trust the consistency of results before 2020w34
-news_df = news_df[news_df.published_date >= '2020-08-17'].copy()
+news_df = news_df[news_df.published_date >= '2021-01-01'].copy()
 
 for source in news_df.source.unique():
     if source not in news_source_pprint_dict.keys():
@@ -619,13 +626,15 @@ news_df = news_df.sort_values('published_date', ascending=False)
 news_df['date_pretty'] = pd.to_datetime(news_df.published_date).dt.strftime('%Y-%m-%d')
 news_df['title_plus_url'] = news_df.apply(lambda row: f"{row['title']}|{row['link']}", axis=1)
 
-news_sources = news_df[['link','source','PartyGroup']].drop_duplicates()\
+#Filter to most recent month
+news_sources = news_df[news_df.published_date.dt.date > datetime.date.today()-datetime.timedelta(days=30)][['link','source','PartyGroup']]\
+    .drop_duplicates()\
     .groupby(['source','PartyGroup']).link.count().reset_index()\
     .rename(index=str, columns={'link':'News articles'})\
     .sort_values('News articles', ascending=False)
 #(now filtering to top 10/15 below in function)
 news_sources['tooltip_text'] = news_sources.apply(
-    lambda row: f"{row['source']}: {row['News articles']} article{'s' if row['News articles'] != 1 else ''} about {row['PartyGroup'].lower()}s", 
+    lambda row: f"{row['source']}: {row['News articles']} article mention{'s' if row['News articles'] != 1 else ''} of {row['PartyGroup'].lower()}s", 
     axis=1
 )
 
@@ -892,8 +901,6 @@ def blog_item(post_name):
     blog_titles = blog_pieces['title'].tolist()
     if post_name in blog_links:
         place_in_blog_list = blog_links.index(post_name)
-        print(blog_titles)
-        print(place_in_blog_list)
 
         return render_template('blog-'+post_name+'.html',
             full_mla_list = sorted(mla_ids.normal_name.tolist()),
@@ -1449,7 +1456,6 @@ def plot_user_tweet_sentiment_fn(mobile_mode = False):
     #most_neg_text_y2 = df_to_plot.sentiment_vader_compound.iloc[int(0.5*n_of_each_to_plot)]+0.04
     most_pos_text_y2 = df_to_plot.sentiment_vader_compound.min()*0.15
     most_neg_text_y2 = df_to_plot.sentiment_vader_compound.max()*0.15
-    print(most_pos_text_y2, most_neg_text_y2)
 
     df_to_plot['y2'] = [most_neg_text_y2]*n_of_each_to_plot + [most_pos_text_y2]*n_of_each_to_plot
     df_to_plot['text'] = ['']*df_to_plot.shape[0]
@@ -1885,7 +1891,6 @@ def plot_plenary_emotions_fn(session_to_plot, mobile_mode = False):
         emotions_party_to_plot = hist_emotions_party_agg[(hist_emotions_party_agg.session_name==session_to_plot) & 
             (hist_emotions_party_agg.emotion_type.isin(['anger','anticipation','joy','sadness','trust'])) &
             (hist_emotions_party_agg.PartyName.isin(['Alliance','DUP','SDLP','Sinn Fein','UUP']))]
-    print(emotions_party_to_plot.head(5))
 
     emotions_party_to_plot = emotions_party_to_plot.merge(
         pd.DataFrame({'order': [1,2,3,4,5], 'emotion_type': ['trust','anticipation','joy','sadness','anger']}),

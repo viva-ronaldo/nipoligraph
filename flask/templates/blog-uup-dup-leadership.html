@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    {% include 'sidebar.html' %}
+
+    {% include 'nav.html' %}
+
+    <article>
+      <div class='container-xl' style='min-height: 800px'>
+
+        <div class="row">
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <div class="post-heading">
+              <h1>Unionist leadership signals</h1>
+              <h2 class="subheading">Recognising the signs after the fact</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class='row mb-4'>
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <p>As I write this, <a href="{{ url_for('indiv', mla_name='Edwin Poots' )}}">Edwin Poots</a> has just been <a href="https://www.bbc.co.uk/news/uk-northern-ireland-57121825">elected</a> as leader of the Democratic Unionist Party (DUP), and <a href="{{ url_for('indiv', mla_name='Doug Beattie' )}}">Doug Beattie</a> has <a href="https://www.bbc.co.uk/news/uk-northern-ireland-57090193">no challengers</a> for the leadership of the Ulster Unionist Party (UUP), so I've missed the boat somewhat, but nonetheless I am interested to see if any of the data collected by NI PoliGraph could be used to detect the likely future leaders from a group of MLAs and MPs.</p>
+            
+            <p>We can surmise that a potential leader might, compared to their peers,
+            <ul>
+                <li>have a high impact on Twitter, particularly among the other politicians</li>
+                <li>be relatively active in the Assembly (MLAs), and</li>
+                <li>have a higher news profile.</li>
+            </ul>
+            <p>If this proves to be true, perhaps in future it will be possible to track, as part of NI PoliGraph, 'power rankings' for each of the parties, as a guide to who the most influential members are at any time.</p>
+
+            <h2 class='section-heading'>Twitter impact</h2>
+            
+            <p>In the last four months, Mr Beattie and <a href="{{ url_for('indiv', mla_name='Robbie Butler' )}}">Robbie Butler</a> are far ahead of the other UUP MLAs in retweets received from other politicians. Almost all of these retweets have come from fellow UUP members, and many of them from the outgoing leader, <a href="{{ url_for('indiv', mla_name='Steve Aiken' )}}">Steve Aiken</a>, in particular. Both Mr Beattie and Mr Butler are <a href="{{ url_for('twitter') }}">among the most active tweeters</a> of the politicians tracked by NI PoliGraph.</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/uup_leadership_plot1.png')}}"/>
+            
+            <p>On the DUP side, the volume of retweets is much lower, and <a href="{{ url_for('indiv', mla_name='Arlene Foster' )}}">Arlene Foster</a> is way ahead of the rest. Mr Poots is one of the next-most-retweeted DUP members, along with <a href="{{ url_for('indiv', mla_name='Pam Cameron' )}}">Pam Cameron</a>, <a href="{{ url_for('indiv', mla_name='Gavin Robinson' )}}">Gavin Robinson</a>, and <a href="{{ url_for('indiv', mla_name='Peter Weir' )}}">Peter Weir</a>. The most frequent retweeters for Mr Poots have been <a href="{{ url_for('indiv', mla_name='Jonathan Buckley' )}}">Jonathan Buckley</a> (9) and <a href="{{ url_for('indiv', mla_name='Paul Givan' )}}">Paul Givan</a> (6), both of whom <a href="https://www.belfasttelegraph.co.uk/news/northern-ireland/dup-mlas-and-an-mp-come-out-in-support-of-edwin-poots-leadership-bid-40375147.html">backed him</a> for the leadership. <a href="{{ url_for('indiv', mla_name='Jeffrey Donaldson' )}}">Jeffrey Donaldson</a>, Mr Poots's rival for the leadership, has been more consistently active on Twitter in the last year, but has received fewer retweets from his peers.</p>
+            
+            <p>From their profile pages, we can also see that Mr Poots and Mr Donaldson both tweet messages of average sentiment, with relatively high impact as measured by <i>total</i> retweets received. Mr Beattie's and Mr Butler's tweets have lower overall impact, but Mr Beattie's output is measured as being of more negative sentiment (he ranks 67/80 for positivity, among the members that tweet regularly) than Mr Butler's (22/80).</p>
+
+            <h2 class='section-heading'>Assembly activity</h2>
+
+            <p>Considering the combination of questions asked to ministers, and contributions made during plenary debates in the Assembly, and excluding <a href="{{ url_for('indiv', mla_name='Robin Swann' )}}">Robin Swann</a> (as a minister, he has much more opportunity to speak in plenary sessions than a regular MLA), Mr Beattie emerges as the most active UUP MLA. In the last eighteen months, he has submitted four times as many questions as Mr Butler, and more than any other MLA. In plenary debates, the group is much more evenly balanced, and Mr Aiken, Mr Butler, and several others have made more contributions than Mr Beattie.</p>
+
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/uup_leadership_plot2.png')}}"/>
+            
+            <h2 class='section-heading'>Making the news</h2>
+            
+            <p>Finally, let's look at the strength of media profile of the UUP and DUP contenders, estimated as the number of news articles (in the sources tracked by NI PoliGraph) that mentioned each of them, in 2021. Arlene Foster and Robin Swann have much higher profiles, due to their positions in the Executive, so have been omitted from the plot below.</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/uup_leadership_plot3.png')}}"/>
+
+            <p>Mr Poots, Mr Weir, and <a href="{{ url_for('indiv', mla_name='Diane Dodds' )}}">Diane Dodds</a> are also <a href="http://aims.niassembly.gov.uk/mlas/ministers.aspx">ministers</a>, and receive a large number of news article mentions as a result. Mr Donaldson, as an MP, arguably has fewer opportunities for making the news, but nevertheless has received a fairly large number of mentions this year, as have several of the other DUP MPs. It's clear that the DUP have a large group of members with high media visibility, and that Mr Poots and Mr Donaldson are two of the biggest names in this regard.</p>
+            
+            <p>After Mr Aiken, the leader, Mr Beattie is the only other UUP figure to receive a substantial number of article mentions in 2021 - around four times as many as Mr Butler (not shown).</p>
+            
+            <h2 class='section-heading'>Conclusion</h2>
+            
+            <p>By all metrics considered, Mr Beattie stands out as the foremost candidate for UUP leadership, if we exclude Mr Aiken and Mr Swann from the argument. It is not hard to see why the media were quick to identify him as the likely next leader when the vacancy arose.</p>
+            <p>It is more difficult to compare candidates from the DUP, as they are split between Stormont and Westminster, and because occupying an Assembly ministry tends to greatly increase the number of news mentions that a member receives; then again, arguably the latter is a genuine source of strength in a leadership contest, regardless of whether it is 'fair' to compare ministers and non-ministers by the media profile metric. Insofar as we can compare them, Mr Poots appears to be one of the highest-profile and most influential DUP members, besides Mrs Foster, but there is not much to choose between a group of DUP MLAs and MPs in the data.</p>
+
+          </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[0] is not none %}
+              <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+            {% endif %}
+          </div>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[1] is not none %}
+              <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}
