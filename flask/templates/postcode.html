@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    {% include 'nav.html' %}
+    <div class="overlay"></div>
+
+    <div class='container-xl' style='min-height: 800px'>    
+
+        <div class="row mb-2 justify-content-center pt-4">
+
+          <h4>{{postcode_choice}} is part of the <b>{{constit_choice}}</b> constituency.</h4>
+        </div>
+
+        <div class="row mb-2 justify-content-center">
+          <p><small>Click individual MLAs/MPs to view full profiles.</small></p>
+        </div>
+        
+        <div class='row mb-2 justify-content-center'>
+          {% for i in range(rep_names_list|length) %}
+            <div class='col-xl-4 col-sm-6'>
+              <div class="col p-3 mb-3 bg-light rounded">
+                
+                  <div class="col px-0" style="border-top: 10px solid {{rep_party_colours_list[i]}};" >
+                    {% if rep_roles_list[i]=='MLA' %}
+                      <div class='col pt-3 pb-3' style='background: #e6e6e6;  min-height: 500px'>
+                    {% else %}
+                      <div class='col pt-3 pb-3' style='background: lavender;  min-height: 500px'>
+                    {% endif %}
+                    
+                      <a href="{{url_for('indiv', mla_name=rep_names_list[i]) }}" style='color: inherit' title="Click to go to this person's profile page on NI PoliGraph">
+                        <h4>{{rep_names_list[i]}} {{rep_roles_list[i]}}</h4>
+                      </a>
+                      <h5>{{rep_parties_list[i]}}</h5>
+
+                      {% if rep_twitter_handles_list[i] is not none %}
+                        <p style='margin-bottom: 0px'><i class='fab fa-twitter'></i> <a class='use-underline' target='_blank' style='color: inherit;' href='https://www.twitter.com/{{rep_twitter_handles_list[i]}}'>{{rep_twitter_handles_list[i]}}</a></p> 
+                      {% else %}
+                        <p style='min-height: 25px'></p>
+                      {% endif %}
+
+                      {% if rep_roles_list[i]=='MLA' %}
+                          <a href="http://aims.niassembly.gov.uk/mlas/details.aspx?&per={{rep_personIds_list[i]}}&sel=1&ind=0&prv=0" target="_blank">
+                              <img src="{{rep_image_urls_list[i]}}" alt="Portrait of MLA" style="margin: 10px; margin-bottom: 30px; width: 112px; height: 149px; margin-left: auto; margin-right: auto; display: block;" title="Click to open the MLA's profile on niassembly.gov.uk">
+                          </a>
+                      {% else %}
+                          <img src="{{rep_image_urls_list[i]}}" alt="Portrait of MP" style="margin: 10px; margin-bottom: 30px; width: 112px; height: 149px; margin-left: auto; margin-right: auto; display: block;">
+                      {% endif %}
+                      
+                      <div style="font-size: 0.8em">
+                        <p class='postcode-card-list'>{{tweet_volume_rank_string_list[i] | safe}}</p>
+                        {% if retweet_rate_rank_string_list[i] != 'n/a' %}
+                          <p class='postcode-card-list'>{{retweet_rate_rank_string_list[i] | safe}}</p>
+                        {% endif %}
+
+                        {% if rep_roles_list[i]=='MLA' %}
+                          <p class='postcode-card-list'>Has taken part in {{votes_present_string_list[i] | safe}}</p>
+                          <p class='postcode-card-list'>Most frequently makes debate contributions on
+                            {% for t in top_contrib_topic_list_list[i] %}
+                              <span style="color: {{t.split('|')[2]}}"><b>{{t.split('|')[0]}}</b></span>
+                              {% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                          </p>
+                        {% endif %}
+
+                      </div>
+                      
+                    </div>
+                  </div>
+              
+              </div>
+            </div>
+          {% endfor %}
+
+        </div>
+        
+    </div>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <p>
+      Images from NI Assembly and UK Parliament, licensed under the <a class='use-underline' href="https://www.parliament.uk/site-information/copyright-parliament/open-parliament-licence/">Open Government Licence v3.0</a>.
+    </p>
+{% endblock %}
+
+{% block other_js %}
+
+    <script type="text/javascript" src="{{ url_for('static', filename='jquery.sparkline.2.1.2.js') }}"></script>
+
+    <script src="https://cdn.datatables.net/1.10.21/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.5/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.5/js/responsive.bootstrap.min.js"></script>
+  
+    <script src="http://cdn.datatables.net/plug-ins/1.10.15/dataRender/datetime.js"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='moment.min.js') }}"></script>
+
+    <script type="text/javascript" src="{{ url_for('static', filename='jquery-progresspiesvg-min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='progresspiesvgAppl-min.js') }}"></script>    
+
+    <script type="text/javascript">
+
+        
+    </script>
+
+{% endblock %}

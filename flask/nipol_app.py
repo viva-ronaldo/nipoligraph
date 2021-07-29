@@ -149,6 +149,11 @@ mla_ids = mla_ids.merge(
     pd.read_csv(data_dir + 'mla_email_addresses.csv', dtype = {'PersonId': object}),
     on = 'PersonId', how = 'left'
     )
+mla_ids.AssemblyEmail.fillna('none', inplace=True)
+mla_ids = mla_ids.merge(
+    pd.read_csv(data_dir + 'mp_email_addresses.csv'), on = 'normal_name', how = 'left'
+    )
+mla_ids.WestminsterEmail.fillna('none', inplace=True)
 
 with open(data_dir + 'party_group_dict.json', 'r') as f:
     party_group_dict = json.load(f)
@@ -208,6 +213,7 @@ tweets_df['created_at_yweek'] = tweets_df.apply(
     lambda row: '{:s}-{:02g}'.format(row['created_ym'][:4], row['created_at_week']), axis=1)
 
 last_5_yweeks_tweets = tweets_df.created_at_yweek.sort_values().unique()[-5:]
+print('Retweets are counted over',last_5_yweeks_tweets)
 
 tweet_sentiment = pd.read_csv(data_dir + 'vader_scored_tweets_apr2019min_to_present.csv', dtype={'status_id': object})
 tweets_df = tweets_df.merge(tweet_sentiment, on='status_id', how='left')
@@ -754,6 +760,9 @@ print('Done polls')
 blog_pieces = pd.read_csv(data_dir + 'blog_pieces_list.psv', sep='|').iloc[-1::-1]
 print('Done blog')
 
+#Postcode stuff
+postcodes_to_constits = pd.read_csv(data_dir + 'all_ni_postcode_constits_from_doogal.csv', index_col=None)
+
 #Totals for front page
 #---------------------
 n_politicians_current_session = mla_ids.shape[0]
@@ -783,12 +792,14 @@ del answers_df, hist_answers_df, hist_questions_df, vote_results_df, hist_vote_r
 def index():
     return render_template('index.html',
         totals_dict = totals_dict,
-        full_mla_list = sorted(mla_ids.normal_name.tolist()))
+        full_mla_list = sorted(mla_ids.normal_name.tolist()),
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()))
 
 @app.route('/what-they-say', methods=['GET'])
 def twitter():
     return render_template('twitter.html',
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()),
         info_centr_top5 = tweets_network_top5s['info_centr'].tolist(),
         page_rank_top5 = tweets_network_top5s['page_rank'].tolist(),
         betw_centr_top5 = tweets_network_top5s['betw_centr'].tolist())
@@ -836,6 +847,7 @@ def assembly():
         n_mlas = n_mlas, 
         n_votes = n_votes,
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()),
         votes_list = votes_list,
         pca_votes_threshold_pct = int(pca_votes_threshold_fraction*100),
         votes_passed_details = [(v_comms_tmp.vote_result=='PASS').sum(), v_comms_tmp.shape[0], f"{100*(v_comms_tmp.vote_result=='PASS').mean():.0f}%"],
@@ -871,6 +883,7 @@ def news():
     return render_template('news.html',         
         articles_list = articles_list,
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()),
         news_volume_average_window_weeks = news_volume_average_window_weeks)
 
 @app.route('/how-we-vote', methods=['GET'])
@@ -882,17 +895,20 @@ def polls():
     tmp = tmp[['date_plus_url','organisation','sample_size','party','pct']]
     return render_template('polls.html',
         poll_results_list = [e[1].values.tolist() for e in tmp.iterrows()],
-        full_mla_list = sorted(mla_ids.normal_name.tolist()))
+        full_mla_list = sorted(mla_ids.normal_name.tolist()),
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()))
 
 @app.route('/about', methods=['GET'])
 def about():
     return render_template('about.html',
-        full_mla_list = sorted(mla_ids.normal_name.tolist()))
+        full_mla_list = sorted(mla_ids.normal_name.tolist()),
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()))
 
 @app.route('/blog', methods=['GET'])
 def blog():
     return render_template('blog.html', 
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()),
         blog_pieces = blog_pieces)
 
 @app.route('/blog/<post_name>', methods=['GET'])
@@ -904,6 +920,7 @@ def blog_item(post_name):
 
         return render_template('blog-'+post_name+'.html',
             full_mla_list = sorted(mla_ids.normal_name.tolist()),
+            postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()),
             prev_and_next_article_title = (
                 None if place_in_blog_list==blog_pieces.shape[0]-1 else blog_titles[place_in_blog_list+1],
                 None if place_in_blog_list==0 else blog_titles[place_in_blog_list-1]),
@@ -929,6 +946,8 @@ def indiv():
         #row = mla_ids[mla_ids.normal_name == 'Órlaithí Flynn'].iloc[0]
         row = mla_ids[mla_ids.normal_name == person_choice].iloc[0]
         
+        date_added = row['added']
+
         if row['role'] in ['MLA','MP']:
             person_name_string = person_name_string + f" {row['role']}"
 
@@ -941,10 +960,14 @@ def indiv():
             email_address = mla_ids[mla_ids.PersonId==mla_personid].AssemblyEmail.iloc[0]
         elif person_choice in mp_api_numbers.keys() and person_choice not in member_other_photo_links.keys():
             image_url = f"https://members-api.parliament.uk/api/Members/{mp_api_numbers[person_choice]:s}/Portrait?cropType=ThreeFour"
+            email_address = mla_ids[mla_ids.normal_name==person_choice].WestminsterEmail.iloc[0]
         elif person_choice in member_other_photo_links.keys():
             image_url = member_other_photo_links[person_choice]
+            email_address = mla_ids[mla_ids.normal_name==person_choice].WestminsterEmail.iloc[0]
         else:
             image_url = '#'
+        if email_address == 'none':
+            email_address = None
 
         if person_choice in mla_minister_roles.keys():
             person_name_string += f" ({mla_minister_roles[person_choice]})"
@@ -983,7 +1006,7 @@ def indiv():
             .sort_values('created_at', ascending=False)
 
         if sum(tweets_df.normal_name==row['normal_name']) > 0:
-            twitter_handle = tweets_df[tweets_df.normal_name==row['normal_name']].screen_name.iloc[0]
+            twitter_handle = tweets_df[tweets_df.normal_name==row['normal_name']].screen_name.iloc[-1]
 
             tweet_volume_rank = tweets_df['normal_name'].value_counts().index.get_loc(row['normal_name']) + 1
             #
@@ -1001,6 +1024,7 @@ def indiv():
             tweet_volume_rank_string = "Doesn't tweet at all"
         member_tweet_volumes = tweets_df['normal_name'].value_counts().values.tolist()
 
+        #member_retweets requires having at least 10 tweets in last 5 weeks
         if sum(member_retweets['normal_name'] == row['normal_name']) > 0:
             retweet_rate = member_retweets[member_retweets['normal_name'] == row['normal_name']]['retweets_per_tweet'].iloc[0]
             retweet_rate_rank = (member_retweets['normal_name'] == row['normal_name']).values.argmax()+1
@@ -1112,6 +1136,7 @@ def indiv():
         mla_personid = None
         person_name_string = None
         person_name_lc = None
+        date_added = None
         person_choice_party = None
         person_committee_roles = []
         image_url = None
@@ -1148,8 +1173,10 @@ def indiv():
         person_is_mla = person_is_mla,
         mla_personid = mla_personid,
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()),
         person_name_string = person_name_string,
         person_name_lc = person_name_lc,
+        person_date_added = date_added,
         person_party = person_choice_party,
         person_committee_roles = person_committee_roles,
         image_url = image_url,
@@ -1179,6 +1206,123 @@ def indiv():
         member_contribs_volumes = member_contribs_volumes,
         top_contrib_topic_list = top_contrib_topic_list,
         member_emotion_ranks_string = member_emotion_ranks_string)
+
+@app.route('/postcode', methods=['GET'])
+def postcode():
+    args = request.args
+    if 'postcode_choice' in args:
+        print(args.get('postcode_choice'))
+        constit_choice = postcodes_to_constits[postcodes_to_constits.Postcode==args.get('postcode_choice')].Constituency.iloc[0]
+        print(mla_ids.columns)
+        mla_choices = mla_ids[(mla_ids.active == 1) & (mla_ids.ConstituencyName == constit_choice)]
+        mla_choices = mla_choices.sort_values(['role','MemberLastName'])
+    else:
+        constit_choice = 'None'
+
+    normal_names_list = mla_choices.normal_name.tolist()
+
+    print(mla_choices.columns)
+
+    rep_image_urls_list = [f"http://aims.niassembly.gov.uk/images/mla/{row.PersonId}_s.jpg" if row.role=='MLA' 
+        else None 
+        for row in mla_choices.itertuples()]
+    
+    rep_image_urls_list = []
+    votes_present_string_list = []
+    top_contrib_topic_list_list = []
+
+    for row in mla_choices.itertuples():
+        if row.role == 'MLA':
+            rep_image_urls_list.append(f"http://aims.niassembly.gov.uk/images/mla/{row.PersonId}_s.jpg")
+        elif row.normal_name in mp_api_numbers.keys() and row.normal_name not in member_other_photo_links.keys():
+            rep_image_urls_list.append(f"https://members-api.parliament.uk/api/Members/{mp_api_numbers[row.normal_name]:s}/Portrait?cropType=ThreeFour")
+        elif row.normal_name in member_other_photo_links.keys():
+            rep_image_urls_list.append(member_other_photo_links[row.normal_name])
+        else:
+            rep_image_urls_list.append('#')
+
+        if row.role == 'MLA':
+            votes_present_numbers = (sum(votes_df['normal_name'] == row.normal_name), votes_df.EventId.nunique())
+            votes_present_string_list.append(f"<b>{votes_present_numbers[0]}" + \
+                f" / {votes_present_numbers[1]} Assembly votes</b> in the current session")
+        else:
+            votes_present_string_list.append('n/a')
+
+        if row.role == 'MLA':
+            top_contrib_topics = scored_plenary_contribs_df[scored_plenary_contribs_df['speaker'] == row.normal_name]\
+                .topic_name.value_counts(normalize=True, dropna=False)
+            top_contrib_topics = top_contrib_topics[top_contrib_topics.index != 'misc./none']
+            #send topic|pct for font size|color for font
+            if len(top_contrib_topics) >= 3:
+                top_contrib_topic_list = [f"{top_contrib_topics.index[0]} ({top_contrib_topics.values[0]*100:.0f}%)|{36*max(min(top_contrib_topics.values[0]/0.4,1), 16/36):.0f}|{plenary_contribs_colour_dict[top_contrib_topics.index[0]]}",
+                    f"{top_contrib_topics.index[1]} ({top_contrib_topics.values[1]*100:.0f}%)|{36*max(min(top_contrib_topics.values[1]/0.4,1), 16/36):.0f}|{plenary_contribs_colour_dict[top_contrib_topics.index[1]]}",
+                    f"{top_contrib_topics.index[2]} ({top_contrib_topics.values[2]*100:.0f}%)|{36*max(min(top_contrib_topics.values[2]/0.4,1), 16/36):.0f}|{plenary_contribs_colour_dict[top_contrib_topics.index[2]]}"
+                ]
+            else:
+                top_contrib_topic_list = 'n/a'
+            top_contrib_topic_list_list.append(top_contrib_topic_list)
+        else:
+            top_contrib_topic_list_list.append('n/a')
+
+    rep_twitter_handles_list = [tweets_df[tweets_df.normal_name==nn].screen_name.iloc[-1] if nn in tweets_df.normal_name.unique() 
+        else None 
+        for nn in normal_names_list]
+
+    rep_email_addrs_list = [row.AssemblyEmail if row.role=='MLA' else row.WestminsterEmail for row in mla_choices.itertuples()]
+    rep_email_addrs_list = [None if e == 'none' else e for e in rep_email_addrs_list]
+
+    tweet_volume_rank_string_list = []
+    retweet_rate_rank_string_list = []
+    for nn in normal_names_list:
+        if sum(tweets_df.normal_name==nn) > 0:
+            twitter_handle = tweets_df[tweets_df.normal_name==nn].screen_name.iloc[-1]
+
+            tweet_volume_rank = tweets_df['normal_name'].value_counts().index.get_loc(nn) + 1
+            #
+            if tweet_volume_rank <= rank_split_points[0]:
+                tweet_volume_rank_string_list.append(f"Tweets <b>very frequently</b>")
+            elif tweet_volume_rank <= rank_split_points[1]:
+                tweet_volume_rank_string_list.append(f"Tweets <b>fairly frequently</b>")
+            elif tweet_volume_rank <= rank_split_points[2]:
+                tweet_volume_rank_string_list.append(f"Tweets at an <b>average rate</b>")
+            else:
+                tweet_volume_rank_string_list.append(f"Doesn't tweet very often")
+        else:
+            tweet_volume_rank_string_list.append("Doesn't tweet at all")
+
+        #member_retweets requires having at least 10 tweets in last 5 weeks
+        if sum(member_retweets['normal_name'] == nn) > 0:
+            retweet_rate = member_retweets[member_retweets['normal_name'] == nn]['retweets_per_tweet'].iloc[0]
+            retweet_rate_rank = (member_retweets['normal_name'] == nn).values.argmax()+1
+            if retweet_rate_rank <= 10:
+                retweet_rate_rank_string_list.append(f"<b>High</b> Twitter impact")
+            elif retweet_rate_rank <= 0.3*member_retweets.shape[0]:
+                retweet_rate_rank_string_list.append(f"<b>Fairly high</b> Twitter impact")
+            elif retweet_rate_rank <= 0.7*member_retweets.shape[0]:
+                retweet_rate_rank_string_list.append(f"<b>Average</b> Twitter impact")
+            else:
+                retweet_rate_rank_string_list.append(f"<b>Low</b> Twitter impact")
+        else:
+            retweet_rate_rank_string_list.append('n/a')
+
+    return render_template('postcode.html',
+        postcode_choice = args.get('postcode_choice'),
+        constit_choice = constit_choice,
+        rep_names_list = normal_names_list,
+        rep_parties_list = mla_choices.PartyName_long.tolist(),
+        rep_party_colours_list = [party_colours[party_colours.party_name==p].colour.iloc[0] for p in mla_choices.PartyName],
+        rep_roles_list = mla_choices.role.tolist(),
+        rep_email_addrs_list = rep_email_addrs_list,
+        rep_twitter_handles_list = rep_twitter_handles_list,
+        rep_personIds_list = mla_choices.PersonId.tolist(),
+        rep_image_urls_list = rep_image_urls_list,
+        rep_added_dates_list = mla_choices.added.tolist(),
+        tweet_volume_rank_string_list = tweet_volume_rank_string_list,
+        retweet_rate_rank_string_list = retweet_rate_rank_string_list,
+        votes_present_string_list = votes_present_string_list,
+        top_contrib_topic_list_list = top_contrib_topic_list_list,
+        full_mla_list = sorted(mla_ids.normal_name.tolist()),
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()))
 
 
 #Plots are not pages themselves

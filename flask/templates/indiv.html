@@ -30,6 +30,8 @@
                 {% if email_address is not none %}
                   <p style='margin:0'><i class='fas fa-envelope-open'></i> <span style='font-size: 0.8em'>{{email_address}}</span></p>
                 {% endif %}
+
+                <p style='margin:0'><small>Tracked since {{person_date_added}}</small></p>
                 
               </div>
             </div>
@@ -231,7 +233,7 @@
 {% endblock %}
 
 {% block addtl_footer %}
-    <p class='text-muted'>
+    <p>
     {% if person_selected and person_is_mla %}
       Image from NI Assembly, licensed under the <a class='use-underline' href="http://data.niassembly.gov.uk/licence.aspx">Open Government Licence v3.0</a> 
     {% elif person_selected and 'parliament.uk' in image_url %}

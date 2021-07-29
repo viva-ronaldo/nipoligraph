@@ -3,7 +3,6 @@
 {% block content %}
 
   <!--<div class="wrapper">-->
-    {% include 'sidebar.html' %}
 
     {% include 'nav.html' %}
 
@@ -40,7 +39,7 @@
               <div class="col p-4 d-flex flex-column position-static data-panel-c">
                 <h4>Most impactful tweeters</h4>
                 <div style='min-height: 150px'>
-                  <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians with the <b>biggest impact</b> on Twitter, as measured by the average number of retweets received by each of their <i>original tweets</i> in the past month <span title='Retweet counts are measured a few days after the tweet is sent, so will be underestimates of the true retweet rate.' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>.</p>
+                  <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians with the <b>biggest impact</b> on Twitter, as measured by the average number of retweets received by each of their <i>original tweets</i> in the past month <span class='help-tooltip' title='Retweet counts are measured a few days after the tweet is sent, so will be underestimates of the true retweet rate.' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>.</p>
                 </div>
                 <div id='vis3'></div>
               </div>
@@ -85,7 +84,7 @@
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column position-static data-panel-c">
                 <h4>Most positive and negative tweeters</h4>
-                <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians whose tweets (including retweets) scored highest and lowest, on average, for <b>positive sentiment</b> <span title="calculated as the VADER 'compound' score, relative to the mean for all tweets (see Technical stuff)" data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> in the past month.</p>
+                <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians whose tweets (including retweets) scored highest and lowest, on average, for <b>positive sentiment</b> <span class='help-tooltip' title="calculated as the VADER 'compound' score, relative to the mean for all tweets (see Technical stuff)" data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> in the past month.</p>
                 <div id='vis4'></div>
               </div>
             </div>

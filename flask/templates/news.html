@@ -3,7 +3,6 @@
 {% block content %}    
   
   <!--<div class="wrapper">-->
-    {% include 'sidebar.html' %}
 
     {% include 'nav.html' %}
     
@@ -35,7 +34,7 @@
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column position-static data-panel-b">
                 <h4>News article volume</h4>
-                <p class="card-text mb-2 data-panel-card-border">This tracks the number of online news articles each week <span title='showing the {{news_volume_average_window_weeks}}-week running average' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>, as collected by <a class='use-underline' href='https://newscatcherapi.com'>NewsCatcher</a>, that include a mention of a member of one of the parties. Party leaders and Assembly ministers tend to dominate the mentions, as can be seen in the list of articles <a href='#Article-list'>below</a>.</p>
+                <p class="card-text mb-2 data-panel-card-border">This tracks the number of online news articles each week <span class='help-tooltip' title='showing the {{news_volume_average_window_weeks}}-week running average' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>, as collected by <a class='use-underline' href='https://newscatcherapi.com'>NewsCatcher</a>, that include a mention of a member of one of the parties. Party leaders and Assembly ministers tend to dominate the mentions, as can be seen in the list of articles <a href='#Article-list'>below</a>.</p>
                 <div id='vis3'></div>
               </div>
             </div>

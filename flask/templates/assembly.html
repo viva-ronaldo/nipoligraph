@@ -3,7 +3,6 @@
 {% block content %}
 
   <!--<div class="wrapper">-->
-    {% include 'sidebar.html' %}
 
     {% include 'nav.html' %}
 
@@ -63,7 +62,7 @@
           <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
             <div class="col p-4 d-flex flex-column justify-content-center data-panel-a">
               <h4>Voting records</h4>
-              <p class="card-text mb-2 data-panel-card-border">The <b>voting patterns</b> of {{n_mlas}} MLAs over {{n_votes}} votes <span title='those voting in at least {{pca_votes_threshold_pct}}% of the votes' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> are visualised using dimensionality reduction <span title="converting each member's sequence of votes into two coordinates, for the purpose of visualisation" data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>. There is no explicit meaning to the two graph axes, but circles that are close together represent MLAs that vote in similar ways. Parties cluster strongly together because they often each vote as a bloc.</p>
+              <p class="card-text mb-2 data-panel-card-border">The <b>voting patterns</b> of {{n_mlas}} MLAs over {{n_votes}} votes <span class='help-tooltip' title='those voting in at least {{pca_votes_threshold_pct}}% of the votes' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> are visualised using dimensionality reduction <span class='help-tooltip' title="converting each member's sequence of votes into two coordinates, for the purpose of visualisation" data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>. There is no explicit meaning to the two graph axes, but circles that are close together represent MLAs that vote in similar ways. Parties cluster strongly together because they often each vote as a bloc.</p>
               <div id='vis3'></div>
             </div>
           </div>
@@ -89,7 +88,7 @@
               <!--<strong class="d-inline-block mb-2 text-primary">Optional category</strong>-->
               <h4>Ministerial answers</h4>
               <div>
-                <p class="card-text mb-2 data-panel-card-border">Shows the <b>number of questions <span title='written and oral combined; the majority are written' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> answered</b> by each minister in the selected session (line lengths), and the <b>average time taken</b> to do so (circle sizes). Ministers are supposed to respond to questions within ten working days (numbers here are <i>calendar</i> days). The First and Deputy First Ministers respond to questions as a pair.</p>  
+                <p class="card-text mb-2 data-panel-card-border">Shows the <b>number of questions <span class='help-tooltip' title='written and oral combined; the majority are written' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> answered</b> by each minister in the selected session (line lengths), and the <b>average time taken</b> to do so (circle sizes). Ministers are supposed to respond to questions within ten working days (numbers here are <i>calendar</i> days). The First and Deputy First Ministers respond to questions as a pair.</p>  
               </div>
               <div id='vis2'></div>
             </div>
@@ -103,7 +102,7 @@
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column position-static data-panel-a">
                 <h4>Plenary discussion topics</h4>
-                <p class="card-text mb-2 data-panel-card-border">A model is used to assign a 'topic' label to all Plenary session member contributions <span title='a speech by a member, or part of a speech, if interrupted' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>, based on the words used. These are the frequencies of each topic in the selected Assembly session. Hover over the bars to see the key words that define each topic. <br />These labels are used in the individual member pages to describe what subjects each member tends to speak about in plenary sessions.</p>
+                <p class="card-text mb-2 data-panel-card-border">A model is used to assign a 'topic' label to all Plenary session member contributions <span class='help-tooltip' title='a speech by a member, or part of a speech, if interrupted' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>, based on the words used. These are the frequencies of each topic in the selected Assembly session. Hover over the bars to see the key words that define each topic. <br />These labels are used in the individual member pages to describe what subjects each member tends to speak about in plenary sessions.</p>
                 <div id='vis5'></div>
               </div>
             </div>
