@@ -533,8 +533,8 @@ a[href*='progresspie'] {
     cursor: help;
 }
 
- .postcode-card-list {
+.postcode-card-list {
     margin-top: 10px;
     margin-bottom: 10px;
     line-height: 1.2;
- }
+}

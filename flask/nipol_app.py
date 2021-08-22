@@ -1,5 +1,5 @@
 from flask import Flask, render_template, url_for, request, flash, jsonify
-import datetime, re, getpass
+import datetime, re, getpass, os, time
 import pickle, json, feather
 import pandas as pd
 import altair
@@ -206,6 +206,7 @@ tweets_df['mla_party'] = tweets_df.mla_party.apply(lambda p: party_names_transla
 tweets_df = tweets_df[tweets_df.created_ym >= '202007']
 tweets_df = tweets_df[tweets_df['normal_name'].isin(mla_ids['normal_name'])]
 tweets_df['tweet_type'] = tweets_df.is_retweet.apply(lambda b: 'retweet' if b else 'original')
+#tweets_df['created_at_week'] = tweets_df['created_at'].dt.isocalendar().week
 tweets_df['created_at_week'] = tweets_df['created_at'].dt.week
 #early Jan can be counted as week 53 by pd.week - messes things up
 tweets_df.loc[(tweets_df.created_at_week==53) & (tweets_df.created_at.dt.day <= 7), 'created_at_week'] = 1
@@ -275,6 +276,14 @@ member_tweet_sentiment['tooltip_text'] = member_tweet_sentiment.apply(
 # )
 
 tweets_network_top5s = pd.read_csv(data_dir + 'tweets_network_last3months_top5s.csv')
+
+#Generated tweets
+gen_tweets = pd.read_csv(data_dir + 'fiveparties_generated_tweets_1epoch_gpt2medium_reppen1pt5.csv')
+#exclude any that are all hashtags/mentions
+gen_tweets['all_h_or_m'] = gen_tweets.generated_text.apply(lambda t: all([w[0] in ['@','#'] for w in t.split()]))
+gen_tweets = gen_tweets[~gen_tweets.all_h_or_m]
+print(gen_tweets.shape)
+print(gen_tweets.head(3))
 
 print('Done Twitter')
 
@@ -616,6 +625,7 @@ news_df['source'] = news_df.source.map(news_source_pprint_dict)
 
 #
 news_df['published_date'] = pd.to_datetime(news_df['published_date'])
+#news_df['published_date_week'] = news_df.published_date.dt.isocalendar().week
 news_df['published_date_week'] = news_df.published_date.dt.week
 #early Jan can be counted as week 53 by pd.week - messes things up
 news_df.loc[(news_df.published_date_week==53) & (news_df.published_date.dt.day <= 7), 'published_date_week'] = 1
@@ -639,10 +649,11 @@ news_sources = news_df[news_df.published_date.dt.date > datetime.date.today()-da
     .rename(index=str, columns={'link':'News articles'})\
     .sort_values('News articles', ascending=False)
 #(now filtering to top 10/15 below in function)
-news_sources['tooltip_text'] = news_sources.apply(
-    lambda row: f"{row['source']}: {row['News articles']} article mention{'s' if row['News articles'] != 1 else ''} of {row['PartyGroup'].lower()}s", 
-    axis=1
-)
+if news_sources.shape[0] > 0:
+    news_sources['tooltip_text'] = news_sources.apply(
+        lambda row: f"{row['source']}: {row['News articles']} article mention{'s' if row['News articles'] != 1 else ''} of {row['PartyGroup'].lower()}s", 
+        axis=1
+    )
 
 #dedup articles by party before calculating averages by party - doesn't make a big difference
 news_sentiment_by_party_week = news_df[['published_date_year','published_date_week','link','PartyName','sr_sentiment_score']].drop_duplicates()\
@@ -758,6 +769,7 @@ print('Done polls')
 
 #Blog articles list
 blog_pieces = pd.read_csv(data_dir + 'blog_pieces_list.psv', sep='|').iloc[-1::-1]
+print(blog_pieces.title)
 print('Done blog')
 
 #Postcode stuff
@@ -771,6 +783,10 @@ rank_split_points = [10, n_politicians_current_session*0.3, n_politicians_curren
 n_active_mlas = (mla_ids.role=='MLA').sum()
 n_active_mlas_excl_ministers = n_active_mlas - len(mla_minister_roles.keys())
 
+file_change_times = [os.path.getmtime(x) for x in \
+    [data_dir + 'tweets_slim_4jun2021_to_present.feather']]
+last_updated_date = time.strftime('%A, %-d %B', time.localtime(max(file_change_times)))
+
 totals_dict = {
     'n_politicians': f"{pd.concat([mla_ids[['normal_name']], hist_mla_ids[['normal_name']]]).normal_name.nunique():,}",
     'n_questions': f"{pd.concat([questions_df, hist_questions_df]).DocumentId.nunique():,}",
@@ -780,7 +796,7 @@ totals_dict = {
     'n_tweets': f"{tweets_df.status_id.nunique():,}",
     'n_news': f"{news_df.link.nunique():,}",
     'n_polls': f"{polls_df.poll_id.nunique():,}",
-    'last_updated_date': tweets_df.created_at.max().strftime('%A, %-d %B')
+    'last_updated_date': last_updated_date
 }
 
 #Tidy up
@@ -802,7 +818,12 @@ def twitter():
         postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()),
         info_centr_top5 = tweets_network_top5s['info_centr'].tolist(),
         page_rank_top5 = tweets_network_top5s['page_rank'].tolist(),
-        betw_centr_top5 = tweets_network_top5s['betw_centr'].tolist())
+        betw_centr_top5 = tweets_network_top5s['betw_centr'].tolist(),
+        gen_tweets_dup = gen_tweets.loc[gen_tweets.mla_party=='DUP', 'generated_text'].sample(50).tolist(),
+        gen_tweets_uup = gen_tweets.loc[gen_tweets.mla_party=='UUP', 'generated_text'].sample(50).tolist(),
+        gen_tweets_alli = gen_tweets.loc[gen_tweets.mla_party=='Alliance', 'generated_text'].sample(50).tolist(),
+        gen_tweets_sdlp = gen_tweets.loc[gen_tweets.mla_party=='SDLP', 'generated_text'].sample(50).tolist(),
+        gen_tweets_sf = gen_tweets.loc[gen_tweets.mla_party=='Sinn Fein', 'generated_text'].sample(50).tolist())        
 
 @app.route('/what-they-do', methods=['GET'])
 def assembly():
@@ -1211,9 +1232,9 @@ def indiv():
 def postcode():
     args = request.args
     if 'postcode_choice' in args:
-        print(args.get('postcode_choice'))
+        #print(args.get('postcode_choice'))
         constit_choice = postcodes_to_constits[postcodes_to_constits.Postcode==args.get('postcode_choice')].Constituency.iloc[0]
-        print(mla_ids.columns)
+        #print(mla_ids.columns)
         mla_choices = mla_ids[(mla_ids.active == 1) & (mla_ids.ConstituencyName == constit_choice)]
         mla_choices = mla_choices.sort_values(['role','MemberLastName'])
     else:
@@ -1221,7 +1242,7 @@ def postcode():
 
     normal_names_list = mla_choices.normal_name.tolist()
 
-    print(mla_choices.columns)
+    #print(mla_choices.columns)
 
     rep_image_urls_list = [f"http://aims.niassembly.gov.uk/images/mla/{row.PersonId}_s.jpg" if row.role=='MLA' 
         else None 
