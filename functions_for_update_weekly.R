@@ -111,6 +111,39 @@ update_vote_list <- function(votes_file, vote_results_file) {
     invisible()
 }
 
+update_and_get_politicians_list <- function(path_to_politicians_file='data/all_politicians_list.csv') {
+    tmp <- GET(sprintf('http://data.niassembly.gov.uk/members.asmx/GetAllCurrentMembers_JSON'))
+    mlas <- fromJSON(content(tmp, as='text'))$AllMembersList$Member
+    
+    politicians <- read.csv(path_to_politicians_file)
+    
+    new_mlas <- subset(mlas, !(MemberName %in% politicians$MemberName))
+    if (nrow(new_mlas) > 0) {
+        politicians <- rbind(politicians,
+                             new_mlas %>% mutate(role='MLA', normal_name=paste(MemberFirstName, MemberLastName), added=as.character(Sys.Date()), active=1) %>%
+                                 select(PersonId, normal_name, PartyName, role, added, active, 
+                                        MemberName, MemberFirstName, MemberLastName, ConstituencyName, ConstituencyId))
+        write.csv(politicians, path_to_politicians_file, row.names=FALSE)
+        
+        #Make a note of this change
+        write.table(data.frame(d=as.character(Sys.Date()), t=sprintf('Added new MLAs %s', paste(new_mlas$MemberLastName, collapse=','))), 
+                    'politician_list_changes.log', 
+                    append=TRUE, quote=FALSE, sep=' ', col.names=FALSE, row.names=FALSE)
+        
+    }
+    #Also check for any MLAs that have left and set them to inactive in the file
+    newly_inactive_mlas <- subset(politicians, role=='MLA' & active==1 & !(MemberName %in% mlas$MemberName))
+    if (nrow(newly_inactive_mlas) > 0) {
+        politicians %<>% mutate(active = ifelse(MemberName %in% newly_inactive_mlas$MemberName, 0, active))
+        write.csv(politicians, path_to_politicians_file, row.names=FALSE)
+        write.table(data.frame(d=as.character(Sys.Date()), t=sprintf('Removed inactive MLAs %s', paste(newly_inactive_mlas$MemberLastName, collapse=','))), 
+                    'politician_list_changes.log', 
+                    append=TRUE, quote=FALSE, sep=' ', col.names=FALSE, row.names=FALSE)
+    }
+    
+    politicians
+}
+
 update_assembly_lists <- function() {
     #Diary of business
     tmp <- GET(sprintf('http://data.niassembly.gov.uk/plenary.asmx/GetBusinessDiary_JSON?startDate=%s&endDate=2025-01-01', Sys.Date()))

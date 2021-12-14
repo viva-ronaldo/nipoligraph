@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'nav.html' %}
+
+<article>
+    <div class='container-xl' style='min-height: 800px'>
+        
+        <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+                <div class="post-heading">
+                    <h1>NI Assembly transfers analysis</h1>
+                    <h2 class="subheading">2. The transfer matrix</h2>
+                </div>
+            </div>
+        </div>
+                        
+        <div class='row mb-4'>
+          <div class="col-lg-8 col-md-10 mx-auto">
+            
+            <h2 class='section-heading'>Complete transfer matrices</h2>
+            
+            <p>Our goal now is to construct a matrix of overall transfer probabilities for all pairs of parties. Transfer fractions from party <b>A</b> to party <b>B</b> can be computed for all cases in which <b>A</b> was the single transferring party, and <b>B</b> was an available option for the transfers. These fractions are adjusted to account for the varying number of target parties remaining, using the method introduced in <a href='{{prev_and_next_article_link[0]}}'>the previous post</a>. Fractions can then be normalised to provide the probability of a vote from <b>A</b> being transferred to each other party, if all parties were available to receive the transfers. The intent is for this matrix to measure the true affinity of votes from the transferring party for the recipient party, rather than simply reflect what transfers actually occurred in a given year.</p>
+            
+            <p>The fractions transferred between two different parties depends very strongly on whether or not a self-transfer is available for the transferring party. Cases where no self-transfer was available are used to construct these matrices: the self-transfer cells (the main diagonal) are left blank in the plot below, but this fraction is typically large, ~0.6 (see <a href='{{prev_and_next_article_link[1]}}'>Part 3</a>), with the exception of Independent, for which it is much lower.</p>
+            
+            <p>Since not all <b>A&rarr;B</b> combinations occur in a particular year, two steps are taken to fill the gaps in the matrix. The first is to use symmetry: where available, fill an unknown <b>A&rarr;B</b> transfer fraction by setting it to the <b>B&rarr;A</b> fraction, scaled by the ratio of overall transfer friendliness (see <a href='{{prev_and_next_article_link[1]}}'>Part 3</a>) of the two parties. The second step, for any remaining missings, is to use the value for a known <b>C&rarr;B</b> transfer, where <b>C</b> is the party 'most similar' to <b>A</b> in terms of outgoing transfers. Any remaining missing values, which are generally for minor parties (and not shown here), are set to 0.005. Matrix rows are then normalised to sum to 1, including the <em>votes_lost</em> column.</p>
+
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/stv-transfers-2_plot1.png')}}"/>
+            
+            <p>The complete transfer grid for 2017 is shown above. Reading <em>across a row</em>, the colours show where a party tends to distribute its transferred votes, when an option to self-transfer is not available. Particularly strong affinities (yellow and orange colours) can be seen between Alliance and Green, UUP and DUP, and SDLP and Sinn Fein, although the latter is rather biased in the Sinn Fein&rarr;SDLP direction. By reading values <em>by column</em>, parties such as Alliance and Independent can be seen to be uniformly popular transfer destinations (lots of green and yellow cells), whereas the more sectarian parties, such as DUP or Sinn Fein, gather transfers only from certain donor parties.</p>
+            
+            <p>In general, when other members of the same party are not available, unionist candidates transfer to other unionists (upper left in the above plot) and nationalists transfer to other nationalists (lower right). The roughly symmetrical (about the main diagonal) nature of the grid reflects the reciprocal nature of transfers: when party <b>A</b> transfers strongly <em>to</em> party <b>B</b>, it is also likely to receive votes strongly <em>from</em> party <b>B</b>.</p>
+            
+            <p>Parties receiving more first preference votes do, however, tend to attract more transfers too; for example, compare the values in the UUP and UKIP columns (unlike rows, columns do not sum to 1). This is not always the case, though: DUP and Sinn Fein receive noticeably fewer fractional transfers than UUP and SDLP, respectively, despite the former two receiving more first preference votes. Remember that these are fractions received when the party is available as a recipient, so they are not affected by the greater likelihood of DUP and Sinn Fein to be elected early in a count process.</p>
+            
+            <h2 class='section-heading'>Changes over time</h2>
+            
+            <p>Subtracting the 2011 grid from the 2017 grid shows the change in transfer fractions occurring from 2011 to 2017 (skipping the 2016 election, due to its closeness to 2017, but see later plots below). These changes show a general strengthening of transfers between unionist parties (orange colours in the upper-left corner), with an exception for transfers between UUP and DUP and between UUP and TUV, which decreased slightly. Other notable changes include an increase in Workers&rarr;Sinn Fein, an increase in Alliance&rarr;Green, increases from PBPA to Green and Alliance, and increases between UUP and SDLP.</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/stv-transfers-2_plot2.png')}}"/>
+            
+            <p>Note that the processing done on the transfer matrices has aimed to remove any dependence on number of candidates standing or availability of self-transfers, but this is unlikely to be perfect, and some results here are likely to be skewed by idiosyncratic changes in one or a handful of constituencies.</p>
+
+            <h2 class='section-heading'>Evolving inter-party relationships</h2>
+            
+            <p>Comparing the transfer matrices for 2007, 2011, 2016, and 2017, it is possible to look for trends in transfers between particular parties, such as might indicate long-term shifts in the political distance between the parties, or changing voter bases.</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/stv-transfers-2_plot3.png')}}"/>
+            
+            <p>UUP voters have historically been more willing to transfer to SDLP than vice versa, but transfers <a style='color: mediumaquamarine'>from SDLP to UUP</a> increased in 2017, in particular. This has occurred alongside a reduction in transfers <a style='color: lime'>to Sinn Fein</a> since 2011.</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/stv-transfers-2_plot4.png')}}"/>
+            
+            <p>The Unionist bloc transfers heavily between parties. Since 2007, TUV has emerged as a rival to UUP for transfers <a style='color: #D00000'>from DUP</a>; at the same time, transfers <a style='color: orchid'>between TUV</a>  <a style='color: slateblue'>and UUP</a> have fallen in recent elections from a high in 2011 (turquoise, pink).</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/stv-transfers-2_plot5.png')}}"/>
+            
+            <p>A strong grouping of centre-left, non-sectarian parties has emerged over the last three elections. Transfers <a style='color: #569b41'>between Alliance</a> <a style='color: #a4bc16'>and Green</a> have increased, and at the same time both parties have begun to transfer strongly to and from PBPA since its arrival in 2007. Alliance&ndash;UUP and Green&ndash;SDLP transfers have fallen particularly sharply since 2007 (not shown).</p>
+            
+            <h2 class='section-heading'>Party positioning</h2>
+            
+            <p>A different transfer matrix, combining the situations when self-transfers are and are not available, can be constructed. Using the 2017 version of this, with transfer fractions received by each party as value columns, we can convert the transfer data into its principal components (PCs), after first scaling the columns to have unit variance. I excluded Workers from this because their limited amount of transfer data skewed the results and made them a little harder to interpret. Here, parties are projected in similar directions if they <em>transfer to other parties in a similar way</em>.</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/stv-transfers-2_plot6.png')}}"/>
+            
+            <p>The first two of these components give a plausible arrangement of the main parties in two-dimensional space, but they represent only 30% of the total variance, suggesting that the relationships between parties is much more complicated than can be represented in only two dimensions, so we should not over-interpret these results. It is not obvious what these two PCs represent, but the nationalist and left-leaning parties are found with positive PC1 values, and the unionist, right-learning parties with negative PC1 values. Sinn Fein and SDLP are noticeably far apart in PC2, which reflects differences in how their votes are transferred (and which can also be seen in the transfer matrix, above).</p>
+            
+            <p>It is interesting to compare the position of the parties relative to one another here against the <a href='https://www.nipoligraph.co.uk/what-they-do'>NI PoliGraph 'Voting records' plot</a>. The former can be regarded as how similar voters <em>think</em> the parties are to each other (according to the priorities that they wish to express when casting a vote), while the latter attempts to show how similar the parties <em>are in practice</em>, in terms of votes on Assembly motions. Note that the raw <em>x</em> and <em>y</em> coordinate positions should not be compared between the two plots, and the comparison is made less informative by the lower percentage of variance explained by the top two PCs in this plot than in the voting records case. Still, the results are broadly consistent, with Alliance, Green, and PBPA lying much closer to the nationalist parties than to the unionist bloc, and the UUP in a more central or moderate position than the other unionist parties.</p>
+
+          </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[0] is not none %}
+              <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+            {% endif %}
+          </div>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[1] is not none %}
+              <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}

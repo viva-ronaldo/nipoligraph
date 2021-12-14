@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    {% include 'nav.html' %}
+    <div class="overlay"></div>
+
+    <div class='container-xl' style='min-height: 800px'>
+
+      <div class="row mb-2 justify-content-center pt-4">
+        <ul class="nav nav-pills" id="postcodeTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <a class="nav-link active" id="people-tab" data-toggle="pill" href="#people" type="button" role="tab" aria-controls="people" aria-selected="true">Representatives</a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" id="demog-tab" data-toggle="pill" href="#demog" href='#demog' type="button" role="tab" aria-controls="demog" aria-selected="false">Demographics</a>
+          </li>
+        </ul>
+      </div>
+      
+      <div class="tab-content" id="postcodeTabContent">
+        
+        <div class="tab-pane fade show active" id="people" role="tabpanel" aria-labelledby="people-tab">
+
+          <div class="row mb-2 mx-2 justify-content-center pt-4">
+            <p>{{heading_message|safe}}</p>
+          </div>
+
+          <div class="row mb-2 mx-2 justify-content-center">
+            <p><small>Click individual MLA/MP names to view full profiles.</small></p>
+          </div>
+          
+          <div class='row mb-2 justify-content-center'>
+            {% for i in range(rep_names_list|length) %}
+              <div class='col-xl-4 col-sm-6'>
+                <div class="col p-3 mb-3 bg-light rounded">
+                  
+                    <div class="col px-0" style="border-top: 10px solid {{rep_party_colours_list[i]}};" >
+                      {% if rep_roles_list[i]=='MLA' %}
+                        <div class='col pt-3 pb-3' style='background: #e6e6e6;  min-height: 500px'>
+                      {% else %}
+                        <div class='col pt-3 pb-3' style='background: lavender;  min-height: 500px'>
+                      {% endif %}
+                      
+                        <a href="{{url_for('indiv', mla_name=rep_names_list[i]) }}" style='color: inherit' title="Click to go to this person's profile page on NI PoliGraph">
+                          <h4>{{rep_names_list[i]}} {{rep_roles_list[i]}}</h4>
+                        </a>
+                        <h5>{{rep_parties_list[i]}}</h5>
+
+                        {% if rep_twitter_handles_list[i] is not none %}
+                          <p style='margin-bottom: 0px'><i class='fab fa-twitter'></i> <a class='use-underline' target='_blank' style='color: inherit;' href='https://www.twitter.com/{{rep_twitter_handles_list[i]}}' title="Click to go to this person's Twitter page">{{rep_twitter_handles_list[i]}}</a></p> 
+                        {% else %}
+                          <p style='min-height: 25px'></p>
+                        {% endif %}
+
+                        {% if rep_roles_list[i]=='MLA' %}
+                            <a href="http://aims.niassembly.gov.uk/mlas/details.aspx?&per={{rep_personIds_list[i]}}&sel=1&ind=0&prv=0" target="_blank">
+                                <img src="{{rep_image_urls_list[i]}}" alt="Portrait of MLA" style="margin: 10px; margin-bottom: 30px; width: 112px; height: 149px; margin-left: auto; margin-right: auto; display: block;" title="Click to open the MLA's profile on niassembly.gov.uk">
+                            </a>
+                        {% else %}
+                            <img src="{{rep_image_urls_list[i]}}" alt="Portrait of MP" style="margin: 10px; margin-bottom: 30px; width: 112px; height: 149px; margin-left: auto; margin-right: auto; display: block;">
+                        {% endif %}
+                        
+                        <div style="font-size: 0.8em">
+                          <p class='postcode-card-list'>{{tweet_volume_rank_string_list[i] | safe}}</p>
+                          {% if retweet_rate_rank_string_list[i] != 'n/a' %}
+                            <p class='postcode-card-list'>{{retweet_rate_rank_string_list[i] | safe}}</p>
+                          {% endif %}
+
+                          {% if rep_roles_list[i]=='MLA' %}
+                            <p class='postcode-card-list'>Has taken part in {{votes_present_string_list[i] | safe}}</p>
+                            
+                            {% if top_contrib_topic_list_list[i] != 'n/a' %}
+                              <p class='postcode-card-list'>Most frequently makes debate contributions on
+                                {% for t in top_contrib_topic_list_list[i] %}
+                                  <span style="color: {{t.split('|')[2]}}"><b>{{t.split('|')[0]}}</b></span>
+                                  {% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                              </p>
+                            {% endif %}
+                          {% endif %}
+
+                        </div>
+                        
+                      </div>
+                    </div>
+                
+                </div>
+              </div>
+            {% endfor %}
+
+          </div>  
+        </div>
+
+        <div class="tab-pane fade" id="demog" role="tabpanel" aria-labelledby="demog-tab">
+
+          <div class='row mb-0 mx-2 justify-content-center pt-4'>
+                  
+            <p>The population of <b>{{constit_choice}}</b> is {{constit_population}}. {{constit_second_message}}</p>
+          </div>
+
+          <div class='row mb-2 mx-2 justify-content-center'>
+          
+            <div class="col p-2 py-4 d-flex flex-column position-static">
+              <table id="demog_table_1" class="table table-bordered" style="width:100%">
+                <thead>
+                  <tr>
+                    <th>Constituency</th>
+                    <th>Population</th>
+                    <th>Mean age</th>
+                    <th>Median wage</th>
+                    <th>Pct brought up protestant</th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+              
+          </div>
+
+
+          <div class='row m-2 justify-content-center'>
+            <p><b>{{constit_choice}}</b> ranks <b>{{constit_MDM_rank_order}}</b> out of the 18 constituencies for overall deprivation.</p>
+            <p>The metrics below are the rankings of the 890 wards for deprivation, with 1 being most deprived, averaged by constituency.</p>
+          </div>
+
+          <div class='row mb-2 justify-content-center'>
+            <div class="col-lg-10 pb-4 d-flex flex-column position-static">
+              <div id='constit-depriv-ranks-plot'></div>
+            </div>
+          </div>  
+
+          <div class='row mb-2 mx-2 justify-content-center pt-4'>
+
+            <p>Some more statistics comparing the constituencies:</p>
+            
+            <div class="col p-2 py-4 d-flex flex-column position-static">
+              <table id="demog_table_2" class="table table-bordered" style="width:100%">
+                <thead>
+                  <tr>
+                    <th>Constituency</th>
+                    <th>Area (sq. km)</th>
+                    <th>Fraction urban</th>
+                    <th>Number of farms</th>
+                    <th>Pct working in agriculture</th>
+                    <th>Frac. adults IS claimants</th>
+                    <th>Frac. children in IS households</th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+              
+          </div>
+
+          <div class='row py-2 justify-content-center'>
+            <aside class="col-lg-6 blog-sidebar" id='Technical-stuff'>
+              <div class="p-4 mb-3 bg-light rounded">
+                <h4 class="font-italic">Technical Stuff</h4>
+                <div class='small'>
+                  <p>Demographic data were obtained from <a href='https://www.opendatani.gov.uk/'>OpenDataNI</a>; specifically: the <a href='https://www.opendatani.gov.uk/dataset/https-www-nisra-gov-uk-statistics-deprivation'>Multiple Deprivation Measure</a> from 2010, <a href='https://www.opendatani.gov.uk/dataset/population-estimates-for-northern-ireland'>population and age numbers</a> from 2020, <a href='https://www.opendatani.gov.uk/dataset/annual-survey-of-hours-and-earnings'>median wages</a> (for all persons, not just full-time workers) from 2020, <a href='https://www.opendatani.gov.uk/dataset/farm-census-administrative-geographies'>the 2019 Agricultural Census</a>, and <a href='https://www.opendatani.gov.uk/dataset/income-support-recipients-stat-geog'>income support information</a> from 2020. Religion percentages are from the <a href='https://www.ninis2.nisra.gov.uk/public/Theme.aspx?themeNumber=136&themeName=Census+2011'>2011 Census</a> (KS212NI). Number of farms for Belfast constituencies are actually '< 5', not necessarily zero.</p>
+                  <p>Mapping of postcodes to constituencies is from <a href='https://www.doogal.co.uk/'>doogal.co.uk</a>, and mapping of super output areas and wards to constituencies, and constituency sizes and urban fractions, are from <a href='https://www.nisra.gov.uk/support/geography/northern-ireland-super-output-areas'>NISRA</a>.</p>
+                  <p>For more detailed information, see the <a href='https://www.ninis2.nisra.gov.uk/public/Home.aspx'>Northern Ireland Neighbourhood Information Service</a>.</p>
+                </div>
+              </div>
+            </aside>
+          </div>
+
+
+
+        </div>
+
+      </div>
+                
+    </div>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <p>
+      Images from NI Assembly and UK Parliament, licensed under the <a class='use-underline' href="https://www.parliament.uk/site-information/copyright-parliament/open-parliament-licence/">Open Government Licence v3.0</a>.
+    </p>
+{% endblock %}
+
+{% block other_js %}
+
+    <script type="text/javascript" src="{{ url_for('static', filename='jquery.sparkline.2.1.2.js') }}"></script>
+
+    <script src="https://cdn.datatables.net/1.10.21/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.5/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.5/js/responsive.bootstrap.min.js"></script>
+  
+    <script src="http://cdn.datatables.net/plug-ins/1.10.15/dataRender/datetime.js"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='moment.min.js') }}"></script>
+
+    <script type="text/javascript" src="{{ url_for('static', filename='jquery-progresspiesvg-min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='progresspiesvgAppl-min.js') }}"></script>    
+
+    <script type="text/javascript">
+
+      var demog_dataset_1 = {{combined_demog_table_list | tojson }};
+      var demog_dataset_2 = {{combined_demog_table2_list | tojson }};
+      var constitChoice = {{constit_choice | tojson }};
+      var constitStartingRank = {{constit_alphabetical_rank_order}};
+
+      let initialisedDT = false;
+
+      $('a[href="#demog"]').on('click', function() {
+        setTimeout(function(){
+
+          if (!initialisedDT) {
+            $('#demog_table_1').DataTable( {
+                paging: false,
+                info: false,
+                searching: false,
+                scrollY: '400px',  //the header row is messed up inside bs tabs if this is set
+                responsive: true,
+                data: demog_dataset_1,
+                columns: [
+                    { title: "Constituency" },
+                    { title: "Population", render: $.fn.dataTable.render.number( ',', '.', 0 ) },
+                    { title: "Mean age" },
+                    { title: "Median wage", render: $.fn.dataTable.render.number( ',', '.', 0, '£' ) },
+                    { title: "Pct brought up Protestant", render: $.fn.dataTable.render.number( ',', '.', 0, '', '%') }
+                ],
+                order: [[0, 'asc']],
+                rowCallback: function ( row, data ) {
+                  if (data[0].toUpperCase() == constitChoice) {
+                    $('td', row).css('background-color', ' rgba(255, 0, 0, 0.2)');
+                  }
+                },
+                drawCallback: function (settings) {
+                  //set this to a value out of 569 to get the chosen row in view
+                  //https://stackoverflow.com/questions/27663743/how-to-maintain-jquery-datatables-scroll-position-after-draw
+                  $('div.dataTables_scrollBody').scrollTop((constitStartingRank-1)*35);
+                }
+            } );
+
+            $('#demog_table_2').DataTable( {
+                paging: false,
+                info: false,
+                searching: false,
+                scrollY: '400px',  //the header row is messed up inside bs tabs if this is set
+                responsive: true,
+                data: demog_dataset_2,
+                columns: [
+                    { title: "Constituency" },
+                    { title: "Area (sq. km)" },
+                    { title: "Fraction urban", render: $.fn.dataTable.render.number( ',', '.', 0, '', '%') },
+                    { title: "Number of farms" },
+                    { title: "Pct working in agriculture", render: $.fn.dataTable.render.number( ',', '.', 1, '', '%') },
+                    { title: "Pct adults IS claimants", render: $.fn.dataTable.render.number( ',', '.', 1, '', '%') },
+                    { title: "Pct children in IS households", render: $.fn.dataTable.render.number( ',', '.', 1, '', '%') }
+                ],
+                order: [[0, 'asc']],
+                rowCallback: function ( row, data ) {
+                  if (data[0].toUpperCase() == constitChoice) {
+                    $('td', row).css('background-color', ' rgba(255, 0, 0, 0.2)');
+                  }
+                },
+                drawCallback: function (settings) {
+                  //set this to a value out of 569 to get the chosen row in view
+                  //https://stackoverflow.com/questions/27663743/how-to-maintain-jquery-datatables-scroll-position-after-draw
+                  $('div.dataTables_scrollBody').scrollTop((constitStartingRank-1)*35);
+                }
+            } );
+
+            initialisedDT = true;
+          };
+
+          if (screen.width >= 500) {
+            parse('/data/plot_constituency_depriv_metrics_'+constitChoice+'_web', 'constit-depriv-ranks-plot');
+          } else {
+            parse('/data/plot_constituency_depriv_metrics_'+constitChoice+'_mobile', 
+                'constit-depriv-ranks-plot');
+          }
+
+        }, 200);
+      } );
+        
+      
+    </script>
+
+{% endblock %}

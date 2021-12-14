@@ -19,9 +19,17 @@
             <a href="{{ url_for('polls') }}">How We <b>Vote</b></a>
         </li>
         <li>
-            <div class="politician-list-search-container" width=50%>
+            <div class="sidebar-list-search-container" width=50%>
                 <form action="{{ url_for('indiv') }}" method="GET" > 
-                    <input id='politician-list-search-sidebar' type="text" name="mla_name" placeholder="Find a politician" style='width: 170px; font-size: 0.8em'>
+                    <input id='politician-list-search' type="text" name="mla_name" placeholder="Find a politician">
+                    <button type="submit" style='padding: 5px 8px; margin: 0;'><i class="fa fa-search"></i></button>
+                </form>
+            </div>
+        </li>
+        <li>
+            <div class="sidebar-list-search-container sidebar-list-search-container-squash" width=50%>
+                <form action="{{ url_for('postcode') }}" method="GET" > 
+                    <input id='postcode-list-search' type="text" name="postcode_choice" placeholder="Postcode/constituency" onkeyup="changeToUpperCase(this)">
                     <button type="submit" style='padding: 5px 8px; margin: 0;'><i class="fa fa-search"></i></button>
                 </form>
             </div>

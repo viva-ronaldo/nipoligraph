@@ -145,20 +145,24 @@
               suggest(matches);
           }
         });
-        $("#politician-list-search-sidebar").autoComplete({
-          minChars: 2,
+
+        $("#postcode-list-search").autoComplete({
+          minChars: 3,
           delay: 50,
           menuClass: '',  //for styling the dropdown
-          cache: false,
           source: function(term, suggest){
               term = term.toLowerCase();
-              var choices = {{full_mla_list | tojson}};
+              var choices = {{postcodes_list | tojson}};
               var matches = [];
               for (i=0; i<choices.length; i++)
                   if (~choices[i].toLowerCase().indexOf(term)) matches.push(choices[i]);
               suggest(matches);
           }
         });
+
+        function changeToUpperCase(el) {
+          el.value =el.value.toUpperCase();
+        }
 
     </script>
 

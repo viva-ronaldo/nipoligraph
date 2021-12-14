@@ -187,10 +187,9 @@ footer, #sidebar {
 #sidebar ul p {
     padding: 10px;
 }
-#sidebar ul li a, #sidebar .politician-list-search-container {
+#sidebar ul li a, #sidebar .sidebar-list-search-container {
     padding: 10px;
     padding-left: 20px;
-    /*margin-left: 10px;*/
     font-size: 1.2em;
     display: block;
 }
@@ -236,24 +235,30 @@ ul ul a {
 .form-control {
     background-color: floralwhite;
 }
-.politician-list-search-container input[type=text] {
+.sidebar-list-search-container input[type=text] {
+  width: 170px;
   padding: 6px;
-  /*margin-top: 8px;*/
-  font-size: 0.9em;
-  /*border: none;*/
-  /*float: left;*/
+  font-size: 0.75em;
 }
-.politician-list-search-container button {
+.sidebar-list-search-container-squash input[type=text] {
+  font-size: 0.65em;
+}
+.nav-item .sidebar-list-search-container input[type=text]{
+    font-size: 0.9em;
+}
+.nav-item .sidebar-list-search-container-squash input[type=text]{
+    font-size: 0.8em;
+    width: 240px;
+}
+.sidebar-list-search-container button {
   float: right;
   padding: 5.5px 10px;
-  /*margin-top: 8px;*/
-  /*margin-right: 16px;*/
   background: #ddd;
   font-size: 20px;
   border: none;
   cursor: pointer;
 }
-.politician-list-search-container button:hover {
+.sidebar-list-search-container button:hover {
   background: #ccc;
 }
 
@@ -456,7 +461,9 @@ footer a:hover .fa-circle, footer a:focus .fa-circle {
 }
 .blog-plot {
     width: 100%;
-    margin: 20px 0px;
+    margin: 20px 20px;
+    padding-bottom: 20px;
+    padding-top: 10px;
 }
 figcaption {
     text-align: center; 
@@ -529,4 +536,22 @@ a[href*='progresspie'] {
     background: transparent url('/static/icon_progresspie.svg') center left no-repeat;
     background-size: 16px 16px;
     padding-left: 20px;
+}
+
+.help-tooltip {
+    cursor: help;
+}
+
+.postcode-card-list {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    line-height: 1.2;
+}
+
+#postcodeTab .nav-link.active {
+    background: var(--footer-sidebar-colour);
+    color: white;
+}
+#postcodeTab a, a:hover {
+    color: var(--footer-sidebar-colour);
 }

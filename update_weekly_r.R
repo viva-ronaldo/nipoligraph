@@ -28,7 +28,8 @@ source('./functions_for_update_weekly.R')
 #DONE score tweets sentiment in python
 #DONE tweet network
 
-politicians <- read.csv('data/all_politicians_list.csv')
+#First check for any new MLAs and add to the politicians file, then return the list
+politicians <- update_and_get_politicians_list()
 
 #Latest diary events - take anything from current date to 2025 ----
 update_assembly_lists()
@@ -57,14 +58,14 @@ if (!is.null(tmp2)) {
                            tmp2 %>% select(DocumentId, TabledDate, TablerPersonId, MinisterPersonId,
                                            QuestionText, RequestedAnswerType))
 }
+questions_file_path <- 'data/niassembly_questions_alltopresent.feather'
+existing_questions <- read_feather(questions_file_path)
 if (nrow(new_questions) > 0) {
-    questions_file_path <- 'data/niassembly_questions_alltopresent.feather'
-    existing_questions <- read_feather(questions_file_path)
     existing_questions <- rbind(existing_questions, new_questions) %>% filter(!duplicated(.[,c('DocumentId','MinisterPersonId')]))
     message('Writing Assembly questions')
     write_feather(existing_questions, questions_file_path)
     rm(new_questions, tmp, tmp2)
-}
+} 
 
 #Get answers with function
 answers_file_path <- 'data/niassembly_answers_alltopresent.feather'

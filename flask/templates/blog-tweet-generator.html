@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    {% include 'nav.html' %}
+
+    <article>
+      <div class='container-xl' style='min-height: 800px'>
+
+        <div class="row">
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <div class="post-heading">
+              <h1>Tweet generator</h1>
+              <h2 class="subheading">Finding the parties' Twitter voices</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class='row mb-4'>
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <p><i>Language models</i>, which are machine learning algorithms that are trained on masses of text to predict the next word in a sentence, are <a href='https://openai.com/blog/better-language-models/'>now capable</a> of generating very convincing synthetic text, spanning multiple paragraphs. While these open-source models, in their original form, have been trained on a wide selection of internet content and therefore 'write' in a general (though context-dependent) style, it is possible to modify the models, by a process known as <i>fine-tuning</i>, to make them specialise in a particular text domain. This method <a href='https://wandb.ai/wandb/huggingtweets/reports/HuggingTweets-Train-a-Model-to-Generate-Tweets--VmlldzoxMTY5MjI'>has been used</a> to create 'tweet bots' that generate original tweets in the style of a particular author. With the most up-to-date language models, these bots can produce extremely convincing content.</p>
+            
+            <p>Mostly for fun, I used this method to train models to write tweets in the style of the main five NI parties.</p>
+
+            <h2 class='section-heading'>What does each party tweet about?</h2>
+            
+            <p>In order to be able to judge if this approach has been successful, we first need to establish whether each of the parties (the combined output of their MLAs and MPs) writes tweets with some distinguishing characteristics.</p>
+            
+            <p>The data used for this analysis (and for training the models, below) was <a href="{{url_for('twitter')}}">all tweets collected by NI PoliGraph</a> up to early June 2021, which for most members extends back to April 2019. I excluded retweets, which left 117,000 tweets for the five parties; 16,000 for the least frequent tweeters, DUP, and 31,000 for the most frequent, Sinn Féin. Each party includes tweets from at least 8 separate members.</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/tweet-generator_plot1.png')}}"/>
+            
+            <p>The average length of the tweets does not show substantial differences between parties: the mean and median lengths are about two thirds of the 240-character maximum length, for all parties. The use of hashtags ('#'s) and mentions of other users ('@'s) show big differences, however: Sinn Féin and SDLP are the keenest users of hashtags, while Alliance and UUP mention other users more than do the other parties.</p>
+            
+            <p>Most of the mentions by party members are of other party members; this is a behaviour that we will look to see in the model-generated tweets later. We can also exclude these party member mentions and see which non-affiliated users are mentioned most in tweets by the five parties. In addition to the MLA and MP accounts, here I manually excluded about 40 accounts: anyone that was clearly a member of one party, such as ex-politicians, and official party accounts.</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/tweet-generator_plot2.png')}}"/>
+            
+            <p>Most of the remaining 'neutral' accounts that are most frequently mentioned are Assembly departments, and these are somewhat, but not very much, more likely to be mentioned by the party that runs the department. Only two accounts in the top 20 are clear one-party favourites: PasterJimberoo1, frequently mentioned by Alliance, was an account that has since been shut down following legal action by the broadcaster <a href='https://twitter.com/StephenNolan/'>Stephen Nolan</a> (who himself is one of the most-mentioned users), and <a href='https://twitter.com/soni_ltd'>Soni_ltd</a> is the electricity grid operator SONI, which somewhat surprisingly has been mentioned over 400 times by the DUP, almost entirely by <a href="{{ url_for('indiv', mla_name='Paul Frew' )}}">Paul Frew</a>. Otherwise, the mix of parties for many of the most mentioned users reflects the overall volume of mentions by each party (Alliance has the highest rate of mentions, and Sinn Féin has the largest volume of tweets, with an average mention rate).</p>
+           
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/tweet-generator_plot3.png')}}"/>
+            
+            <p>Hashtags are less consistently used, but show bigger skews towards certain parties, and often single members. For example, DUP's Paul Frew used #NorthernIreland and #beautiful regularly, but only a handful of times did anyone else use these hashtags, while most of the 147 uses of #NIAssembly were by SDLP's <a href="{{ url_for('indiv', mla_name='Patsy McGlone' )}}">Patsy McGlone</a>, <a href='https://twitter.com/patsymcglone/status/1420404418709659657'>who tweets</a> each time he <a href="{{url_for('assembly')}}">asks a question</a> in the Assembly. All parties have used #COVID19 in the last year. What we will see below is that the language models are able to reproduce some of these characteristic hashtags, but also generate some plausible-sounding ones of their own.</p>
+            
+            <p>The most obvious way to tell one party's tweets from another is by the language that is commonly used. The plot below shows the most commonly used words by each party, after removing a lot of 'boring' words, specifically the party names, and words that are used commonly by all parties (<i>good, today, support, minister, health, work</i>, and hundreds of 'stop words' like <i>is</i> and <i>they</i>).</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/tweet-generator_plot4.png')}}"/>
+            
+            <p>Some characteristic party language can be seen. Sinn Féin, SDLP, and Alliance most often mention <i>brexit</i>; Sinn Féin talk about <i>irish</i> [language?], [the] <i>north</i> [of Ireland], and <i>community</i>. DUP seem to often tweet about (presumably positive) <i>news</i> that they are involved in, and mentions of <i>local</i> businesses and groups. SDLP and Alliance like to tell followers that they are <i>working</i> on something. UUP members (predominantly <a href="{{ url_for('indiv', mla_name='Steve Aiken' )}}">Steve Aiken</a> and <a href="{{ url_for('indiv', mla_name='Doug Beattie' )}}">Doug Beattie</a>) often have discussions with others on Twitter that refer to [making a] <i>point</i>.</p>
+            
+            <p>So, tweets are messy, but there do exist some party patterns that we can look for our generated tweets to replicate.</p>
+            
+            <h2 class='section-heading'>Generating original tweets</h2>
+
+            <h4>Method</h4>
+            
+            <p>I took the medium (345m parameter) version of <a href='https://openai.com/blog/better-language-models/'>GPT-2</a> from <a href='https://huggingface.co/'>HuggingFace</a> and fine-tuned it by training it to predict the next word in series of real tweets. This was done separately for each of the five main parties, using 16-31,000 tweets per party, from 2020 and Jan-May 2021. Retweets and tweets shorter than 30 characters were excluded from training. The training of these models (one epoch each was enough to see most of the learning benefit) was done on <a href='https://colab.research.google.com/'>Google Colab</a>, to access GPUs that greatly speed up the process. The code used to do this can be found <a href='https://github.com/viva-ronaldo/nipoligraph/blob/postcode_lookup/mla_tweets_finetune_colab.ipynb'>here</a>. <a href='https://huggingface.co/transformers/training.html#fine-tuning-in-pytorch-with-the-trainer-api'>These</a> <a href='https://medium.com/swlh/fine-tuning-gpt-2-for-magic-the-gathering-flavour-text-generation-3bafd0f9bb93'>articles</a> <a href='https://snappishproductions.com/blog/2020/03/01/chapter-9.5-text-generation-with-gpt-2-and-only-pytorch.html.html'>were helpful</a> in figuring out how to do this.</p>
+            
+            <p>GPT-2 is trained to predict, or generate some plausible options for, the next word (or <i>token</i>) in a sequence, given a <i>prompt</i> of one or more tokens. In training, I used a special 'tweet start' token at the beginning of each tweet, so that when this is provided as the prompt, GPT-2 recognises it as the start of a tweet, and generates one or several sentences to follow it. A set of parameters control the variety of output that the model produces, and with reasonable values, it is possible to generate varied yet sensible output tweets. I generated 1000 samples for each party.</p>
+
+            <h4>Results</h4>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/tweet-generator_plot5.png')}}"/>
+            
+            <p>The statistics for the generated tweets are shown above, alongside the equivalent values for real tweets (also seen above). I had to somewhat force the output to give samples of the correct length, by applying a maximum number of words, and then chopping off the ends in some cases, where the tweets unrealistically in mid-sentence (I don't know if there is a way to encourage the model to generate shorter samples without applying the hard word limit). After getting the lengths right, the frequency of use of hashtags and user mentions is also realistic, although the high rate of mentions by Alliance is underestimated..</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/tweet-generator_plot6.png')}}"/>
+            
+            <p>This plot compares the frequency of use of the most common 100 words by party in real tweets to their frequency in the generated tweets. There is a strong correlation between the frequencies (~0.9 for each party), which means that the mix of words produced by the model is sensible. The model does however lean too heavily on the very most common words, as indicated by their position above the dashed line on the right side of the plot.</p>
+
+            <p>Let's see some examples!</p>
+
+            <h4>Example output</h4>
+
+            <ul>
+              <li>
+                <p><b>An <span style='color: chartreuse;'>SDLP</span> tweet:</b> <i>"@dmcglone @CaraHunterMLA Really, it is. I just made this point as a side note and was doing the same thing for two days now..."</i></p>
+
+                <p>Many real tweets are replies, and the model often produces tweets this style. The user accounts mentioned may or may not be real (see below).</p>
+              </li>
+
+              <li>
+                <p><b>A <span style='color: maroon'>DUP</span> tweet:</b> <i>"On this day in 1776 William Floyd was born to the royal family of Ireland which included Queen Elizabeth III and her brother Philip V who later became Duke King George the third."</i></p>
+
+                <p>The text can appear superficially plausible, but get details wrong, such as with this fictional royal history.</p>
+              </li>
+
+              <li>
+                <p><b>An <span style='color: chartreuse;'>SDLP</span> tweet:</b> <i>"This is an important part of making our communities and workplaces better places to work, live & play. Great news that such a wide range can be supported! As @deptinfra"</i></p>
+
+                <p>Standard 'good news' positive tweets are well handled, although this example, like many others, cuts off in mid-sentence.</p>
+              </li>
+
+              <li>
+                <p><b>A <span style='color: navy'>UUP</span> tweet:</b> <i>"@richardtgarland There is an EU treaty but it's a protocol and they have to deal with multiple issues that we do not like.. no compromise, the UK has lost control"</i></p>
+
+                <p>The content of the tweets varies by party, according to the themes that their real tweets focus on.</p>
+              </li>
+            </ul>            
+            
+            <h4>Mentions and hashtags</h4>
+
+            <p>As expected, many of the common real users, such as <a href='https://twitter.com/sdlplive'>@sdlplive</a>, <a href="{{url_for('indiv', mla_name='Steve Aiken')}}">@steveaikenuup</a>, or <a href="{{url_for('indiv', mla_name='Michelle O\'Neill')}}">@moneillsf</a> are mentioned frequently in the generated tweets. Aside from these party members, many of the familiar 'neutral' accounts from above appear in the top twenty for the generated tweets, with some realistic party skews. But this is not surprising, as it would not be difficult for a model to simply copy the '@' tokens that it saw in training. What is more interesting and impressive is that GPT-2 also creates some users that do not appear in the training data, but which could plausibly be accounts that would be mentioned by that party. Examples are <i>@GillianMartin7, @EimersRitchie</i> (probably inspired by <a href='https://twitter.com/Eimears_Wish'>@Eimears_Wish</a>), <i>@BelfastCulture, @HospiceNI</i> (the real account is <a href='https://twitter.com/NIHospice'>@NIHospice</a>), <i>@DianeWong2</i>, and <i>@tomboyboy4</i>.</p>
+            
+            <p>Hashtags are also realistically reproduced (not shown) and there are numerous sensible new ones created by GPT-2, including <i>#FermanaghSF, #BrexitTime, #BelfastWeek, #GAA2020,</i> and <i>#BeKindTalkNorthernIreland</i>. None of these exact hashtags appear in the training tweets, although many slight variations of them have been used.</p>
+
+            <h4>Summary</h4>
+
+            <p>Aside from the mid-sentence finish issue, the generated tweets are of good quality, and show the power of modern language models (remember that this is not even the state-of-the-art within the GPT family of models). Reading through some synthetic tweets nicely highlights, I think, what each party's tweets, in aggregate, tend to look like.</p>
+
+            <h2 class='section-heading'>Try it out</h2>
+            
+            <p>The tweet generator is now available on the NI PoliGraph <a href="{{url_for('twitter')}}">What They Say page</a>. Remember that these are just model approximations to each party's tweet characteristic, so don't read too much into any quirky outputs that may result.</p>
+
+          </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[0] is not none %}
+              <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+            {% endif %}
+          </div>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[1] is not none %}
+              <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}

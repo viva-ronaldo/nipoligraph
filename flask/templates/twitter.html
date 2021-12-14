@@ -3,7 +3,6 @@
 {% block content %}
 
   <!--<div class="wrapper">-->
-    {% include 'sidebar.html' %}
 
     {% include 'nav.html' %}
 
@@ -40,7 +39,7 @@
               <div class="col p-4 d-flex flex-column position-static data-panel-c">
                 <h4>Most impactful tweeters</h4>
                 <div style='min-height: 150px'>
-                  <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians with the <b>biggest impact</b> on Twitter, as measured by the average number of retweets received by each of their <i>original tweets</i> in the past month <span title='Retweet counts are measured a few days after the tweet is sent, so will be underestimates of the true retweet rate.' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>.</p>
+                  <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians with the <b>biggest impact</b> on Twitter, as measured by the average number of retweets received by each of their <i>original tweets</i> in the past month <span class='help-tooltip' title='Retweet counts are measured a few days after the tweet is sent, so will be underestimates of the true retweet rate.' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>.</p>
                 </div>
                 <div id='vis3'></div>
               </div>
@@ -85,7 +84,7 @@
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column position-static data-panel-c">
                 <h4>Most positive and negative tweeters</h4>
-                <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians whose tweets (including retweets) scored highest and lowest, on average, for <b>positive sentiment</b> <span title="calculated as the VADER 'compound' score, relative to the mean for all tweets (see Technical stuff)" data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> in the past month.</p>
+                <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians whose tweets (including retweets) scored highest and lowest, on average, for <b>positive sentiment</b> <span class='help-tooltip' title="calculated as the VADER 'compound' score, relative to the mean for all tweets (see Technical stuff)" data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> in the past month.</p>
                 <div id='vis4'></div>
               </div>
             </div>
@@ -146,12 +145,34 @@
 
         <div class="row mb-2 justify-content-md-center">
 
-          <aside class="col-md-4 blog-sidebar">
-              <div class="p-4 mb-3 bg-light rounded">
-                <h4 class="font-italic">Tweet Generator <span class="badge badge-info">COMING SOON</span></h4>
-                <p class="mb-0">Generate original tweets in the style of each party.</p>
+          <div class="col-lg-8">
+            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+              <div class="col py-4 px-4 d-flex flex-column position-static data-panel-b">
+
+                <h4 class="font-italic">Tweet Generator</h4>
+                <p class="card-text mb-2 data-panel-card-border">Generate original tweets in the style of each party, using the language model <a href='https://openai.com/blog/better-language-models/'>GPT-2</a>. These may refer to real usernames, and are designed to resemble the real tweets issued by party members in 2019-21, but these samples are completely synthetic, and the content may not always make sense. See <a href="{{url_for('blog_item', post_name='tweet-generator')}}">the blog post</a> for how this works. Please note that this is <i>just for fun</i>.</p>
+                
+                <form>
+                  <div class='form-group row mt-2'>
+                    <div class='col-sm-1'></div>
+                    <input type='button' onclick="randomTweet();" value='Generate a tweet in the style of...' class='col-sm-6' id='gen-tweet-button' style='background-color: maroon; color: white'>
+                    <div class='col-sm-3'>
+                      <select class='form-control' id='party-for-gen-tweet'>
+                        <option value='DUP'>DUP</option>
+                        <option value='UUP'>UUP</option>
+                        <option value='Alliance'>Alliance</option>
+                        <option value='SDLP'>SDLP</option>
+                        <option value='Sinn Fein'>Sinn Fein</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <p><i><span id='generated-tweet'></span></i></p>
+                </form>
+
               </div>
-          </aside>
+            </div>
+          </div>
 
           <!--<div class="col-lg-8">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
@@ -177,6 +198,8 @@
 {% endblock %}
 
 {% block other_js %}
+
+    <script src="https://cdn.jsdelivr.net/jquery.typeit/4.3.0/typeit.min.js"></script>
 
     <script type="text/javascript">
 
@@ -417,6 +440,58 @@
           logLevel: vega.Warn,
           renderer: 'svg'
         }).initialize('#tweet-network-plot').hover().run();
+
+        //generated tweet selection
+        var gen_tweets_dup = {{gen_tweets_dup | tojson}};
+        var gen_tweets_uup = {{gen_tweets_uup | tojson}};
+        var gen_tweets_alli = {{gen_tweets_alli | tojson}};
+        var gen_tweets_sdlp = {{gen_tweets_sdlp | tojson}};
+        var gen_tweets_sf = {{gen_tweets_sf | tojson}};
+
+        function randomTweet() {
+          var dropdown_values = document.getElementById('party-for-gen-tweet');
+          var selected_value = dropdown_values.options[dropdown_values.selectedIndex].text;
+          var selected_tweet = '';
+          var selected_bg_colour = '';
+          switch(selected_value) {
+            case 'DUP': 
+              selected_tweet = gen_tweets_dup[Math.floor(Math.random() * gen_tweets_dup.length)];
+              selected_bg_colour = 'maroon';
+              break;
+            case 'UUP': 
+              selected_tweet = gen_tweets_uup[Math.floor(Math.random() * gen_tweets_uup.length)];
+              selected_bg_colour = 'navy';
+              break;
+            case 'Alliance': 
+              selected_tweet = gen_tweets_alli[Math.floor(Math.random() * gen_tweets_alli.length)];
+              selected_bg_colour = '#e6c300';
+              break;
+            case 'SDLP': 
+              selected_tweet = gen_tweets_sdlp[Math.floor(Math.random() * gen_tweets_sdlp.length)];
+              selected_bg_colour = 'chartreuse';
+              break;
+            case 'Sinn Fein': 
+              selected_tweet = gen_tweets_sf[Math.floor(Math.random() * gen_tweets_sf.length)];
+              selected_bg_colour = 'green';
+              break;
+          }
+          //document.getElementById('generated-tweet').innerHTML = '"' + selected_tweet + '"';
+
+          document.getElementById('gen-tweet-button').style.backgroundColor = selected_bg_colour;
+          if (['#e6c300','chartreuse'].includes(selected_bg_colour)) {
+            document.getElementById('gen-tweet-button').style.color = 'black';
+          } else {
+            document.getElementById('gen-tweet-button').style.color = 'white';
+          }
+
+          //https://github.com/2008my/typeit
+          $('#generated-tweet').typeIt({
+            speed: 25,
+            cursor: false
+          })
+          .tiType('"' + selected_tweet + '"');
+        }
+
     </script>
 
 {% endblock %}
