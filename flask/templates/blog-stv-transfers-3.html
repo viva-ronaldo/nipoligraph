@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'nav.html' %}
+
+<article>
+    <div class='container-xl' style='min-height: 800px'>
+        
+        <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+                <div class="post-heading">
+                    <h1>NI Assembly transfers analysis</h1>
+                    <h2 class="subheading">3. Tribalism and transfer friendliness</h2>
+                </div>
+            </div>
+        </div>
+                        
+        <div class='row mb-4'>
+          <div class="col-lg-8 col-md-10 mx-auto">
+            
+            <p>As in <a href='{{prev_and_next_article_link[0]}}'>the previous post</a>, here we use the calculated transfer matrices, adjusted for parties available for transfer and with gaps filled in, rather than raw transfer data (in this piece of analysis, the difference between the two approaches should not be large). We can look at some more aspects of how votes are being transferred.</p>
+
+            <h2 class='section-heading'>'Vote [party] 1,2,3' is getting through to voters</h2>
+            
+            <p>In recent years, more votes were successfully passed between candidates from the same party:</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/stv-transfers-3_plot1.png')}}"/>
+            
+            <p>If voters ranked candidates by party and filled out their ballots completely, values of 1 would be expected here. The fact that the fractions are considerably lower, particularly for UUP and Alliance votes, suggests that voters often deviate from party lines when ranking candidates. However, in the last few elections, SDLP, UUP, and Alliance voters seem to have been catching up with DUP and Sinn Fein voters in their self-transfer consistency. The high TUV values come from just one constituency in each of 2011 and 2016, as do Alliance values in 2007 and 2011.</p>
+
+            <h2 class='section-heading'>Are voters becoming less tribal?</h2>
+            
+            <p>Considering all counts (not just those with a self-transfer available), only around 70% of votes are transferred within unionist or nationalist blocs, and this figure has fallen slightly since 2007. ('Unionist' is defined here as any party with 'Unionist' in the title, plus UKIP and NI Conservatives, and 'nationalist' as Sinn Fein, SDLP, and Republican Sinn Fein; Workers and PBPA are perhaps more strongly associated with the nationalist community, but both define themselves as non-sectarian, so are taken as such here; inclusion or exclusion of a small party does not affect the results much.) However, these spare votes have been transferred to non-sectarian parties, rather than to the opposing bloc. In both unionist and nationalist cases, 2-7% of votes are transferred to the other bloc, which is fewer votes than are lost (not transferred). This makes sense, (only) if voters have exhausted the options within their favoured bloc and have no preference between parties within the other bloc. In practice it is likely that some voters do not cast any vote for the opposing bloc, instead possibly allowing part of their vote to be lost.</p>
+
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/stv-transfers-3_plot2.png')}}"/>            
+            <p>Unionist votes are more frequently kept within the bloc; this occurs via both a greater likelihood for nationalist votes to transfer to non-sectarian parties or independent candidates, and <a href='http://www.nipoligraph.co.uk/blog/stv-transfers-1'>fewer votes being lost compared to nationalists</a>. The former is likely a consequence of the closer alignment (in a left-right sense) between nationalist and non-sectarian than between unionist and non-sectarian parties, and, probably, the more expansive definition </p>
+            
+            <h2 class='section-heading'>Transfer friendliness</h2>
+            
+            <p>We can use the sum of the columns in the transfer matrix, which measures how often a recipient party receives transfers from any donor party, as a measure of 'transfer friendliness'. (I weighted this sum by the donor party's first preference vote fraction, but capped at 0.1, as a rough indicator of how many votes each donor party has available to transfer in practice.) Transfer friendliness is strongly correlated with the logarithm of countrywide first preference vote fraction (a Spearman coefficient of 0.77), as expected: if a party receives a lot of first preference votes, they are likely to appear in relatively high positions on other ballots too. Transfer friendliness measures the likelihood of receiving transfers <em>when the party is available as a target</em>, so it should not be negatively affected by a party receiving more first preference votes and thus being less frequently available as a transfer target. The fact that the correlation is not even stronger than it is may be saying something about the competing demands of a party trying to appeal both to its own base (to get more first preferences) and to supporters of other parties (to get more transfers).</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/stv-transfers-3_plot3.png')}}"/>
+            
+            <p>The plot shows several parties including SDLP and UUP sitting above the trend line, which means that they receive more transfers than would be expected from their first preference vote share. Conversely, Sinn Fein, TUV, and DUP have generally been less transfer-friendly than would be expected from their first preference votes. This fits with a theory that votes are more likely to transfer 'inwards', in a left-centre-right and/or unionist-non-sectarian-nationalist sense, than 'outwards'. Hence, parties at the extremes, including TUV (strong unionist), and Sinn Fein (strong nationalist) are less able to capture transferred votes than are more centrist parties.
+</p>
+            
+          </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[0] is not none %}
+              <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+            {% endif %}
+          </div>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[1] is not none %}
+              <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}

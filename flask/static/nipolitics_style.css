@@ -240,8 +240,15 @@ ul ul a {
   padding: 6px;
   font-size: 0.75em;
 }
+.sidebar-list-search-container-squash input[type=text] {
+  font-size: 0.65em;
+}
 .nav-item .sidebar-list-search-container input[type=text]{
     font-size: 0.9em;
+}
+.nav-item .sidebar-list-search-container-squash input[type=text]{
+    font-size: 0.8em;
+    width: 240px;
 }
 .sidebar-list-search-container button {
   float: right;
@@ -454,7 +461,9 @@ footer a:hover .fa-circle, footer a:focus .fa-circle {
 }
 .blog-plot {
     width: 100%;
-    margin: 20px 0px;
+    margin: 20px 20px;
+    padding-bottom: 20px;
+    padding-top: 10px;
 }
 figcaption {
     text-align: center; 
@@ -537,4 +546,12 @@ a[href*='progresspie'] {
     margin-top: 10px;
     margin-bottom: 10px;
     line-height: 1.2;
+}
+
+#postcodeTab .nav-link.active {
+    background: var(--footer-sidebar-colour);
+    color: white;
+}
+#postcodeTab a, a:hover {
+    color: var(--footer-sidebar-colour);
 }

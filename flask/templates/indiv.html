@@ -12,8 +12,8 @@
           {% if person_selected %}
             <div class="col-lg-6 px-5 py-2 text-center">
               <div class='col pt-3 pb-3' style='background: #e6e6e6'>
-                <h1>{{person_name_string}}</h1>
-                <h2>{{person_party}}</h2>
+                <h1>{{person_name_string|safe}}</h1>
+                <h2>{{person_party}} &middot; {{person_constit}}</h3>
                 {% if person_is_mla %}
                     <a href="http://aims.niassembly.gov.uk/mlas/details.aspx?&per={{mla_personid}}&sel=1&ind=0&prv=0" target="_blank">
                         <img src="{{image_url}}" alt="Portrait of MLA or MP" style="margin: 10px; width: 112px; height: 149px;" title="Click to open MLA profile on niassembly.gov.uk">
@@ -50,15 +50,17 @@
                      <table style="width:100%; border-collapse: separate; border-spacing: 5px 12px; table-layout: fixed">
 
                       <tr><td width='70%'></td><td width='30%'></td></tr>
-                      <tr>
-                        <td colspan='2'>Sits on the following committees:
-                          <ul>
-                            {% for c in person_committee_roles %}
-                              <li>{{c}}</li>
-                            {% endfor %}
-                          </ul>
-                        </td>
-                      </tr>
+                      {% if person_committee_roles != [] %}
+                        <tr>
+                          <td colspan='2'>Sits on the following committees:
+                            <ul>
+                              {% for c in person_committee_roles %}
+                                <li>{{c}}</li>
+                              {% endfor %}
+                            </ul>
+                          </td>
+                        </tr>
+                      {% endif %}
 
                       <tr>
                         <td colspan='2'>Has taken part in <span class='ring-percent-dyn-colour-outof27' data-val='{{votes_present_numbers[0]}}'></span> {{votes_present_string | safe}} </td>
@@ -136,7 +138,7 @@
                     <tr><td width='70%'></td><td width='30%'></td></tr>
 
                     <tr>
-                      <td>{{news_articles_by_week | sum}} news article mention{{'s' if (news_articles_by_week | sum) != 1 else ''}} since January 2021</td>
+                      <td>{{news_articles_by_week | sum}} news article mention{{'s' if (news_articles_by_week | sum) != 1 else ''}} since {{news_tracked_since_date}}</td>
                       <td><span class="newssparkline"></span></td>
                     </tr>
                     <tr>
@@ -151,7 +153,7 @@
 
                     <tr><td width='70%'></td><td width='30%'></td></tr>
 
-                    {% if tweet_volume_rank_string|safe != "Doesn't tweet at all" %}
+                    {% if tweet_volume_rank_string|safe != "We don't know of a Twitter account for this member" %}
                       <tr>
                         <td> <b>{{tweets_by_week | sum}}</b> tweet{{'s' if (tweets_by_week | sum) != 1 else ''}} since July 2020</td>
                         <td><span class="tweetssparkline"></span></td>

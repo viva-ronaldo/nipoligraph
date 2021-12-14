@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'nav.html' %}
+
+<article>
+    <div class='container-xl' style='min-height: 800px'>
+        
+        <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+                <div class="post-heading">
+                    <h1>TODO</h1>
+                    <h2 class="subheading">TODO</h2>
+                </div>
+            </div>
+        </div>
+                        
+        <div class='row mb-4'>
+          <div class="col-lg-8 col-md-10 mx-auto">
+            
+            <p>??</p>
+                                    
+
+            <h2 class='section-heading'>Observations on nationwide prediction</h2>
+            
+            <p>It is very easy to predict the parties' nationwide vote shares to an accuracy of around 2%: by using their values from the previous election. Changes of more than a few percent are rare, so this method in 2016-2019 achieves a root-mean-square error (RMSE) for the main parties of <b>1.8%</b>. These predictions look like the following; here, a perfect prediction has all points lying on the diagonal line:</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/election-pred-1_plot1.png')}}"/>
+            
+            <p>The previous vote method cannot, of course, capture increases or decreases in party support that have occurred since the previous election, such as for Alliance in the 2019 local election (for which I use here the 2014 local election as the prediction, although the 2016 or 2017 Assembly values could arguably be used instead, which would increase the accuracy). This is where we would like the vote share tracker, which brings in polling information in the intervening years, to help our prediction by telling us when these shifts in party support have occurred.</p>
+            
+            <p>The plot below shows predictions using the parties' tracker values just before the election. Remember that the tracker is essentially the previous election result, plus weighted information from polls since then, so it <i>should</i> be more accurate than using the unchanged value from the previous election.</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/election-pred-1_plot2.png')}}"/>
+            
+            <p>The tracker <i>does</i> pick up on the largest shifts in vote share (note the better prediction for Alliance in 2019), but overall it gets as many changes wrong as it gets right. The RMSE for this method is higher (worse) than the previous method, at 2.3%, although this is largely due to the two big mis-fires in 2019, when Sinn Fein and DUP shares were overestimated by 6% and 8%, respectively. It would be nice if we could exclude these two cases, but we would have had no reason to doubt them at the time of the 2019 election.</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/election-pred-1_plot3.png')}}"/>
+            
+            <p>Things are slightly better if we consider <i>changes</i> in tracker values from the previous election, rather than their absolute value at the time of the current election. Still, the plot above shows the poor record of the tracker in predicting the direction of changes in party vote share. Overall, only 14 of the 26 predicted changes turned out to be in the right direction: no better than random guesses. Predictions in 2017 were particularly bad, as all but one of the predicted changes in fact went in the other direction. This was a harder scenario for the tracker, however, because only one year had elapsed since the previous election, so predicted changes in support were small (+/- 1-2%). The plot does show that the larger predicted vote changes (anything larger than about +/- 4%) tend at least to be in the correct direction (e.g., the predicted 4% drop for SDLP in 2016 led to an actual 2% drop).</p>
+            
+            <p>Unfortunately then, the extra polling information that is carried by the tracker will be of only small value to a prediction of nationwide vote shares, above simply replicating the previous election values.</p>
+
+            <h2 class='section-heading'>Constituency prediction method 1: historical data</h2>
+            
+            <p>TODO intro</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/election-pred-1_plot4.png')}}"/>
+            
+            <p>We have already seen that changes in vote share measured from the tracker are not very reliable at predicting the <i>nationwide</i> vote share changes, and this plot shows that predicting constituency-level changes may be even harder. As in the previous plot, we want to see points in the upper-right or lower-left quadrants here, but in most cases, the constituency values for a party are spread across the x-axis, meaning that their vote share goes up in some constituencies and down in others. What use was it, for example, to have a predicted nationwide change of -2.7% for DUP in 2016, when their constituency results covered a range of -10% to +8% (the mean change of -1.3% was, at least, somewhat well predicted)?</p>
+            
+            <p>With this limitation in mind, I fitted a fairly simple, generalised linear regression model to predict change in party vote share by constituency, training on 2016, 2017, and 2019 elections, with change in tracker percent as the most important predictor, but with a few other terms added, to try and give the model some ability to correctly predict variations at the constituency level. These other terms are:</p>
+            <ul>
+                <li>TODO</li>
+                <li>Constituency percent relative to countrywide percent at the last election: TODO</li>
+                <li>Constituency percent relative to the tracker value at the time of the last election: TODO</li>
+                <li>Did the candidate(s) run in the last election? TODO</li>
+            </ul>
+            
+            <p>The model decides, by looking at historical prediction errors, how much weight to put on the change in tracker percent since the last election (and on each of the other terms). Quantitatively, the model opts to alter the prediction from the previous election value by about 30% of the change in tracker value; that is, if a party scored 20% in a constituency in 2017 but has been polling 5% higher in 2022, this component of the model will move the prediction up 1.5% (5*0.3), to 21.5%. If the poll numbers were perfectly reliable, the model predictions would follow them exactly, and if they carried no reliable information at all, the model would ignore them: the 30% weight thus reflects the model's moderate confidence in changes in party support that are reported by the poll tracker.</p>
+            
+            <p>In practice, in 2022, this means that the large increase in support for TUV in the tracker will be heavily downweighted in the model. Frankly, there is no precedent in the tracker (since 2014) for a swing as large as this, so some caution seems sensible, but I do feel that large poll moves such as this can largely be trusted, and the model's caution is moreso a result of errors in the past with small changes of 1-2% in the tracker, which, we saw above, are essentially noise and should be ignored.</p>
+            
+            <p>TODO tracker fudging</p>
+            
+            <p>TODO model RMSE. At the constituency level, the RMSE for using the previous election's value is 3.2%, so this model does significantly better than that simple approach. TODO WHY?</p>
+            
+            <h2 class='section-heading'>Constituency prediction method 2: direct from polling</h2>
+            
+            <p>TODO would like to do MRP but don't have enough breakdowns and large enough counts</p>
+            
+            <p>TODO we can use voted for last time although will be noisy</p>
+
+          </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[0] is not none %}
+              <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+            {% endif %}
+          </div>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[1] is not none %}
+              <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}

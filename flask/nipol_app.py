@@ -1,8 +1,8 @@
-from flask import Flask, render_template, url_for, request, flash, jsonify
+from flask import Flask, render_template, url_for, request, flash, jsonify, redirect
 import datetime, re, getpass, os, time
 import pickle, json, feather
 import pandas as pd
-import altair
+import altair as alt
 import numpy as np
 from itertools import product
 from collections import defaultdict
@@ -11,6 +11,7 @@ from sklearn.decomposition import PCA
 app = Flask(__name__)
 app.debug = False
 app.secret_key = 'dont_need_one'
+app.url_map.strict_slashes = False
 
 #Load data
 #---------
@@ -282,8 +283,6 @@ gen_tweets = pd.read_csv(data_dir + 'fiveparties_generated_tweets_1epoch_gpt2med
 #exclude any that are all hashtags/mentions
 gen_tweets['all_h_or_m'] = gen_tweets.generated_text.apply(lambda t: all([w[0] in ['@','#'] for w in t.split()]))
 gen_tweets = gen_tweets[~gen_tweets.all_h_or_m]
-print(gen_tweets.shape)
-print(gen_tweets.head(3))
 
 print('Done Twitter')
 
@@ -431,9 +430,6 @@ emotions_party_agg = emotions_df.groupby(['PartyName','emotion_type']).apply(
 print('Done votes and contributions')
 
 diary_df = pd.read_csv(data_dir + 'diary_future_events.psv', sep='|')
-#Exclude events that have now happened (will run filter again in assembly.html function)
-#diary_df = diary_df[diary_df['EventDate'] >= datetime.date.today().strftime('%Y-%m-%d')]
-diary_df = diary_df[diary_df['EndTime'] >= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')]
 #Use StartTime to get the date to avoid problems with midnight +/-1h BST
 diary_df['EventPrettyDate'] = pd.to_datetime(diary_df['StartTime'], utc=True).dt.strftime('%A, %-d %B')
 diary_df['EventName'] = diary_df.apply(
@@ -441,6 +437,9 @@ diary_df['EventName'] = diary_df.apply(
     axis=1
 )
 diary_df['EventHTMLColour'] = diary_df.EventName.apply(lambda e: diary_colour_dict[e])
+#Exclude events that have now happened (will run filter again in assembly.html function)
+#diary_df = diary_df[diary_df['EventDate'] >= datetime.date.today().strftime('%Y-%m-%d')]
+#diary_df = diary_df[diary_df['EndTime'] >= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')]
 
 #Assembly historical
 #-------------------
@@ -769,11 +768,14 @@ print('Done polls')
 
 #Blog articles list
 blog_pieces = pd.read_csv(data_dir + 'blog_pieces_list.psv', sep='|').iloc[-1::-1]
-print(blog_pieces.title)
+#print(blog_pieces.title)
 print('Done blog')
 
 #Postcode stuff
 postcodes_to_constits = pd.read_csv(data_dir + 'all_ni_postcode_constits_from_doogal.csv', index_col=None)
+
+combined_demog_table = pd.read_csv(data_dir + 'combined_demographics_out.csv')
+#These are in increasing order, i.e. lowest age gets age_rank_order=1
 
 #Totals for front page
 #---------------------
@@ -804,26 +806,32 @@ del answers_df, hist_answers_df, hist_questions_df, vote_results_df, hist_vote_r
 
 #----
 
+@app.before_request
+def clear_trailing():
+    rp = request.path 
+    if rp != '/' and rp.endswith('/'):
+        return redirect(rp[:-1])
+
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html',
         totals_dict = totals_dict,
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
-        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()))
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()))
 
 @app.route('/what-they-say', methods=['GET'])
 def twitter():
     return render_template('twitter.html',
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
-        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()),
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
         info_centr_top5 = tweets_network_top5s['info_centr'].tolist(),
         page_rank_top5 = tweets_network_top5s['page_rank'].tolist(),
         betw_centr_top5 = tweets_network_top5s['betw_centr'].tolist(),
-        gen_tweets_dup = gen_tweets.loc[gen_tweets.mla_party=='DUP', 'generated_text'].sample(50).tolist(),
-        gen_tweets_uup = gen_tweets.loc[gen_tweets.mla_party=='UUP', 'generated_text'].sample(50).tolist(),
-        gen_tweets_alli = gen_tweets.loc[gen_tweets.mla_party=='Alliance', 'generated_text'].sample(50).tolist(),
-        gen_tweets_sdlp = gen_tweets.loc[gen_tweets.mla_party=='SDLP', 'generated_text'].sample(50).tolist(),
-        gen_tweets_sf = gen_tweets.loc[gen_tweets.mla_party=='Sinn Fein', 'generated_text'].sample(50).tolist())        
+        gen_tweets_dup = gen_tweets.loc[gen_tweets.mla_party=='DUP', 'generated_text'].sample(100).tolist(),
+        gen_tweets_uup = gen_tweets.loc[gen_tweets.mla_party=='UUP', 'generated_text'].sample(100).tolist(),
+        gen_tweets_alli = gen_tweets.loc[gen_tweets.mla_party=='Alliance', 'generated_text'].sample(100).tolist(),
+        gen_tweets_sdlp = gen_tweets.loc[gen_tweets.mla_party=='SDLP', 'generated_text'].sample(100).tolist(),
+        gen_tweets_sf = gen_tweets.loc[gen_tweets.mla_party=='Sinn Fein', 'generated_text'].sample(100).tolist())        
 
 @app.route('/what-they-do', methods=['GET'])
 def assembly():
@@ -868,7 +876,7 @@ def assembly():
         n_mlas = n_mlas, 
         n_votes = n_votes,
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
-        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()),
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
         votes_list = votes_list,
         pca_votes_threshold_pct = int(pca_votes_threshold_fraction*100),
         votes_passed_details = [(v_comms_tmp.vote_result=='PASS').sum(), v_comms_tmp.shape[0], f"{100*(v_comms_tmp.vote_result=='PASS').mean():.0f}%"],
@@ -904,7 +912,7 @@ def news():
     return render_template('news.html',         
         articles_list = articles_list,
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
-        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()),
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
         news_volume_average_window_weeks = news_volume_average_window_weeks)
 
 @app.route('/how-we-vote', methods=['GET'])
@@ -917,31 +925,32 @@ def polls():
     return render_template('polls.html',
         poll_results_list = [e[1].values.tolist() for e in tmp.iterrows()],
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
-        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()))
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()))
 
 @app.route('/about', methods=['GET'])
 def about():
     return render_template('about.html',
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
-        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()))
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()))
 
 @app.route('/blog', methods=['GET'])
 def blog():
     return render_template('blog.html', 
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
-        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()),
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
         blog_pieces = blog_pieces)
 
 @app.route('/blog/<post_name>', methods=['GET'])
 def blog_item(post_name):
     blog_links = blog_pieces['link'].tolist()
     blog_titles = blog_pieces['title'].tolist()
+    print(post_name)
     if post_name in blog_links:
         place_in_blog_list = blog_links.index(post_name)
 
         return render_template('blog-'+post_name+'.html',
             full_mla_list = sorted(mla_ids.normal_name.tolist()),
-            postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()),
+            postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
             prev_and_next_article_title = (
                 None if place_in_blog_list==blog_pieces.shape[0]-1 else blog_titles[place_in_blog_list+1],
                 None if place_in_blog_list==0 else blog_titles[place_in_blog_list-1]),
@@ -966,11 +975,13 @@ def indiv():
 
         #row = mla_ids[mla_ids.normal_name == 'Órlaithí Flynn'].iloc[0]
         row = mla_ids[mla_ids.normal_name == person_choice].iloc[0]
-        
+
         date_added = row['added']
 
         if row['role'] in ['MLA','MP']:
             person_name_string = person_name_string + f" {row['role']}"
+
+        person_constit = row['ConstituencyName']
 
         person_is_mla = row['role'] == 'MLA'
         mla_personid = None
@@ -991,12 +1002,12 @@ def indiv():
             email_address = None
 
         if person_choice in mla_minister_roles.keys():
-            person_name_string += f" ({mla_minister_roles[person_choice]})"
+            person_name_string += f"</br>({mla_minister_roles[person_choice]})"
 
-        if person_is_mla:
+        if person_is_mla and row['normal_name'] in committee_roles.normal_name.tolist():
             person_committee_roles = committee_roles[committee_roles.normal_name==row['normal_name']].apply(
                 lambda row: f"{row['Organisation']}{ ' ('+row['Role']+')' if 'Chair' in row['Role'] else ''}", axis=1
-            )
+            ).tolist()
         else:
             person_committee_roles = []
 
@@ -1042,7 +1053,7 @@ def indiv():
             tweet_volume_rank_string += f"<br />(<b>#{tweet_volume_rank} / {n_politicians_current_session}</b> in total tweets since 1 July 2020)"
         else:
             twitter_handle = None
-            tweet_volume_rank_string = "Doesn't tweet at all"
+            tweet_volume_rank_string = "We don't know of a Twitter account for this member"
         member_tweet_volumes = tweets_df['normal_name'].value_counts().values.tolist()
 
         #member_retweets requires having at least 10 tweets in last 5 weeks
@@ -1094,10 +1105,12 @@ def indiv():
         if tmp.shape[0] > 0:
             mla_votes_list = [e[1].values.tolist() for e in tmp.iterrows()]
 
-        votes_present_numbers = (sum(votes_df['normal_name'] == row['normal_name']), votes_df.EventId.nunique())
+        #Account for people joining midway through a session
+        vote_date_added = '2020-01-11' if date_added == '2020-08-01' else date_added #I tracked most people from 1 Aug 2020 but have their vote info from Jan 2020
+        votes_they_joined_before = votes_df[(votes_df.DivisionDate.astype(str) >= vote_date_added) | (votes_df.normal_name==row['normal_name'])]
+        votes_present_numbers = (sum(votes_df['normal_name'] == row['normal_name']), votes_they_joined_before.EventId.nunique())
         votes_present_string = f"<b>{votes_present_numbers[0]}" + \
-            f" / {votes_present_numbers[1]} votes</b> since {votes_df.DivisionDate.min().strftime('%d %B %Y')}"
-        
+            f" / {votes_present_numbers[1]} votes</b> since {votes_they_joined_before.DivisionDate.min().strftime('%d %B %Y')}"
 
         num_questions = (questions_df['normal_name'] == row['normal_name']).sum()
         member_question_volumes = questions_df['normal_name'].value_counts().values.tolist()
@@ -1133,7 +1146,7 @@ def indiv():
         for emotion_type in ['anger','anticipation','joy','sadness','trust']:
             tmp = emotions_df[(emotions_df.emotion_type==emotion_type) & (emotions_df.word_count >= 100)].sort_values('ave_emotion', ascending=False)
             if row['normal_name'] in tmp.speaker.tolist():
-                member_rank = (tmp.speaker==row['normal_name']).argmax()+1
+                member_rank = (tmp.speaker==row['normal_name']).idxmax()+1
                 if member_rank <= 15:
                     member_any_top_emotion = True
                     member_emotion_ranks_string += f"<b>{emotion_type}</b> (#{member_rank}/{tmp.shape[0]}), "
@@ -1147,95 +1160,74 @@ def indiv():
                 (emotions_df.word_count >= 100)]\
                 .groupby('speaker').agg({'ave_emotion': sum}).reset_index().sort_values('ave_emotion', ascending=True) 
             if row['normal_name'] in tmp.speaker.tolist():
-                member_rank = (tmp.speaker==row['normal_name']).argmax()+1
+                member_rank = (tmp.speaker==row['normal_name']).idxmax()+1
                 if member_rank <= 20:
                     member_emotion_ranks_string = f"Plenary contributions language scores relatively <b>low on emotion</b> overall (#{tmp.shape[0]-member_rank+1}/{tmp.shape[0]})"
 
+
+        return render_template('indiv.html', 
+            person_selected = person_selected,
+            person_is_mla = person_is_mla,
+            mla_personid = mla_personid,
+            full_mla_list = sorted(mla_ids.normal_name.tolist()),
+            postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
+            person_name_string = person_name_string,
+            person_name_lc = person_name_lc,
+            person_date_added = date_added,
+            news_tracked_since_date = 'January 2021' if date_added < '2021-01-01' else date_added,
+            person_party = person_choice_party,
+            person_committee_roles = person_committee_roles,
+            image_url = image_url,
+            twitter_handle = twitter_handle,
+            email_address = email_address,
+            tweets_last_month = tweets_last_month, 
+            tweets_by_week = tweets_by_week,
+            tweet_volume_rank_string = tweet_volume_rank_string,
+            member_tweet_volumes = member_tweet_volumes,
+            retweet_rate_rank_string = retweet_rate_rank_string,
+            retweet_rate = retweet_rate,
+            member_retweet_rates = member_retweet_rates,
+            tweet_positivity_rank_string = tweet_positivity_rank_string,
+            tweet_positivity = tweet_positivity,
+            member_tweet_positivities = member_tweet_positivities,
+            sample_recent_tweets = sample_recent_tweets,
+            news_articles_last_month = news_articles_last_month,
+            news_articles_by_week = news_articles_by_week,
+            mla_votes_list = mla_votes_list,
+            votes_present_string = votes_present_string,
+            votes_present_numbers = votes_present_numbers,
+            num_questions = num_questions,
+            questions_rank_string = questions_rank_string,
+            member_question_volumes = member_question_volumes,
+            num_plenary_contribs = num_plenary_contribs,
+            plenary_contribs_rank_string = plenary_contribs_rank_string,
+            member_contribs_volumes = member_contribs_volumes,
+            top_contrib_topic_list = top_contrib_topic_list,
+            member_emotion_ranks_string = member_emotion_ranks_string,
+            person_constit = person_constit)
+
     else:
-        person_selected = False
-        person_is_mla = False
-        mla_personid = None
-        person_name_string = None
-        person_name_lc = None
-        date_added = None
-        person_choice_party = None
-        person_committee_roles = []
-        image_url = None
-        twitter_handle = None
-        email_address = None
-        tweets_last_month = None
-        tweets_by_week = []
-        tweet_volume_rank_string = None
-        member_tweet_volumes = []
-        retweet_rate_rank_string = None
-        retweet_rate = None
-        member_retweet_rates = []
-        tweet_positivity_rank_string = None
-        tweet_positivity = None
-        member_tweet_positivities = []
-        sample_recent_tweets = None
-        news_articles_last_month = None
-        news_articles_by_week = []
-        mla_votes_list = None
-        votes_present_string = None
-        votes_present_numbers = []
-        num_questions = None
-        questions_rank_string = None
-        member_question_volumes = []
-        num_plenary_contribs = None
-        plenary_contribs_rank_string = None
-        member_contribs_volumes = []
-        top_contrib_topic_list = []
-        member_emotion_ranks_string = None
+        return render_template('index.html',
+            totals_dict = totals_dict,
+            full_mla_list = sorted(mla_ids.normal_name.tolist()),
+            postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()))
 
-
-    return render_template('indiv.html', 
-        person_selected = person_selected,
-        person_is_mla = person_is_mla,
-        mla_personid = mla_personid,
-        full_mla_list = sorted(mla_ids.normal_name.tolist()),
-        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()),
-        person_name_string = person_name_string,
-        person_name_lc = person_name_lc,
-        person_date_added = date_added,
-        person_party = person_choice_party,
-        person_committee_roles = person_committee_roles,
-        image_url = image_url,
-        twitter_handle = twitter_handle,
-        email_address = email_address,
-        tweets_last_month = tweets_last_month, 
-        tweets_by_week = tweets_by_week,
-        tweet_volume_rank_string = tweet_volume_rank_string,
-        member_tweet_volumes = member_tweet_volumes,
-        retweet_rate_rank_string = retweet_rate_rank_string,
-        retweet_rate = retweet_rate,
-        member_retweet_rates = member_retweet_rates,
-        tweet_positivity_rank_string = tweet_positivity_rank_string,
-        tweet_positivity = tweet_positivity,
-        member_tweet_positivities = member_tweet_positivities,
-        sample_recent_tweets = sample_recent_tweets,
-        news_articles_last_month = news_articles_last_month,
-        news_articles_by_week = news_articles_by_week,
-        mla_votes_list = mla_votes_list,
-        votes_present_string = votes_present_string,
-        votes_present_numbers = votes_present_numbers,
-        num_questions = num_questions,
-        questions_rank_string = questions_rank_string,
-        member_question_volumes = member_question_volumes,
-        num_plenary_contribs = num_plenary_contribs,
-        plenary_contribs_rank_string = plenary_contribs_rank_string,
-        member_contribs_volumes = member_contribs_volumes,
-        top_contrib_topic_list = top_contrib_topic_list,
-        member_emotion_ranks_string = member_emotion_ranks_string)
 
 @app.route('/postcode', methods=['GET'])
 def postcode():
     args = request.args
     if 'postcode_choice' in args:
-        #print(args.get('postcode_choice'))
-        constit_choice = postcodes_to_constits[postcodes_to_constits.Postcode==args.get('postcode_choice')].Constituency.iloc[0]
+        postcode_choice = args.get('postcode_choice')
+        postcode_choice = postcode_choice.upper()
+        if postcode_choice in mla_ids.ConstituencyName.str.upper().tolist():
+            constit_choice = postcode_choice
+            heading_message = f"These are the representatives for the <b>{constit_choice}</b> constituency."
+        else:
+            constit_choice = postcodes_to_constits[postcodes_to_constits.Postcode==postcode_choice].Constituency.iloc[0].upper()
+            heading_message = f"{postcode_choice} is part of the <b>{constit_choice}</b> constituency."
+
         #print(mla_ids.columns)
-        mla_choices = mla_ids[(mla_ids.active == 1) & (mla_ids.ConstituencyName == constit_choice)]
+        mla_choices = mla_ids[(mla_ids.active == 1) & (mla_ids.ConstituencyName.str.upper() == constit_choice)]
         mla_choices = mla_choices.sort_values(['role','MemberLastName'])
     else:
         constit_choice = 'None'
@@ -1262,8 +1254,13 @@ def postcode():
         else:
             rep_image_urls_list.append('#')
 
+        date_added = row.added
+
         if row.role == 'MLA':
-            votes_present_numbers = (sum(votes_df['normal_name'] == row.normal_name), votes_df.EventId.nunique())
+            #Account for people joining midway through a session
+            vote_date_added = '2020-01-11' if date_added == '2020-08-01' else date_added #I tracked most people from 1 Aug 2020 but have their vote info from Jan 2020
+            votes_they_joined_before = votes_df[(votes_df.DivisionDate.astype(str) >= vote_date_added) | (votes_df.normal_name==row.normal_name)]
+            votes_present_numbers = (sum(votes_df['normal_name'] == row.normal_name), votes_they_joined_before.EventId.nunique())
             votes_present_string_list.append(f"<b>{votes_present_numbers[0]}" + \
                 f" / {votes_present_numbers[1]} Assembly votes</b> in the current session")
         else:
@@ -1309,7 +1306,7 @@ def postcode():
             else:
                 tweet_volume_rank_string_list.append(f"Doesn't tweet very often")
         else:
-            tweet_volume_rank_string_list.append("Doesn't tweet at all")
+            tweet_volume_rank_string_list.append("We don't know of a Twitter account for this member")
 
         #member_retweets requires having at least 10 tweets in last 5 weeks
         if sum(member_retweets['normal_name'] == nn) > 0:
@@ -1326,9 +1323,41 @@ def postcode():
         else:
             retweet_rate_rank_string_list.append('n/a')
 
+    demogs_row_is_constit = np.where(combined_demog_table.constit.str.upper() == constit_choice)[0][0]
+    demogs_for_constit = combined_demog_table.iloc[demogs_row_is_constit]
+
+    young_rank = combined_demog_table['mean_age'].rank().astype(int).iloc[demogs_row_is_constit]
+    wage_rank = combined_demog_table['median_wage'].rank(ascending=False).astype(int).iloc[demogs_row_is_constit]
+    
+    if young_rank <= 6:
+        young_rank_text = f'It is the {young_rank}th youngest constituency'
+    elif young_rank >= 13:
+        young_rank_text = f'It is the {18-young_rank+1}th oldest constituency'
+    else:
+        young_rank_text = ''
+        
+    if wage_rank <= 6:
+        wage_rank_text = f'has the {wage_rank}th highest median wage'
+    elif wage_rank >= 13:
+        wage_rank_text = f'has the {18-wage_rank+1}th lowest median wage'
+    else:
+        wage_rank_text = ''
+        
+    if young_rank_text != '' and wage_rank_text != '':
+        comb_rank_text = ' and '.join([young_rank_text, wage_rank_text]) + '.'
+    elif young_rank_text != '':
+        comb_rank_text = young_rank_text + '.'
+    elif wage_rank_text != '':
+        comb_rank_text = 'It '+wage_rank_text+' of the 18 constituencies.'
+    else:
+        comb_rank_text = ''
+
+    comb_rank_text = comb_rank_text.replace('1th ','').replace('2th','2nd').replace('3th','3rd')
+
     return render_template('postcode.html',
-        postcode_choice = args.get('postcode_choice'),
+        postcode_choice = postcode_choice,
         constit_choice = constit_choice,
+        heading_message = heading_message,
         rep_names_list = normal_names_list,
         rep_parties_list = mla_choices.PartyName_long.tolist(),
         rep_party_colours_list = [party_colours[party_colours.party_name==p].colour.iloc[0] for p in mla_choices.PartyName],
@@ -1343,7 +1372,15 @@ def postcode():
         votes_present_string_list = votes_present_string_list,
         top_contrib_topic_list_list = top_contrib_topic_list_list,
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
-        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist()))
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
+        combined_demog_table_list = [e[1].values.tolist() for e in combined_demog_table[['constit','total_population',
+            'mean_age','median_wage','pct_brought_up_protestant']].iterrows()],
+        combined_demog_table2_list = [e[1].values.tolist() for e in combined_demog_table[['constit','total_area_sqkm',
+            'pct_urban','n_farms','pct_work_in_agri','pct_adults_IS_claimants','pct_children_in_IS_households']].iterrows()],
+        constit_population = f"{demogs_for_constit.total_population:,}",
+        constit_second_message = comb_rank_text,
+        constit_MDM_rank_order = combined_demog_table['MDM_mean_rank'].rank().astype(int).iloc[demogs_row_is_constit],
+        constit_alphabetical_rank_order = combined_demog_table['constit'].rank().astype(int).iloc[demogs_row_is_constit])
 
 
 #Plots are not pages themselves
@@ -1363,18 +1400,18 @@ def add_grey_legend(plot, orient='top-right', columns=1, mobile_mode=False):
 #Most minister answers bars
 # @app.route('/data/plot_minister_answers_bars')
 # def plot_minister_answers_bars_fn():
-#     selection = altair.selection_single(on='mouseover', empty='all')
-#     plot = altair.Chart(minister_answers).mark_bar()\
+#     selection = alt.selection_single(on='mouseover', empty='all')
+#     plot = alt.Chart(minister_answers).mark_bar()\
 #         .add_selection(selection)\
 #         .encode(#x='Minister_normal_name', 
 #             y='Questions answered',
-#             x=altair.Y('Minister_normal_name', sort='-y', axis = altair.Axis(title=None)),
-#             color = altair.Color('Minister_party_name', 
-#                 scale=altair.Scale(
+#             x=alt.Y('Minister_normal_name', sort='-y', axis = alt.Axis(title=None)),
+#             color = alt.Color('Minister_party_name', 
+#                 scale=alt.Scale(
 #                     domain=party_colours[party_colours.party_name.isin(minister_answers.Minister_party_name)]['party_name'].tolist(), 
 #                     range=party_colours[party_colours.party_name.isin(minister_answers.Minister_party_name)]['colour'].tolist()
 #                     )),
-#             #opacity = altair.condition(selection, altair.value(1), altair.value(0.3)),
+#             #opacity = alt.condition(selection, alt.value(1), alt.value(0.3)),
 #             tooltip = 'tooltip_text')\
 #         .properties(title = ' ', width='container', height=250)
 #     #plot1 = plot1.configure_view(discreteWidth=800, continuousHeight=500)
@@ -1398,12 +1435,12 @@ def plot_minister_answer_times_fn(session_to_plot):
     else:
         plot_df = hist_minister_time_to_answer[hist_minister_time_to_answer.session_name==session_to_plot]
 
-    plot = altair.Chart(plot_df).mark_bar(size=3)\
-        .encode(x=altair.X('Questions answered', axis=altair.Axis(grid=True)),
-            y=altair.Y('Minister_normal_name', sort=altair.EncodingSortField(order='ascending', field='Questions answered'),
-                axis = altair.Axis(title=None)),
-            color = altair.Color('Minister_party_name', 
-                scale=altair.Scale(
+    plot = alt.Chart(plot_df).mark_bar(size=3)\
+        .encode(x=alt.X('Questions answered', axis=alt.Axis(grid=True)),
+            y=alt.Y('Minister_normal_name', sort=alt.EncodingSortField(order='ascending', field='Questions answered'),
+                axis = alt.Axis(title=None)),
+            color = alt.Color('Minister_party_name', 
+                scale=alt.Scale(
                     domain=party_colours[party_colours.party_name.isin(plot_df.Minister_party_name)]['party_name'].tolist(), 
                     range=party_colours[party_colours.party_name.isin(plot_df.Minister_party_name)]['colour'].tolist()
                     )))#\
@@ -1412,24 +1449,24 @@ def plot_minister_answer_times_fn(session_to_plot):
     # #Lose the axis ordering if add this on top
     #plot_b = plot.mark_circle(size=80)#\
         #.encode(x='Median days to answer',
-        #    y=altair.Y('Minister_normal_name', sort=altair.EncodingSortField(order='ascending', field='tmp_sort_field')))
-            #y=altair.Y('Minister_normal_name', sort='x'),
+        #    y=alt.Y('Minister_normal_name', sort=alt.EncodingSortField(order='ascending', field='tmp_sort_field')))
+            #y=alt.Y('Minister_normal_name', sort='x'),
     #plot = plot + plot_b
 
     #default opacity is < 1 for circles so have to set to 1 to match bars
-    plot_b = altair.Chart(plot_df).mark_circle(size=200, opacity=1)\
+    plot_b = alt.Chart(plot_df).mark_circle(size=200, opacity=1)\
         .encode(x='Questions answered',
-            y=altair.Y('Minister_normal_name', sort=altair.SortField(order='ascending', field='Questions answered'),
-                axis = altair.Axis(labels=False, ticks=False, title=None)),
-            color = altair.Color('Minister_party_name', 
-                scale=altair.Scale(
+            y=alt.Y('Minister_normal_name', sort=alt.SortField(order='ascending', field='Questions answered'),
+                axis = alt.Axis(labels=False, ticks=False, title=None)),
+            color = alt.Color('Minister_party_name', 
+                scale=alt.Scale(
                     domain=party_colours[party_colours.party_name.isin(plot_df.Minister_party_name)]['party_name'].tolist(), 
                     range=party_colours[party_colours.party_name.isin(plot_df.Minister_party_name)]['colour'].tolist()
                     )),
             size = 'Median days to answer',
             tooltip = 'tooltip_text')#\
         #.properties(title = '', width=300, height=250)
-    plot = altair.layer(plot, plot_b, data=plot_df).resolve_scale(y='independent')
+    plot = alt.layer(plot, plot_b, data=plot_df).resolve_scale(y='independent')
     plot = plot.properties(width = 'container', 
         height = 300,
         background = 'none')
@@ -1458,20 +1495,20 @@ def plot_questions_asked_fn(session_to_plot, mobile_mode = False):
             .groupby('Question type').head(8 if mobile_mode else 12)
 
     #Opacity change on selection doesn't add anything
-    #selection = altair.selection_single(on='mouseover', empty='all')
+    #selection = alt.selection_single(on='mouseover', empty='all')
     #.add_selection(selection)\
-    #opacity = altair.condition(selection, altair.value(1), altair.value(hover_exclude_opacity_value)),
+    #opacity = alt.condition(selection, alt.value(1), alt.value(hover_exclude_opacity_value)),
 
-    plot = altair.Chart(plot_df).mark_bar(opacity=1)\
+    plot = alt.Chart(plot_df).mark_bar(opacity=1)\
         .encode(
-            y=altair.Y('Questions asked'),
-            x=altair.X('normal_name', sort='-y', title=None),
-            color = altair.Color('PartyName', 
-                scale=altair.Scale(
+            y=alt.Y('Questions asked'),
+            x=alt.X('normal_name', sort='-y', title=None),
+            color = alt.Color('PartyName', 
+                scale=alt.Scale(
                     domain=party_colours[party_colours.party_name.isin(plot_df.PartyName)]['party_name'].tolist(), 
                     range=party_colours[party_colours.party_name.isin(plot_df.PartyName)]['colour'].tolist()
                     ), legend=None),
-            facet = altair.Facet('Question type:N', columns=1),
+            facet = alt.Facet('Question type:N', columns=1),
             tooltip='tooltip_text:N')\
         .resolve_scale(x='independent', y = 'independent')\
         .properties(title = '', 
@@ -1496,20 +1533,20 @@ def plot_questions_asked_fn(session_to_plot, mobile_mode = False):
 # @app.route('/data/plot_party_tweets_scatter')
 # def plot_party_tweets_scatter_fn():
 
-#     plot = altair.Chart(retweet_rate_last_month).mark_circle(size=140, opacity=1)\
-#         .encode(x=altair.X('n_original_tweets', title='Number of original tweets'),
-#             y=altair.Y('retweets_per_tweet', title='Retweets per tweet'),
-#             color = altair.Color('mla_party', 
-#                 scale=altair.Scale(
+#     plot = alt.Chart(retweet_rate_last_month).mark_circle(size=140, opacity=1)\
+#         .encode(x=alt.X('n_original_tweets', title='Number of original tweets'),
+#             y=alt.Y('retweets_per_tweet', title='Retweets per tweet'),
+#             color = alt.Color('mla_party', 
+#                 scale=alt.Scale(
 #                     domain=party_colours[party_colours.party_name.isin(retweet_rate_last_month.mla_party)]['party_name'].tolist(), 
 #                     range=party_colours[party_colours.party_name.isin(retweet_rate_last_month.mla_party)]['colour'].tolist()
 #                     )),
-#                  #legend=altair.Legend(title="Party")),
+#                  #legend=alt.Legend(title="Party")),
 #             tooltip = 'tooltip_text:N')\
 #         .properties(title = '', width=500, height=500)        
 
 #     #start fresh layer, otherwise fontSize is locked to size of points
-#     text = altair.Chart(retweet_rate_last_month).mark_text(
+#     text = alt.Chart(retweet_rate_last_month).mark_text(
 #         align='left',
 #         baseline='middle',
 #         dx=6, dy=-6,
@@ -1541,18 +1578,18 @@ def plot_user_tweetnum_fn(mobile_mode = False):
         .normal_name.tolist()
     top_tweeters_plot_df = top_tweeters[top_tweeters.normal_name.isin(top_n_tweeters)]
 
-    selection = altair.selection_single(on='mouseover', empty='all')
-    plot = altair.Chart(top_tweeters_plot_df).mark_bar()\
+    selection = alt.selection_single(on='mouseover', empty='all')
+    plot = alt.Chart(top_tweeters_plot_df).mark_bar()\
         .add_selection(selection)\
         .encode(
-            y=altair.Y('n_tweets', title='Number of tweets'),
-            x=altair.Y('normal_name', sort='-y', title=None),
-            color = altair.Color('tweet_type', 
-                scale=altair.Scale(
+            y=alt.Y('n_tweets', title='Number of tweets'),
+            x=alt.Y('normal_name', sort='-y', title=None),
+            color = alt.Color('tweet_type', 
+                scale=alt.Scale(
                     domain=['original','retweet'],
                     range=['Peru','SlateGrey']
-                ), legend=altair.Legend(title="")),
-            opacity = altair.condition(selection, altair.value(1), altair.value(0.3)),
+                ), legend=alt.Legend(title="")),
+            opacity = alt.condition(selection, alt.value(1), alt.value(0.3)),
             tooltip='tooltip_text:N')\
         .properties(title = '', 
             width = 'container', 
@@ -1576,17 +1613,17 @@ def plot_user_retweet_fn_mobile():
 
 def plot_user_retweet_fn(mobile_mode = False):
     plot_df = member_retweets.head(10 if mobile_mode else 15)
-    selection = altair.selection_single(on='mouseover', empty='all')
-    plot = altair.Chart(plot_df).mark_bar()\
+    selection = alt.selection_single(on='mouseover', empty='all')
+    plot = alt.Chart(plot_df).mark_bar()\
         .add_selection(selection)\
         .encode(
-            y=altair.Y('retweets_per_tweet', title='Retweets per tweet'),
-            x=altair.Y('normal_name', sort='-y', title=None),
-            color = altair.Color('mla_party', 
-                scale=altair.Scale(
+            y=alt.Y('retweets_per_tweet', title='Retweets per tweet'),
+            x=alt.Y('normal_name', sort='-y', title=None),
+            color = alt.Color('mla_party', 
+                scale=alt.Scale(
                     domain=party_colours[party_colours.party_name.isin(plot_df.mla_party)]['party_name'].tolist(), 
                     range=party_colours[party_colours.party_name.isin(plot_df.mla_party)]['colour'].tolist()
-                    ), legend=altair.Legend(title='')),
+                    ), legend=alt.Legend(title='')),
             tooltip='tooltip_text:N')\
         .properties(title = '', 
             width = 'container', 
@@ -1628,33 +1665,33 @@ def plot_user_tweet_sentiment_fn(mobile_mode = False):
     df_to_plot.iloc[df_to_plot.shape[0]-int(n_of_each_to_plot/2), df_to_plot.columns.get_loc('text')] = 'Most positive'
     df_to_plot['names_numbered'] = range(df_to_plot.shape[0])
 
-    base = altair.Chart(df_to_plot)\
+    base = alt.Chart(df_to_plot)\
         .encode(
-            y=altair.Y('sentiment_vader_compound', title='Mean tweet sentiment score'),
-            x=altair.X('normal_name', sort=altair.EncodingSortField(field='sentiment_vader_compound', op='max'), axis = altair.Axis(title=None)),
-            color = altair.Color('mla_party',
-                scale=altair.Scale(
+            y=alt.Y('sentiment_vader_compound', title='Mean tweet sentiment score'),
+            x=alt.X('normal_name', sort=alt.EncodingSortField(field='sentiment_vader_compound', op='max'), axis = alt.Axis(title=None)),
+            color = alt.Color('mla_party',
+                scale=alt.Scale(
                     domain=party_colours[party_colours.party_name.isin(df_to_plot.mla_party)]['party_name'].tolist(), 
                     range=party_colours[party_colours.party_name.isin(df_to_plot.mla_party)]['colour'].tolist()
                     ),
-                legend = altair.Legend(title = '')),
+                legend = alt.Legend(title = '')),
             tooltip='tooltip_text:N')
     
     plot = base.mark_bar(size=3) + base.mark_circle(size=200, opacity=1)
 
-    dividing_line = altair.Chart(pd.DataFrame({'anything': [0]})).mark_rule(yOffset=0, strokeDash=[2,2])\
-       .encode(y=altair.Y('anything'))
+    dividing_line = alt.Chart(pd.DataFrame({'anything': [0]})).mark_rule(yOffset=0, strokeDash=[2,2])\
+       .encode(y=alt.Y('anything'))
     plot += dividing_line
 
-    text = altair.Chart(df_to_plot).mark_text(
+    text = alt.Chart(df_to_plot).mark_text(
         align='center',
         baseline='middle',
         dx=0, 
         dy=0,
         fontSize = 13 if mobile_mode else 15
     ).encode(text='text', y='y2',
-        x=altair.X('normal_name', sort=altair.EncodingSortField(field='sentiment_vader_compound', op='max')), 
-    ).transform_filter(altair.datum.text != '')
+        x=alt.X('normal_name', sort=alt.EncodingSortField(field='sentiment_vader_compound', op='max')), 
+    ).transform_filter(alt.datum.text != '')
     plot += text
 
     plot = plot.properties(width = 'container', 
@@ -1676,19 +1713,19 @@ def plot_tweet_pca_all_mlas_fn_mobile():
 
 def plot_tweet_pca_all_mlas_fn(mobile_mode = False):
 
-    plot = altair.Chart(tweet_pca_positions).mark_circle(opacity=0.6)\
-        .encode(x=altair.X('mean_PC1', 
-                    #axis=altair.Axis(title='Principal component 1 (explains 12% variance)', labels=False)),
-                    axis=altair.Axis(title=['<---- more asking for good governance','             more historical references or Irish language ---->'], labels=False)),
-            y=altair.Y('mean_PC2', #axis=altair.Axis(title='Principal component 2 (explains 2% variance)', labels=False)),
-                axis=altair.Axis(title='more praising others <----    ----> more brexit and party politics', labels=False)),
-            color = altair.Color('mla_party', 
-                scale=altair.Scale(
+    plot = alt.Chart(tweet_pca_positions).mark_circle(opacity=0.6)\
+        .encode(x=alt.X('mean_PC1', 
+                    #axis=alt.Axis(title='Principal component 1 (explains 12% variance)', labels=False)),
+                    axis=alt.Axis(title=['<---- more asking for good governance','             more historical references or Irish language ---->'], labels=False)),
+            y=alt.Y('mean_PC2', #axis=alt.Axis(title='Principal component 2 (explains 2% variance)', labels=False)),
+                axis=alt.Axis(title='more praising others <----    ----> more brexit and party politics', labels=False)),
+            color = alt.Color('mla_party', 
+                scale=alt.Scale(
                     domain=party_colours[party_colours.party_name.isin(tweet_pca_positions.mla_party)]['party_name'].tolist(), 
                     range=party_colours[party_colours.party_name.isin(tweet_pca_positions.mla_party)]['colour'].tolist()
                     ),
-                legend=altair.Legend(title='')),
-            size = altair.Size('num_tweets', scale=altair.Scale(range=[30 if mobile_mode else 60, 250 if mobile_mode else 500]),
+                legend=alt.Legend(title='')),
+            size = alt.Size('num_tweets', scale=alt.Scale(range=[30 if mobile_mode else 60, 250 if mobile_mode else 500]),
                 legend=None),
             tooltip = 'tooltip_text:N')\
         .properties(title = '', 
@@ -1721,18 +1758,18 @@ def plot_news_sources_fn(mobile_mode = False):
         .source.tolist()
     news_sources_plot_df = news_sources[news_sources.source.isin(topN_sources)]
 
-    selection = altair.selection_single(on='mouseover', empty='all')
-    plot = altair.Chart(news_sources_plot_df).mark_bar()\
+    selection = alt.selection_single(on='mouseover', empty='all')
+    plot = alt.Chart(news_sources_plot_df).mark_bar()\
         .add_selection(selection)\
         .encode(#x='Minister_normal_name', 
-            y=altair.Y('News articles'),
-            x=altair.X('source', sort='-y', title=None),
-            color = altair.Color('PartyGroup', 
-                scale=altair.Scale(
+            y=alt.Y('News articles'),
+            x=alt.X('source', sort='-y', title=None),
+            color = alt.Color('PartyGroup', 
+                scale=alt.Scale(
                     domain=['Unionist','Other','Nationalist'],
                     range=['RoyalBlue','Moccasin','LimeGreen']
-                ), legend = altair.Legend(title = 'Mentioning')),
-            opacity = altair.condition(selection, altair.value(1), altair.value(hover_exclude_opacity_value)),
+                ), legend = alt.Legend(title = 'Mentioning')),
+            opacity = alt.condition(selection, alt.value(1), alt.value(hover_exclude_opacity_value)),
             tooltip='tooltip_text:N')\
         .properties(title = '', 
             width = 'container', 
@@ -1759,15 +1796,15 @@ def shared_plot_news_fn(news_sentiment_by_party_week, y_variable, y_title, title
         lambda row: pd.to_datetime('{}-01-01'.format(row['published_date_year'])) + pd.to_timedelta(7*(row['published_date_week']-1), unit='days'),
         axis=1)
 
-    plot = altair.Chart(news_sentiment_by_party_week).mark_line(size=5)\
-        .encode(x=altair.X('plot_date:T', title=None),
-            y=altair.Y(y_variable, axis=altair.Axis(title=y_title, minExtent=10, maxExtent=100)),
-            color = altair.Color('PartyName', 
-                scale=altair.Scale(
+    plot = alt.Chart(news_sentiment_by_party_week).mark_line(size=5)\
+        .encode(x=alt.X('plot_date:T', title=None),
+            y=alt.Y(y_variable, axis=alt.Axis(title=y_title, minExtent=10, maxExtent=100)),
+            color = alt.Color('PartyName', 
+                scale=alt.Scale(
                     domain=party_colours[party_colours.party_name.isin(news_sentiment_by_party_week.PartyName)]['party_name'].tolist(), 
                     range=party_colours[party_colours.party_name.isin(news_sentiment_by_party_week.PartyName)]['colour'].tolist()
                     ),
-                legend=altair.Legend(title='')))\
+                legend=alt.Legend(title='')))\
         .properties(title = title,
             width = 'container', 
             height = 200 if mobile_mode else 300,
@@ -1797,17 +1834,17 @@ def plot_news_sentiment_fn(mobile_mode = False):
     #work out order manually - easier than figuring out the altair method
     party_order = news_sentiment_by_party_week.groupby('PartyName').sr_sentiment_score.mean().sort_values(ascending=False).index.tolist()
 
-    plot = altair.Chart(news_sentiment_by_party_week).mark_boxplot(size=30)\
-        .encode(y = altair.Y('PartyName:N', title=None, sort=party_order),
-            #x = altair.X('Sentiment score:Q', title=''),
-            x = altair.X('sr_sentiment_score', title=None),
-            color = altair.Color('PartyName', 
-                scale=altair.Scale(
+    plot = alt.Chart(news_sentiment_by_party_week).mark_boxplot(size=30)\
+        .encode(y = alt.Y('PartyName:N', title=None, sort=party_order),
+            #x = alt.X('Sentiment score:Q', title=''),
+            x = alt.X('sr_sentiment_score', title=None),
+            color = alt.Color('PartyName', 
+                scale=alt.Scale(
                     domain=party_colours[party_colours.party_name.isin(news_sentiment_by_party_week.PartyName)]['party_name'].tolist(), 
                     range=party_colours[party_colours.party_name.isin(news_sentiment_by_party_week.PartyName)]['colour'].tolist()
                     ),
                 legend=None),
-            tooltip=altair.Tooltip(field='tooltip_text', type='nominal', aggregate='max'))\
+            tooltip=alt.Tooltip(field='tooltip_text', type='nominal', aggregate='max'))\
         .properties(title = '',
             width='container', 
             height = 200 if mobile_mode else 300,
@@ -1839,8 +1876,8 @@ def polls_plot_fn(mobile_mode = False):
     #x_ticks = polls_df.discoverDate_week.nunique()
     #x_range = (polls_df.date.min() - pd.to_timedelta('90 days'),
     #    polls_df.date.max() + pd.to_timedelta('90 days'))
-    #selection = altair.selection_single(on='mouseover', empty='all')
-    selection2 = altair.selection_single(fields=['pct_type'], bind='legend')
+    #selection = alt.selection_single(on='mouseover', empty='all')
+    selection2 = alt.selection_single(fields=['pct_type'], bind='legend')
 
     polls_df['pct_type'] = 'polls'
     elections_df['pct_type'] = 'elections'
@@ -1856,35 +1893,35 @@ def polls_plot_fn(mobile_mode = False):
     else:
         poll_avgs_track_plot_df = poll_avgs_track
 
-    plot = altair.Chart(joint_plot_df).mark_point(filled=True, size=100 if mobile_mode else 150)\
-        .encode(x=altair.X('date:T', 
-                    axis=altair.Axis(title='', tickCount = joint_plot_df.date.dt.year.nunique())),
-            y=altair.Y('pct', axis=altair.Axis(title='Vote share / %')),
-            color = altair.Color('party', 
-                scale=altair.Scale(
+    plot = alt.Chart(joint_plot_df).mark_point(filled=True, size=100 if mobile_mode else 150)\
+        .encode(x=alt.X('date:T', 
+                    axis=alt.Axis(title='', tickCount = joint_plot_df.date.dt.year.nunique())),
+            y=alt.Y('pct', axis=alt.Axis(title='Vote share / %')),
+            color = alt.Color('party', 
+                scale=alt.Scale(
                     domain=party_colours[party_colours.party_name.isin(polls_df.party)]['party_name'].tolist(), 
                     range=party_colours[party_colours.party_name.isin(polls_df.party)]['colour'].tolist()
             )),
-            shape = altair.Shape('pct_type', legend=altair.Legend(title='show...'),
-                scale=altair.Scale(domain = ['polls','elections'], range = ['circle','diamond'])),
-            size = altair.condition(altair.datum.pct_type == 'polls', altair.value(150), altair.value(300)),
-            opacity = altair.condition(selection2, altair.value(0.5), altair.value(0.1)),
+            shape = alt.Shape('pct_type', legend=alt.Legend(title='show...'),
+                scale=alt.Scale(domain = ['polls','elections'], range = ['circle','diamond'])),
+            size = alt.condition(alt.datum.pct_type == 'polls', alt.value(150), alt.value(300)),
+            opacity = alt.condition(selection2, alt.value(0.5), alt.value(0.1)),
             tooltip = 'tooltip_text:N')\
         .add_selection(selection2)
 
     #Draw lines with separate data to get control on size
-    plot2 = altair.Chart(poll_avgs_track_plot_df).mark_line(size=3)\
+    plot2 = alt.Chart(poll_avgs_track_plot_df).mark_line(size=3)\
         .encode(x='date:T', y='pred_pct',
-            color = altair.Color('party',
-                scale=altair.Scale(
+            color = alt.Color('party',
+                scale=alt.Scale(
                     domain=party_colours[party_colours.party_name.isin(poll_avgs_track_plot_df.party)]['party_name'].tolist(), 
                     range=party_colours[party_colours.party_name.isin(poll_avgs_track_plot_df.party)]['colour'].tolist()
                     ), 
-                legend = altair.Legend(title = ''))
+                legend = alt.Legend(title = ''))
             )
 
-    #plot = altair.layer(plot, plot2, selectors, points, text, rules, plot3)
-    plot = altair.layer(plot2, plot)#, plot3)
+    #plot = alt.layer(plot, plot2, selectors, points, text, rules, plot3)
+    plot = alt.layer(plot2, plot)#, plot3)
     # plot = plot.configure_title(fontSize=20, font='Courier')
     plot = plot.configure_axis(titleFontSize=14, labelFontSize=10)
     plot = plot.configure_legend(
@@ -1924,16 +1961,16 @@ def plot_vote_pca_all_mlas_fn(session_to_plot, mobile_mode = False):
         plot_df = hist_votes_pca_res[session_to_plot][0]
         pct_explained = hist_votes_pca_res[session_to_plot][1]
 
-    plot = altair.Chart(plot_df).mark_circle(size = 60 if mobile_mode else 120, opacity=0.6)\
-        .encode(x=altair.X('x', 
-                    axis=altair.Axis(title=['Principal component 1','(explains {:.0f}% variance)'.format(pct_explained[0])], labels=False)),
-            y=altair.Y('y', axis=altair.Axis(title='Principal component 2 (explains {:.0f}% variance)'.format(pct_explained[1]), labels=False)),
-            color = altair.Color('party', 
-                scale=altair.Scale(
+    plot = alt.Chart(plot_df).mark_circle(size = 60 if mobile_mode else 120, opacity=0.6)\
+        .encode(x=alt.X('x', 
+                    axis=alt.Axis(title=['Principal component 1','(explains {:.0f}% variance)'.format(pct_explained[0])], labels=False)),
+            y=alt.Y('y', axis=alt.Axis(title='Principal component 2 (explains {:.0f}% variance)'.format(pct_explained[1]), labels=False)),
+            color = alt.Color('party', 
+                scale=alt.Scale(
                     domain=party_colours[party_colours.party_name.isin(plot_df.party)]['party_name'].tolist(), 
                     range=party_colours[party_colours.party_name.isin(plot_df.party)]['colour'].tolist()
                     ),
-                 legend=altair.Legend(title="")),
+                 legend=alt.Legend(title="")),
             #href = 'indiv_page_url:N',
             tooltip = 'normal_name:N')\
         .properties(title = '', 
@@ -1959,7 +1996,7 @@ def plot_vote_pca_all_mlas_fn(session_to_plot, mobile_mode = False):
     #plot = plot.configure_legend(disable=True)
 
     #start fresh layer, otherwise fontSize is locked to size of points
-    # text = altair.Chart(mlas_2d_rep[mlas_2d_rep.normal_name==mla_choice]).mark_text(
+    # text = alt.Chart(mlas_2d_rep[mlas_2d_rep.normal_name==mla_choice]).mark_text(
     #     align='left',
     #     baseline='middle',
     #     dx=12,
@@ -1980,13 +2017,13 @@ def plot_vote_pca_all_mlas_fn(session_to_plot, mobile_mode = False):
 #     else:
 #         plot_df = hist_votes_party_unity[hist_votes_party_unity.session_name==session_to_plot]
 
-#     selection = altair.selection_single(on='mouseover', empty='all')
-#     plot = altair.Chart(plot_df).mark_bar()\
+#     selection = alt.selection_single(on='mouseover', empty='all')
+#     plot = alt.Chart(plot_df).mark_bar()\
 #         .add_selection(selection)\
 #         .encode(y = 'Percent voting as one',
-#             x = altair.Y('PartyName', sort='-y', title=None),
-#             color = altair.Color('PartyName', 
-#                 scale=altair.Scale(
+#             x = alt.Y('PartyName', sort='-y', title=None),
+#             color = alt.Color('PartyName', 
+#                 scale=alt.Scale(
 #                     domain=party_colours[party_colours.party_name.isin(plot_df.PartyName)]['party_name'].tolist(), 
 #                     range=party_colours[party_colours.party_name.isin(plot_df.PartyName)]['colour'].tolist()
 #                     )),
@@ -2010,14 +2047,14 @@ def plot_plenary_topics_overall_fn(session_to_plot):
 
     topic_names = list(plenary_contribs_colour_dict.keys())
 
-    selection = altair.selection_single(on='mouseover', empty='all')
-    plot = altair.Chart(plot_df).mark_bar(size=25)\
+    selection = alt.selection_single(on='mouseover', empty='all')
+    plot = alt.Chart(plot_df).mark_bar(size=25)\
         .add_selection(selection)\
         .encode(
-            x=altair.X('n_contribs', title='Number of instances'),
-            y=altair.Y('topic_name', sort='-x', title=None),
-            color=altair.Color('topic_name', 
-                scale=altair.Scale(
+            x=alt.X('n_contribs', title='Number of instances'),
+            y=alt.Y('topic_name', sort='-x', title=None),
+            color=alt.Color('topic_name', 
+                scale=alt.Scale(
                     domain=topic_names, 
                     range=[plenary_contribs_colour_dict[t] for t in topic_names]
                 )
@@ -2042,7 +2079,7 @@ def plot_plenary_emotions_fn_mobile(session_to_plot):
     return plot_plenary_emotions_fn(session_to_plot, mobile_mode=True)
 
 def plot_plenary_emotions_fn(session_to_plot, mobile_mode = False):
-    selection_by_party = altair.selection_single(on='mouseover', empty='all', encodings=['color'])
+    selection_by_party = alt.selection_single(on='mouseover', empty='all', encodings=['color'])
 
     #TODO would be nice to have on hover, selected party vs average of the rest
 
@@ -2062,18 +2099,18 @@ def plot_plenary_emotions_fn(session_to_plot, mobile_mode = False):
         on = 'emotion_type', how = 'inner'
     )
 
-    plot = altair.Chart(emotions_party_to_plot).mark_point(size=120 if mobile_mode else 200, strokeWidth=5 if mobile_mode else 6)\
+    plot = alt.Chart(emotions_party_to_plot).mark_point(size=120 if mobile_mode else 200, strokeWidth=5 if mobile_mode else 6)\
         .add_selection(selection_by_party)\
         .encode(
-            x = altair.X('ave_emotion', title='Fraction words scoring'),
-            y = altair.Y('emotion_type', title=None,
-                sort=altair.EncodingSortField(order='ascending', field='order')),
-            color = altair.Color('PartyName', 
-                scale=altair.Scale(
+            x = alt.X('ave_emotion', title='Fraction words scoring'),
+            y = alt.Y('emotion_type', title=None,
+                sort=alt.EncodingSortField(order='ascending', field='order')),
+            color = alt.Color('PartyName', 
+                scale=alt.Scale(
                     domain=party_colours[party_colours.party_name.isin(emotions_party_to_plot.PartyName)]['party_name'].tolist(), 
                     range=party_colours[party_colours.party_name.isin(emotions_party_to_plot.PartyName)]['colour'].tolist()
                 ), legend=None),
-            opacity = altair.condition(selection_by_party, altair.value(0.7), altair.value(0.05)),
+            opacity = alt.condition(selection_by_party, alt.value(0.7), alt.value(0.05)),
             tooltip = 'PartyName'
         )\
         .properties(height = 200 if mobile_mode else 250, 
@@ -2081,6 +2118,73 @@ def plot_plenary_emotions_fn(session_to_plot, mobile_mode = False):
             background = 'none')
 
     return plot.to_json()
+
+
+#Constituency metrics on the postcode page
+@app.route('/data/plot_constituency_depriv_metrics_<constit_choice>_web')
+def plot_constituency_depriv_metrics_fn_web(constit_choice):
+    return plot_constituency_depriv_metrics_fn(constit_choice)
+
+@app.route('/data/plot_constituency_depriv_metrics_<constit_choice>_mobile')
+def plot_constituency_depriv_metrics_fn_mobile(constit_choice):
+    return plot_constituency_depriv_metrics_fn(constit_choice, mobile_mode = True)
+
+def plot_constituency_depriv_metrics_fn(constit_choice, mobile_mode = False):
+    source = combined_demog_table.melt(id_vars='constit', 
+        value_vars=[c for c in combined_demog_table.columns if c[-9:]=='mean_rank'],
+        value_name='score', var_name='metric')
+
+    depriv_col_pretty_names = {
+        'MDM_mean_rank': 'Mean Deprivation Measure',
+        'proximity_to_services_depriv_mean_rank': 'Proximity to services',
+        'living_environment_depriv_mean_rank': 'Living environment',
+        'crime_disorder_depriv_mean_rank': 'Crime & disorder',
+        'income_depriv_mean_rank': 'Income',
+        'employment_depriv_mean_rank': 'Employment'
+    }
+    source['metric'] = source.metric.apply(lambda c: depriv_col_pretty_names[c])
+
+    source['highlighted'] = [1 if c.upper()==constit_choice else 0 for c in source.constit.tolist()]
+    source['tooltip_text'] = source.apply(lambda row: f"{row['constit']}: {row['score']} for deprivation in {row['metric'].lower()}".replace('mean deprivation measure','MDM'), axis=1)
+
+    selection = alt.selection_single(on='mouseover', fields=['constit'])
+
+    plot = alt.Chart(source).mark_circle(stroke='black', strokeWidth=0).encode(
+        alt.X('score:Q', scale=alt.Scale(domain=[780,80]), axis=alt.Axis(title='Deprivation mean ward rank', values=[100,300,500,700])),
+        alt.Y('metric:N', axis=alt.Axis(title=None), scale=alt.Scale(domain=['Mean Deprivation Measure','Crime & disorder',
+                                                                             'Employment','Income',
+                                                                             'Living environment','Proximity to services'])),
+        size = alt.Size('highlighted:Q', scale=alt.Scale(range=[100,600], domain=[0,1])),
+        opacity = alt.condition(selection, alt.value(1), alt.value(0.2)),
+        color = alt.Color('highlighted:Q', scale=alt.Scale(range=['LightSteelBlue','#7a527a'], domain=[0,1]), legend=None),
+        tooltip='tooltip_text:N'
+    ).add_selection(selection)
+
+    annotations = alt.Chart(pd.DataFrame({'y': [9.6,9.6,10], 'x': [150,780,0], 
+            'text': ['most deprived','least deprived','']})).mark_text(
+        align = 'left', baseline = 'middle',
+        fontSize = 15, color = 'grey', dx = 7
+    ).encode(
+        x='x',
+        y=alt.Y('y', axis=None),
+        text='text'
+    )
+
+    plot = plot + annotations
+    
+    plot = plot.properties(
+        #title=f'Deprivation scores for {constit_choice} vs other constituencies',
+        title='',
+        height = 250 if mobile_mode else 350, 
+        width = 'container',
+        background = 'none'
+    )
+
+    plot = plot.configure_axis(titleFontSize=14, labelFontSize=13, grid=False)
+    plot = plot.configure_title(fontSize=18, font='Arial')
+
+    return plot.to_json()
+
 
 if __name__ == '__main__':
     if getpass.getuser() == 'david':

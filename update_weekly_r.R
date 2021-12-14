@@ -28,7 +28,8 @@ source('./functions_for_update_weekly.R')
 #DONE score tweets sentiment in python
 #DONE tweet network
 
-politicians <- read.csv('data/all_politicians_list.csv')
+#First check for any new MLAs and add to the politicians file, then return the list
+politicians <- update_and_get_politicians_list()
 
 #Latest diary events - take anything from current date to 2025 ----
 update_assembly_lists()

@@ -42,12 +42,14 @@
         <div class="row mb-2 justify-content-md-center">
 
           <div class="my-header px-5 py-3 pt-md-5 pb-md-2 mx-auto text-center">
-            <p>Upcoming Assembly business (see <a class='use-underline' href='http://aims.niassembly.gov.uk/assemblybusiness/businessdiary.aspx'>the official Assembly site</a> for full information):</p>
-            <ul>
-            {% for item in diary.itertuples() %}
-                <li><span style="color: {{ item.EventHTMLColour }}"><b>{{ item.EventName}}</b></span> on {{ item.EventPrettyDate }} at {{ item.StartTime[11:16] }}</li>
-            {% endfor %}
-            </ul>
+            {% if diary.size > 0 %}
+              <p>Upcoming Assembly business (see <a class='use-underline' href='http://aims.niassembly.gov.uk/assemblybusiness/businessdiary.aspx'>the official Assembly site</a> for full information):</p>
+              <ul>
+              {% for item in diary.itertuples() %}
+                  <li><span style="color: {{ item.EventHTMLColour }}"><b>{{ item.EventName}}</b></span> on {{ item.EventPrettyDate }} at {{ item.StartTime[11:16] }}</li>
+              {% endfor %}
+              </ul>
+            {% endif %}
           </div>
 
         </div>

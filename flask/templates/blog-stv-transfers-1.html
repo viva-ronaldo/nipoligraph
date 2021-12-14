@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'nav.html' %}
+
+<article>
+    <div class='container-xl' style='min-height: 800px'>
+        
+        <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+                <div class="post-heading">
+                    <h1>NI Assembly transfers analysis</h1>
+                    <h2 class="subheading">1. Using transfers to the full</h2>
+                </div>
+            </div>
+        </div>
+                        
+        <div class='row mb-4'>
+          <div class="col-lg-8 col-md-10 mx-auto">
+
+            <h2 class='section-heading'>Introduction</h2>
+            
+            <p>The Single Transferable Vote (STV) electoral method, in which voters rank as many candidates as they like in order of preference, is a great system and one that provides a lot of interesting voter information from the raw count results. The counts from the Assembly elections of 2007, 2011, 2016, and 2017 were processed using code available <a href='https://github.com/viva-ronaldo/run-ni-stv/blob/master/parse_elections_available.ipynb'>here</a>, in order to track the transferring of votes from one party to another.</p>
+            
+            <p>Votes are transferred both when a candidate is eliminated from the bottom of a constituency ranking, and when a candidate at the top of the ranking is elected (exceeds the quota). Each constituency election therefore contains multiple transfer opportunities (typically 8-10), from which information about the ordering of parties on voters' ballots can be extracted. After some of the counts, multiple candidates are removed simultaneously; this makes it impossible to cleanly attribute transferred votes to one party, so these cases were removed from the analysis. Where the transfer can be attributed to one party, adjustments can be made to account for the point in the count at which the transfer occurred: the work to do this, and to make inferences about transfers between parties that never actually occurred, forms the basis of this series of posts.</p>
+
+            <h2 class='section-heading'>Adjusting transfers for number of parties remaining</h2>
+            
+            <p>Unsurprisingly, the fraction of transfers received by one party from another in a single count depends on the number of possible target parties that remain when the transfers occur. To create the plot below, average fractions transferred between each pair of parties were calculated considering all counts over 2007-2017. Then, each individual transfer fraction was divided by the average for the party pair, to create an 'inflation factor', representing the size of the transfer relative to the expected fraction for the party pair. These inflation factors were averaged as a function of the number of target parties remaining in the count, and whether the transfer was from one party to another candidate from the <a style='color: maroon'>same party (Self)</a>, or between <a style='color: mediumslateblue'>different parties (Other)</a>.</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/stv-transfers-1_plot1.png')}}"/>
+            
+            <p>Looking at non-self-transfers, when there are only one or two parties remaining as potential transfer destinations, these parties receive a much greater share of the transferred votes than they would if competing with a full field of parties. Conversely, when 6 or more parties remain, the transfers are spread more thinly, and each party receives a smaller fraction than average for that party pairing. Transfers within the same party (which are much larger, in absolute terms, than between different parties; not shown here) show no dependence on the number of parties remaining. This implies that voters tend to rank multiple representatives from the same party in immediate succession, so that the self-transfer will occur regardless of which other parties remain in the count.</p>
+            
+            <p>Using the polynomial fit, shown by the <a style='color: mediumslateblue'>blue line</a>, all actual non-self transfer fractions can be adjusted to account for the number of parties remaining. This technique will be used to compute, more accurately, overall transfer probabilities, in the subsequent posts in this series.</p>
+            
+            <h2 class='section-heading'>Votes dropped, by party</h2>
+            
+            <p>As with transfers, the fraction of votes dropped in each count, due to incomplete ballots, shows a dependence on number of parties remaining, particularly when there is <a style='color: mediumslateblue'>no option to transfer to the same party</a>.</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/stv-transfers-1_plot2.png')}}"/>
+            
+            <p>This is unsurprising since the number of parties remaining maps strongly onto count number, and therefore onto the average number of steps down through a ballot that have already been taken: the further down the ballot, the more likely the end of the voter's preferences will have been reached. A vote is much less likely to be dropped when a self-transfer is available (8%) than without a self-transfer option (21%).</p>
+            
+            <p>Regression models were fitted to the above data, as shown by the two curves, and used to correct the fraction of votes lost at each count by removing the dependences on both number of parties left <em>and</em> the availability of a self-transfer option. This is necessary in order to fairly compare parties, since smaller parties tend to see their votes transferred at an earlier stage than do larger parties, while larger parties often have a self-transfer option and smaller parties do not.</p>
+            
+            <p>Doing this gives the following adjusted percentages of votes dropped from counts in which the major parties were transferring, averaged over all years:</p>
+            
+            <div class="col-lg-6 col-md-8 mx-auto">
+              <div class="table-responsive text-center">
+                <table class="table table-striped table-hover table-sm">
+                  <thead>
+                    <tr>
+                      <th>Party</th>
+                      <th>Votes not transferred</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>Sinn Fein</td><td>20%</td></tr>
+                    <tr><td>Independents</td><td>19%</td></tr>
+                    <tr><td>Green</td><td>19%</td></tr>
+                    <tr><td>Alliance</td><td>16%</td></tr>
+                    <tr><td>SDLP</td><td>16%</td></tr>
+                    <tr><td>UKIP</td><td>14%</td></tr>
+                    <tr><td>UUP</td><td>14%</td></tr>
+                    <tr><td>DUP</td><td>13%</td></tr>
+                    <tr><td>PUP</td><td>11%</td></tr>
+                    <tr><td>TUV</td><td>10%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <p>This ranking shows how often the parties' votes <em>would be dropped</em> if, hypothetically, they transferred at a stage in the count with an <em>average</em> number of transfer options remaining, and with a balance between the situations of having and not having the option to self-transfer. The adjustment does not change the raw dropped fractions by more than ~3%, but it affects the smaller parties more (not shown here).</p>
+            
+            <p>The party from which votes are most often not transferred is Sinn Fein: this probably reflects their quite polarising appeal, combined with the general shortage of alternative nationalist candidates (the adjustment used here removes the 'credit' for a self-transfer, so only transfers to other parties are counted). At the other end of the list, unionist parties occupy the lowest 6 positions. This is presumably a result of transfers among unionist parties being more readily available, due to the greater number of parties: over 2007-2017, candidates could be described as roughly 50% unionist, 30% nationalist, and 20% non-sectarian or independent (many of which were in fact strongly unionist). This is consistent with the Electoral Reform Society's estimation in <a href='https://www.electoral-reform.org.uk/latest-news-and-research/publications/the-2016-northern-ireland-assembly-election/'>their report on the 2016 Assembly election</a> that Protestant voters more commonly (38%) ranked four or more preferences on their ballot than did Catholics (30%). The transfers of votes among and between these different groups will be looked at more closely in upcoming posts.</p>
+            
+            <p>Votes for independent candidates are also quite frequently not transferred, which is understandable since it may sometimes be the case that the vote is being cast for an individual personality rather than a platform of policies. It seems probable that there are a number of ballots submitted with a single preference for an independent candidate and no transfer instructions.</p>
+            
+            <p>Here are the adjusted dropped vote percentages for the main parties in each year:</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/stv-transfers-1_plot3.png')}}"/>
+
+            <p>After adjusting for number of parties remaining and self-transfer availability, there has been no clear trend in total votes not transferred over 2007-2017. This figure was 14% in 2007, rose to 18% in 2011 and 2016, and fell back to 14% in 2017. The reduction in 2017 could be partly due to the reduction in number of seats per constituency from 6 to 5, which resulted in fewer candidates per constituency and somewhat shorter counts.</p>
+            
+            <p>Note that not all of these votes are lost at their full value, as many will be transferred from elected candidates and thus be reduced in weight. Summing constituency votes by count shows that an average of 5% of <i>weighted</i> votes are lost in the course of a count.</p>
+            
+            <p>Thrilling stuff. <a href='{{prev_and_next_article_link[1]}}'>Part 2</a> builds on this and is more interesting.</p>
+
+          </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[0] is not none %}
+              <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+            {% endif %}
+          </div>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[1] is not none %}
+              <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}

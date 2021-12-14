@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    {% include 'nav.html' %}
+
+    <article>
+      <div class='container-xl' style='min-height: 800px'>
+
+        <div class="row">
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <div class="post-heading">
+              <h1>Polling outlook for the 2022 election</h1>
+              <h2 class="subheading">Cause for alarm for DUP, but not unrecoverable</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class='row mb-4'>
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <p>The <a href="{{url_for('polls')}}">NI PoliGraph vote tracker</a> is set up so that the running average vote shares for each represent the best (given the constraints of a simple model) prediction of the first preference vote share that they would receive in a future <i>Assembly</i> election (voting in local and UK general elections behaves somewhat differently, so the tracker is not intended to predict those). It tends to follow quite closely <a href='https://lucidtalk.co.uk/'>LucidTalk poll numbers</a>, as away from elections, these are the only inputs to the tracker.</p>
+
+            <p>Recent polls have shown an unusual amount of movement in the support for the three main unionist parties: the Democratic Unionist Party (<span style='color: maroon'>DUP</span>), Ulster Unionist Party (<span style='color: navy'>UUP</span>), and Traditional Unionist Voice (<span style='color: mediumorchid'>TUV</span>). There are <a href='https://twitter.com/jamiepow/status/1431575692135833600'>reasons</a> to <a href='https://www.agendani.com/the-changed-faces-of-unionism/'>believe</a> that not all of these changes in support will be maintained through to next year's Assembly election, expected in May 2022 - around nine months from now. To get some idea of the volatility in polling for the NI parties, and an estimate of the magnitude of changes in support that can occur in 'normal' conditions between now and next May, we can look at the limited historical record of the NI PoliGraph tracker.</p>
+
+            <h2 class='section-heading'>Predicting previous Assembly elections</h2>
+            
+            <p>Limiting ourselves to Assembly elections leaves only two cases in the data: May 2016, and March 2017, and the second of these is obviously an unusual case so must be viewed with some caution.</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/polls-at-nine-months_plot1.png')}}" style='width: 85%; display: block; margin: auto'/>
+
+            <p>In August 2015, nine months before the 2016 election, the tracker underestimated the DUP vote by 4 percentage points when compared to the final election result. This was only partially corrected closer to the election, as polls in early 2016 put their support at 26-27%. The tracker also overestimated UUP and SDLP by 2-3 points. The mean absolute error (MAE) of the nine-month 'predictions' in 2016 - in other words, the average change in vote percentage from nine months out to the election - was <b>1.7%</b>.</p>
+
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/polls-at-nine-months_plot2.png')}}" style='width: 85%; display: block; margin: auto'/>
+
+            <p>The March 2017 election gives a less useful comparison to this year, because the nine-month (June 2016) tracker values in this case were almost entirely guided by the 2016 Assembly election results, which can be expected to be a very good indicator of what will happen at another Assembly election a year later. Accordingly, the MAE in 2017 was smaller: <b>0.9%</b>. Nevertheless, there were still large upward moves of almost 4% for Sinn Fein and 2% for Alliance during this nine-month period.</p>
+
+            <p>The largest change for a party's support in either of these nine-month periods was <b>4%</b>, which gives an indication of the scale of the problem faced by the DUP, whose support is currently <i><b>12%</b></i> below their 2017 election result.</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/polls-at-nine-months_plot3.png')}}"/>
+
+            <p>For comparison, the MAE of the tracker forecast <i>just before</i> the elections was 1.3% in 2016 and 1.0% in 2017. This indicates the limit on predictability for the Assembly elections (at least, with this relatively simple model), even with polls taken just a few weeks before the election date. The steps in the plot above indicate when new information was introduced: namely, LucidTalk polls (in future, a more sophisticated model might bring in other information, more frequently, such as news or social model signals). From where we are now, around nine months before the next election, the tracker can be expected to get only slightly more accurate, based on these previous cases.</p>
+            
+            <h2 class='section-heading'>2021 for 2022</h2>
+            
+            <p>But, will this logic apply for the 2022 election? Party shares on the unionist side have been changing much more dramatically in 2020 and 2021 than has been seen in previous years, so while the last nine months before the elections of 2016 and 2017 saw moves of no more than 2-4 percentage points, I believe it's possible that we'll see larger moves this time around.</p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/polls-at-nine-months_plot4.png')}}" style='width: 85%; display: block; margin: auto'/>
+            
+            <p>The tracker currently puts DUP at 16%, UUP at 14%, and TUV at 12%. Possible swings of 4-6 points between now and May 2022 make it possible that the DUP will not be the largest unionist party, but also possible that they will rebound to score 20% or higher in a 2022 election: very likely falling short of their first preferences result of 28% in 2017, but still comfortably the largest unionist party. Added to the 'normal' volatility in tracker party vote shares, this year we have the unusual situation of TUV rising rapidly from a low base, with question marks over their ability to field enough strong candidates to score a double-digit result countrywide (let alone translate those votes into seats won), which will give the DUP hope of a late, substantial recovery.</p>
+            
+            <p>This is not to say that a big DUP recovery <i>will</i> happen; previous data indicate that such a swing would be unusual, but historical comparisons are very limited, so I don't think it can be ruled out.</p>
+
+            <p>In the next six months I hope to turn to the tricky problem of turning countrywide vote shares into predictions of both votes and seats won at constituency level. It will be particularly challenging to handle the DUP-TUV dynamic in this area, as there is no recent precedent for it, <a href='https://www.electoralcalculus.co.uk/blogs/ec_boris_bounce_20190729.html'>at least not in Northern Ireland</a>.</p>
+
+          </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[0] is not none %}
+              <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+            {% endif %}
+          </div>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[1] is not none %}
+              <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}
