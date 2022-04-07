@@ -10,55 +10,177 @@
 
     <div class="jumbotron" style="background-image: url('{{ url_for('static', filename='HOW WE VOTE.jpg') }}'); background-size: cover">
       <div class="row d-flex ml-4 justify-content-start">
-        <div class="col-md-6 ml-4 my-3" style='color: black'>
+        <div class="col-md-5 ml-4 my-3" style='color: black'>
           <h1 class='display-3'>How We <b>Vote</b></h1>
-          <p>All nationwide polls and election results are recorded here, starting in 2016. In the future, this may evolve into constituency-level predictions for an upcoming election.</p>
+          <p>All nationwide polls and election results are recorded here, starting in 2016. Using polling and other information, a forecast of the national results in the May 2022 Assembly election is made, and updates regularly.</p>
         </div>
       </div>
     </div>
 
-    <div class='container-xl'>    
+    <div class='container-xl'>
 
-        <div class="row mb-2 justify-content-md-center">
-          <div class="col-md-10">
-            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col p-4 d-flex flex-column position-static">
-                <h4>Levels of support</h4>
-                <p class="card-text mb-2 data-panel-card-border">The running average percentages of the vote by party are updated when a new poll or election occurs. Their values at present day are a projection of vote share at the next Assembly election. Click on the <b>'show...'</b> part of the legend to highlight either polls <i>(circles)</i> or elections <i>(diamonds)</i>.</p>
-                <div id='poll-tracker-vis'></div>
-              </div>
-            </div>
-          </div>
+        <div class="row mb-2 justify-content-center pt-4">
+          <ul class="nav nav-pills" id="pollsTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a class="nav-link" id="tracker-tab" data-toggle="pill" href="#tracker" type="button" role="tab" aria-controls="tracker" aria-selected="false">Poll tracker</a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a class="nav-link active" id="election-tab" data-toggle="pill" href="#election" type="button" role="tab" aria-controls="election" aria-selected="true">Election forecast</a>
+            </li>
+          </ul>
         </div>
 
-        <div class="row mb-2">
-          <aside class="col-md-5 blog-sidebar">
-            <div class="p-4 mb-3 bg-light rounded">
-              <h4 class="font-italic">Technical Stuff</h4>
-              <p class="mb-0 small">The 'polling average' lines shown here are based on both poll and election data up to and including that point in time. Each new data point affects the moving average by different amounts depending on its poll or election type, and (for polls) the poll sample size. Each point has a weaker effect on the averages as time goes on, reaching zero at 1000 days (i.e., the averages depend most strongly on the most recent data).</p>
-              <p class='small'>I chose the weights to try to optimise the fit of the moving averages to <i>Assembly election</i> results. Since the number of elections in the period covered by documented polling is small, this very likely means that the lines are over-fitted to the 2016 and 2017 Assembly elections. An election result is weighted equally to a hypothetical poll of sample size 50,000, 5000, and 500, for Assembly, local, and general elections, respectively. UK general election results are biased against the smaller parties, so are allowed to have only a weak impact on the moving averages.</p>
-              <p class='small'>With these caveats, the moving averages can be taken as a best, purely data-driven, estimate of the Assembly election results that would be expected if an election were held at that point in time (a 'nowcast'). For 2016 and 2017, this model has a root-mean-square error of about <b>1.5%</b>. This reflects the inaccuracy of polling just before the elections; for examples, see UUP in 2016 or Sinn Fein in 2017: these results could not have been anticipated, based solely on prior election and polling data. In future years, using the information gathered on this site, I hope to explore whether news or social media data could prove to be predictive, in addition to polls.</p>
-            </div>
-          </aside>
+        <div class="tab-content" id="pollsTabContent">
+          
+          <div class="tab-pane fade" id="tracker" role="tabpanel" aria-labelledby="tracker-tab">
 
-          <div class="col-md-7">
-            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col p-4 d-flex flex-column position-static">
-                <h4>All poll data</h4>
-                <table id="poll_results" class="table table-striped table-bordered" style="width:100%">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Organisation</th>
-                      <th>Sample</th>
-                      <th>Party</th>
-                      <th>Vote share</th>
-                    </tr>
-                  </thead>
-                </table>
+            <div class="row mb-2 justify-content-md-center">
+              <div class="col-md-10">
+                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+                  <div class="col p-4 d-flex flex-column position-static">
+                    <h4>Levels of support</h4>
+                    <p class="card-text mb-2 data-panel-card-border">The running average percentages of the vote by party are updated when a new poll or election occurs. Their values at present day are a projection of vote share at the next Assembly election. Click on the <b>'show...'</b> part of the legend to highlight either polls <i>(circles)</i> or elections <i>(diamonds)</i>.</p>
+                    <div id='poll-tracker-vis'></div>
+                  </div>
+                </div>
               </div>
             </div>
+
+            <div class="row mb-2">
+              <aside class="col-md-5 blog-sidebar">
+                <div class="p-4 mb-3 bg-light rounded">
+                  <h4 class="font-italic">Technical Stuff</h4>
+                  <p class="small">The 'polling average' lines shown here are based on both poll and election data up to and including that point in time. Each new data point affects the moving average by different amounts depending on its poll or election type, and (for polls) the poll sample size. Each point has a weaker effect on the averages as time goes on, reaching zero at 1000 days (i.e., the averages depend most strongly on the most recent data).</p>
+                  <p class='small'>I chose the weights to try to optimise the fit of the moving averages to <i>Assembly election</i> results. Since the number of elections in the period covered by documented polling is small, this very likely means that the lines are over-fitted to the 2016 and 2017 Assembly elections. An election result is weighted equally to a hypothetical poll of sample size 50,000, 5000, and 500, for Assembly, local, and general elections, respectively. UK general election results are biased against the smaller parties, so are allowed to have only a weak impact on the moving averages.</p>
+                  <p class='small'>With these caveats, the moving averages can be taken as a best, purely data-driven, estimate of the Assembly election results that would be expected if an election were held at that point in time (a 'nowcast'). For 2016 and 2017, this model has a root-mean-square error of about <b>1.5%</b>. This reflects the inaccuracy of polling just before the elections; for examples, see UUP in 2016 or Sinn Fein in 2017: these results could not have been anticipated, based solely on prior election and polling data. In future years, using the information gathered on this site, I hope to explore whether news or social media data could prove to be predictive, in addition to polls.</p>
+                </div>
+              </aside>
+
+              <div class="col-md-7">
+                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+                  <div class="col p-4 d-flex flex-column position-static">
+                    <h4>All poll data</h4>
+                    <table id="poll_results" class="table table-striped table-bordered" style="width:100%">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Organisation</th>
+                          <th>Sample</th>
+                          <th>Party</th>
+                          <th>Vote share</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>  
+
+          <div class="tab-pane fade show active" id="election" role="tabpanel" aria-labelledby="election-tab">
+
+            <div class="row mb-2 justify-content-md-center">
+              <div class="col-lg-8">
+                <div class="p-4 mb-3 bg-light rounded">
+                  <!--<h2><span class="badge badge-info">NEW!</span></h2>-->
+                  <p>This is the live forecast page for the May 2022 Assembly election! Historical election results and polling information have been used to develop a model for Single Transferable Vote elections, and the output from an ensemble <span class='help-tooltip' title='a set of model runs, each using slightly different input parameters, used when it is not possible to simulate events with certainty' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> of model simulations is presented here, as the best estimate of the <i>set of possible outcomes</i> in each constituency, and nationwide. This forecast aims to be as accurate as possible, but attention should be given to the wide range of results that are found to be plausible, given the information available at present. </p>
+
+                  <p>Use the links in the <a href='#election-changes-map'>seat changes map</a> or <a href='#election-candidate-list'>candidate list</a> sections to go to detailed forecast pages for each constituency.</p>
+
+                  <p>Some of the mechanics are explained in <a href='#election-technical-stuff'>Technical Stuff</a>, below, and read <a href="{{url_for('blog')}}">the blog</a> for more details and commentary. The forecast will update every few weeks or when any new polls are released. It will move a little closer towards what the polls say, as we get closer to the election date. Candidate lists are correct to the best of NI PoliGraph's knowledge at this time.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class='row justify-content-md-center'>
+              
+              <div class="col-lg-9">
+                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+                  <div class="col p-4 d-flex flex-column position-static">
+                    <h4>Predicted first preference votes</h4>
+                    <p class="card-text pb-4 data-panel-card-border">Solid bars in the foreground are the current <i>average</i> predictions of countrywide first preference vote shares in the May 2022 Assembly election; lighter shaded bars behind show the 2017 results. These overall levels of support feed into the constituency predictions seen below. See <a href="{{url_for('blog_item', post_name='election-pred-2')}}">the blog article</a> on why these vote shares do not exactly match the parties' values in the poll tracker.</p>
+                    <div id='elct-cw-bars-vis'></div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div class='row justify-content-md-center'>
+
+              <div class="col-md-6">
+                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+                  <div class="col p-4 d-flex flex-column position-static">
+                    <h4>Possible seats won outcomes</h4>
+                    <p class="card-text mb-4 data-panel-card-border">The number of seats won in each of the {{elct_n_ensemble}} simulations of the ensemble forecast are shown here, with circles sized by the likelihood of the outcome. Vertical bars show the average number of seats won across all simulations. The range of possible seat totals for each party is large, which reflects the uncertainty in predictions of each party's predicted vote share in each constituency, its division among multiple candidates, and the transfer process, given historical precedents.</p>
+                    <div id='elct-cw-seats-vis'></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+
+                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+                  <div class="col p-4 d-flex flex-column position-static">
+                    <h4>Largest party outcomes</h4>
+                    <p class="card-text mb-2 data-panel-card-border">This shows which party, if any, wins the most seats in each instance of the ensemble forecast.</p>
+                    <div id='elct-cw-most-seats-vis'></div>
+                  </div>
+                </div>
+
+                <aside class="blog-sidebar">
+                  <div class="p-4 mb-3 bg-light rounded" id='election-technical-stuff'>
+                    <h4 class="font-italic">Technical Stuff</h4>
+                    <p class="small">The forecast system uses a linear regression model to predict party first preference percentages by constituency based on movement in the polls and a few other factors; another model and some logic assigns this vote to the parties' candidates, considering incumbency and 2017 vote shares; and these candidate first preference votes are fed into a simulation of the Single Transferable Vote count process, using a modified version of the <b>R</b> package <a class='use-underline' href='https://github.com/viva-ronaldo/avr'>avr</a>. Models were trained on the 2016 and 2017 Assembly elections. A small number of candidates (3) have a manual adjustment added to their predicted votes, to try to account for unusual individual circumstances that the models are unable to handle; these adjustments are stated on the relevant constituency pages.</p>
+                    <p class="small">This process is repeated {{elct_n_ensemble}} times with slightly different parameter values each time, to account for uncertainties in each of these steps, and the results of the ensemble are converted into probabilities of parties and candidates winning each of the 90 seats in the Assembly.</p>
+                    <p class="small">The steps are explained in more detail in <a href="{{url_for('blog_item', post_name='election-pred-2')}}">a blog post</a>.</p>
+                  </div>
+                </aside>
+              </div>
+            </div>
+
+            <div class='row justify-content-md-center'>
+
+              <div class="col-md-10">
+                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative" id='election-changes-map'>
+                  <div class="col py-3 px-2 d-flex flex-column position-static">
+                    <h4 class='px-2'>Predicted seat changes</h4>
+                    <p class="card-text px-2 mb-2 data-panel-card-border">These are the predicted most likely seat changes in 2022 compared to the 2017 election. Shown are any seat gains or losses with at least a 10% probability; upward- (downward-) pointing triangles show possible seat gains (losses), and triangles are sized by probability of a seat changing hands. A change of two or more seats for a party is not currently predicted anywhere.</p>
+                    <div id='elct-cw-map-vis'></div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div class='row justify-content-md-center'>
+
+              <div class="col-md-9">
+                <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative" id='election-candidate-list'>
+                  <div class="col p-4 d-flex flex-column position-static">
+                    <h4>Elected probabilities <span class='help-tooltip' title='simply, the fraction of the {{elct_n_ensemble}} simulations in which the candidate wins a seat' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> for all candidates</h4>
+                    <p class="card-text pb-4 data-panel-card-border"></p>
+                    <table id="all_cand_list" class="table table-bordered table-striped" style="width:100%">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Constituency</th>
+                          <th>Party</th>
+                          <th>Prob. elected</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            
+
           </div>
+
         </div>
 
     </div>
@@ -73,43 +195,100 @@
 
 {% block other_js %}
 
-    <script src="https://cdn.datatables.net/1.10.21/js/dataTables.bootstrap4.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.2.5/js/dataTables.responsive.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.2.5/js/responsive.bootstrap.min.js"></script>
-
     <script type="text/javascript">
 
-        if (screen.width >= 500) {
-            parse('/data/polls_plot_web', 'poll-tracker-vis');
-        } else {
-            parse('/data/polls_plot_mobile', 'poll-tracker-vis');
-        }
-
         var dataSet = {{poll_results_list | tojson }};
+        var cand_list_data = {{elct_all_cand_list | tojson }};
 
         $(document).ready(function() {
-            $('#poll_results').DataTable( {
-                pagingType: "simple",
+          let selectedTab = window.location.hash;
+          $('.nav-link[href="' + selectedTab + '"]' ).trigger('click');
+        });
+        
+        let initialisedDTs_1 = false;
+        let initialisedDTs_2 = false;
+
+        $('a[href="#tracker"]').on('click', function() {
+          setTimeout(function() {
+
+            if (!initialisedDTs_1) {
+
+              $('#poll_results').DataTable( {
+                  pagingType: "simple",
+                  responsive: true,
+                  data: dataSet,
+                  columns: [
+                      { title: "Date", responsivePriority: 3,
+                        render: function(data, type, row) {
+                          if (data.split('|')[1]=='nan') {
+                            return data.split('|')[0]
+                          } else {
+                            return '<a href="' + data.split('|')[1] + '" target="_blank">' + data.split('|')[0] + '</a>';
+                          }
+                        } 
+                      },
+                      { title: "Organisation" },
+                      { title: "Sample" },
+                      { title: "Party", responsivePriority: 1},
+                      { title: "Vote share", responsivePriority: 2,
+                        render: $.fn.dataTable.render.number( ',', '.', 1, '', '%' ) }
+                  ],
+                  order: [[0, 'desc'], [4, 'desc']]
+              } );
+
+              initialisedDTs_1 = true;
+            };
+
+            if (screen.width >= 500) {
+                parse('/data/polls_plot_web', 'poll-tracker-vis');
+            } else {
+                parse('/data/polls_plot_mobile', 'poll-tracker-vis');
+            }
+
+          }, 200);
+        } );
+
+        $('a[href="#election"]').on('click', function() {
+          setTimeout(function() {
+
+            if (!initialisedDTs_2) {
+
+              $('#all_cand_list').DataTable( {
+                pagingType: 'simple',
                 responsive: true,
-                data: dataSet,
+                data: cand_list_data,
                 columns: [
-                    { title: "Date", responsivePriority: 3,
-                      render: function(data, type, row) {
-                        if (data.split('|')[1]=='nan') {
-                          return data.split('|')[0]
-                        } else {
-                          return '<a href="' + data.split('|')[1] + '" target="_blank">' + data.split('|')[0] + '</a>';
-                        }
-                      } 
-                    },
-                    { title: "Organisation" },
-                    { title: "Sample" },
-                    { title: "Party", responsivePriority: 1},
-                    { title: "Vote share", responsivePriority: 2,
-                      render: $.fn.dataTable.render.number( ',', '.', 1, '', '%' ) }
+                  { title: 'Name', responsivePriority: 1 },
+                  { title: 'Prob. elected' , responsivePriority: 2,
+                    render: $.fn.dataTable.render.number( ',', '.', 2 ) },
+                  { title: 'Constituency', responsivePriority: 3, 
+                    render: function(data, type, row) {
+                      return '<a href="' + data.split('|')[1] + '">' + data.split('|')[0] + '</a>';
+                    }
+                  },
+                  { title: 'Party', responsivePriority: 4 }
                 ],
-                order: [[0, 'desc'], [4, 'desc']]
-            } );
+                order: [1, 'desc']
+              }) ;
+
+            }
+
+            if (screen.width >= 500) {
+              parse('/data/elct_cw_seats_range_plot_web', 'elct-cw-seats-vis');
+              parse('/data/elct_cw_delta_seats_map_plot_web', 'elct-cw-map-vis')
+              parse('/data/elct_cw_most_seats_plot_web', 'elct-cw-most-seats-vis')
+            } else {
+              parse('/data/elct_cw_seats_range_plot_mobile', 'elct-cw-seats-vis');
+              parse('/data/elct_cw_delta_seats_map_plot_mobile', 'elct-cw-map-vis')
+              parse('/data/elct_cw_most_seats_plot_mobile', 'elct-cw-most-seats-vis')
+            }
+            if (screen.width >= 650) {
+              parse('/data/elct_cw_bars_plot_web', 'elct-cw-bars-vis');
+            } else {
+              parse('/data/elct_cw_bars_plot_mobile', 'elct-cw-bars-vis');
+            }
+          }, 200);
+
         } );
 
     </script>

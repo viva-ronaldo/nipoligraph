@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'nav.html' %}
+
+<article>
+    <div class='container-xl' style='min-height: 800px'>
+        
+        <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+                <div class="post-heading">
+                    <h1>Assembly election forecast</h1>
+                    <h2 class="subheading">3. The predictions for 2022</h2>
+                </div>
+            </div>
+        </div>
+                    
+        <div class='row mb-4'>
+            <div class="col-lg-8 col-md-10 mx-auto">
+                            
+                <p>The forecast results are currently live on the <a href="{{url_for('polls')}}#election">election page</a>. At just under three months before the election date of 5 May 2022, the headline results may seem surprising: <b>DUP are favoured to remain the largest party, in terms of seats</b>, although Sinn Féin are expected to be comfortably ahead in first preference vote share. There are a few important points to understand about the forecast system and about Single Transferable Vote (STV) in general, that help explain why the forecast has produced this result, and how reliable it is likely to be.</p>
+                
+                <h3>The forecast is conservative and doesn't fully trust vote shifts suggested by the polls.</h3>
+                
+                <p>This is a result of historical unreliability of those poll shifts, as shown in <a href="{{url_for('blog_item', post_name='election-pred-1')}}">a previous article</a>. The model that predicts changes party votes in each constituency uses the party's change in support since 2017 in the NIPG poll tracker, weighted by a factor of about a half: so the roughly 10-point drop for DUP currently shown by the tracker translates to <b>only about a 5-point drop</b> in predicted support in each constituency. The true drop <i>could</i> turn out to be as large as 10%, but previous results suggest it could alternatively be much less than this, so the factor of a half represents what the model finds to be the optimal compromise. For the same reason, the big rise in TUV vote share seen in the tracker (about 8% since the 2017 election) is predicted to translate to an increase of 'only' 5 points in practice. It should be noted though that changes of this magnitude for a party between successive NI elections has not been seen in recent history, so the model is somewhat 'out of its comfort zone', which potentially makes it less reliable than existing data suggest it is.</p>                 
+                
+                <p>The model does have a time component, and it will trust the polls a little more as we get closer to the election. If the DUP's position in the polls remains unchanged until May, we will see the NIPG forecast slightly decrease their expected first preference vote, but only by about 1% compared to now, which would cost them about 1 seat in the average prediction, but leave them still with a better-than-even chance of being the largest party. Even just before the election, the model does not fully 'believe' any shifts in support that the polls show. Therefore, where the forecast does make errors, it is likely to do so in the direction of 'no change', which in this case means it is more likely to overestimate than underestimate the number of DUP seats won.</p>
+                
+                <h3>Losing first preference votes to TUV isn't too bad as long as DUP remain the larger of the two parties.</h3>
+
+                <p>This is generally true under STV: if a party lose first preference support to a smaller party, but remain the second choice for most of the defecting voters, the impact is heavily mitigated, because the smaller party's candidates are still likely to be eliminated in most constituencies, and transfer many of their votes back to the larger party. It only becomes a serious problem for the larger party when they lose so much to the smaller party that the smaller party's candidates have a chance of overtaking them in some of the counts.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/election-pred-3_plot1.png')}}"/>
+                
+                <p>In the case of DUP losing first preference votes to TUV, this would begin to happen if the DUP's vote falls below about 20%, which would mean an ~8% swing to TUV since 2017. The NIPG forecast currently predicts the DUP vote to be above 22%, which means that in most constituencies, and most simulations in the ensemble, TUV candidates don't have enough first preference votes to challenge for a seat. My assumption of fairly strong transfers from TUV to DUP then keep the DUP candidates in strong positions in those constituencies.</p>
+
+                <p>This explains how one party could be significantly behind another in terms of nationwide first preference vote share, yet win as many or more seats. In STV elections, first preference vote is only part of the story, and it is also important, in closely contested seats, to gather transferred votes during the rounds of the count. DUP effectively have, in many constituencies, a bank of votes that have been 'leant' to TUV (and maybe some to UUP), but that will be partially 'returned' to DUP when those candidates are eliminated and their votes are transferred. Sinn Féin, on the other hand, <a href="{{url_for('blog_item', post_name='stv-transfers-3')}}">have low transfer friendliness</a> and rely on big first preference votes to get them over the line in most cases.</p>
+
+                <p>Although there has evidently been some movement of voters from DUP to TUV, the predicted unionist bloc vote remains larger than the nationalist bloc, so if DUP can remain the largest unionist party in most constituencies, they can expect to gain back many of their lost first preference votes through transfers from the other unionist parties. Although...</p>
+                
+                <h3>Vote transfers from TUV to DUP could be hard to predict in 2022.</h3>
+
+                <p>Will this transfer relationship remain as strong in 2022 as it was in 2016 and 2017? Perhaps not, although DUP still seem like the natural second-best fit for the TUV voter. We can test the sensitivity of the overall results by altering the transfer matrix to shift some of the TUV transferred votes from DUP to 'dropped'; this shows:
+                    <ul>
+                        <li>Reducing the TUV to DUP transfer fraction by 20% reduces the average predicted DUP seats by about half a seat, and they are still favoured to be the largest party</li>
+                        <li>Reducing the term by 50% leaves DUP and Sinn Féin about equally likely to be the largest party</li>
+                        <li>Removing all TUV to DUP transfers reduces the average predicted DUP seats by 3.5 and gives them only a 20% chance of being the largest party</li>
+                    </ul>
+                Transfers from TUV to DUP are therefore important, but our estimate of the transfer fraction would need to be quite far off for DUP not to be favoured to gain the most seats.</p>
+                
+                <h3>A small improvement in the Sinn Féin vote over the average prediction could be crucial.</h3>
+
+                <p>The Sinn Féin vote is another important factor, however. Although the polls suggest a slight decrease since 2017, we have seen that these predicted moves are not very reliable, so the forecast ensemble allows for a range of possible values. The precise value is important, because Sinn Féin are defending a number of seats with very small margins, particularly in <a href="{{url_for('postcode', postcode_choice='FERMANAGH AND SOUTH TYRONE')}}#election">Fermanagh and South Tyrone</a>, <a href="{{url_for('postcode', postcode_choice='WEST BELFAST')}}#election">Belfast West</a>, and <a href="{{url_for('postcode', postcode_choice='NEWRY AND ARMAGH')}}#election">Newry and Armagh</a>, and to a lesser extent in <a href="{{url_for('postcode', postcode_choice='NORTH BELFAST')}}#election">Belfast North</a> and <a href="{{url_for('postcode', postcode_choice='WEST TYRONE')}}#election">West Tyrone</a>. The <i>average</i> NIPG forecast predicts their overall first preference vote to fall slightly, which makes it nearly impossible for them to retain some of these seats. By contrast, DUP are in immediate danger of losing seats only in <a href="{{url_for('postcode', postcode_choice='STRANGFORD')}}#election">Strangford</a> and <a href="{{url_for('postcode', postcode_choice='SOUTH DOWN')}}#election">South Down</a>, and can afford to suffer a larger drop in first preference votes while still having a chance of retaining all of their other seats.</p>
+
+                <p>It could therefore be said that Sinn Féin overperformed slightly in 2017 by number of seats, even though their first preference vote to seat count ratio was similar to that of DUP: they won four out of five seats in Belfast West with only 62% of the first preference vote, and three out of five in Fermanagh and South Tyrone with only 42% of the first preference vote. These results are unlikely to be repeated if their vote falls even a little, which is why the forecasted most likely outcome is for Sinn Féin to lose around 3 seats.</p>
+
+                <!--<h3>The forecast knows almost nothing about the people running.</h3>-->
+                
+                <h2 class='section-heading'>Final thoughts</h2>
+
+                <p>The strong DUP performance in terms of seats won may seem counter-intuitive, but I have outlined the reasons why the forecast output looks this way, and shown that it is important to consider the likely first preference vote shares for all parties when evaluating how many seats any one party may win. I am fairly confident that any predictions of a 'DUP collapse', and of many seats changing hands in 2022, will turn out to be over-confident with regard to changes from the status quo. I would stress again that the uncertainties in this (and any) Assembly forecast are large, and it is advised to avoid focusing solely on the average predictions of seats won, and instead keep in mind the range of outcomes that the models find to be statistically plausible. This will remain the case right up to election day, unless there are substantial changes in the polling before then.</p>
+
+            </div>
+        </div>
+        
+        <div class='row justify-content-between mb-4'>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[0] is not none %}
+                    <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+                {% endif %}
+            </div>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[1] is not none %}
+                    <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+                {% endif %}
+            </div>
+        </div>
+                    
+    </div>
+</article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}

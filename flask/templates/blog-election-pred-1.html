@@ -10,8 +10,8 @@
         <div class="row">
             <div class="col-lg-8 col-md-10 mx-auto">
                 <div class="post-heading">
-                    <h1>TODO</h1>
-                    <h2 class="subheading">TODO</h2>
+                    <h1>Assembly election forecast</h1>
+                    <h2 class="subheading">1. How predictable is it?</h2>
                 </div>
             </div>
         </div>
@@ -19,58 +19,52 @@
         <div class='row mb-4'>
           <div class="col-lg-8 col-md-10 mx-auto">
             
-            <p>??</p>
-                                    
+            <p>Since NI PoliGraph began, my main interest has been in electoral predictions. With the 2022 Assembly election approaching in short order, I will very soon be adding a <b>live electoral forecast page</b>, to show NIPG's best estimate - in probabilistic form, with appropriate range of uncertainty - of what could happen when we vote later this year.</p>
+            
+            <p>The Assembly election process is particularly interesting, compared to First Past the Post (FPTP) systems such as the UK General Election, because of its use of multi-seat constituencies and the Single Transferable Vote (STV) system. This makes predicting the outcome of a constituency, just by observing the nationwide polling trends, difficult; indeed, much of the punditry tends to break down at this point, and conclude that the results 'will come down to the transfers'. This is undoubtedly true, and the NIPG forecast cannot perfectly anticipate how the transfer process will play out either, but there <i>is</i> some quantitative analysis that can be applied to this problem, to understand which constituency outcomes are really plausible and which are not.</p>
+            
+            <p>STV differs from FPTP in several ways, one of which is that there is much less 'cost' to the voter of casting a vote for a smaller party (one whose candidate has no realistic chance of being elected in that constituency). In FPTP, such a vote will be completely lost, but in STV, the vote will appear in the first preference percentage numbers, and then be transferred to one or more of the voter's subsequent candidate preferences. There is therefore also much less cost to a larger party that missed out on that first preference vote, because they have the opportunity to get the vote in later rounds of the count. In the context of the 2022 Assembly election, this creates an important dynamic in which, if one of the larger parties loses (or appears to have lost) support, it matters crucially <i>to where</i> that support has gone. This can be simply stated as: <b>if a large party loses first preference support to a smaller party, they can expect to get some of it back again in transferred votes, thus limiting the damage done</b>. This will be shown more clearly in a later post and in the forecast results.</p>
+            
+            <p>In this first post, I highlight some observations that I made on previous elections and on the prospect of predicting electoral results, while working on the problem for 2022.</p>
 
             <h2 class='section-heading'>Observations on nationwide prediction</h2>
             
-            <p>It is very easy to predict the parties' nationwide vote shares to an accuracy of around 2%: by using their values from the previous election. Changes of more than a few percent are rare, so this method in 2016-2019 achieves a root-mean-square error (RMSE) for the main parties of <b>1.8%</b>. These predictions look like the following; here, a perfect prediction has all points lying on the diagonal line:</p>
+            <p>It is very easy to predict the parties' <i>nationwide</i> vote shares to an accuracy of around 2%: by using their values from the previous election. Changes of more than a few percent are rare, so this method in 2016-2019 achieves a root-mean-square error (RMSE) for the main parties of <b>1.7%</b>. These predictions look like the following; here, a perfect prediction would have all points lying on the diagonal line:</p>
             
             <img class='blog-plot' src="{{url_for('static', filename='blog_plots/election-pred-1_plot1.png')}}"/>
             
-            <p>The previous vote method cannot, of course, capture increases or decreases in party support that have occurred since the previous election, such as for Alliance in the 2019 local election (for which I use here the 2014 local election as the prediction, although the 2016 or 2017 Assembly values could arguably be used instead, which would increase the accuracy). This is where we would like the vote share tracker, which brings in polling information in the intervening years, to help our prediction by telling us when these shifts in party support have occurred.</p>
+            <p>The previous vote method cannot, of course, capture increases or decreases in party support that have occurred since the previous election, such as for Alliance in the 2019 local election (for which I use here the 2014 local election percentage as the predicted value, although the 2016 or 2017 Assembly values could arguably be used instead, which would increase the accuracy). This is where we would like the vote share tracker, which brings in polling information in the intervening years, to help our prediction by telling us when these shifts in party support have occurred.</p>
             
             <p>The plot below shows predictions using the parties' tracker values just before the election. Remember that the tracker is essentially the previous election result, plus weighted information from polls since then, so it <i>should</i> be more accurate than using the unchanged value from the previous election.</p>
             
             <img class='blog-plot' src="{{url_for('static', filename='blog_plots/election-pred-1_plot2.png')}}"/>
             
-            <p>The tracker <i>does</i> pick up on the largest shifts in vote share (note the better prediction for Alliance in 2019), but overall it gets as many changes wrong as it gets right. The RMSE for this method is higher (worse) than the previous method, at 2.3%, although this is largely due to the two big mis-fires in 2019, when Sinn Fein and DUP shares were overestimated by 6% and 8%, respectively. It would be nice if we could exclude these two cases, but we would have had no reason to doubt them at the time of the 2019 election.</p>
+            <p>The tracker <i>does</i> pick up on the largest shifts in vote share (note the better prediction for Alliance in 2019), it also moves a lot of cases in the wrong direction. The RMSE for this method is higher (worse) than the previous method, at 2.3%, although this is largely due to the two big misfires in the 2019 local elections, when Sinn Fein and DUP shares were overestimated by 6% and 8%, respectively. It would be nice if we could exclude these two cases, but we would have had no reason to doubt them at the time of the 2019 election (although, technically, the NIPG tracker is only intended to be predictive of <i>Assembly</i> election vote shares).</p>
             
             <img class='blog-plot' src="{{url_for('static', filename='blog_plots/election-pred-1_plot3.png')}}"/>
             
-            <p>Things are slightly better if we consider <i>changes</i> in tracker values from the previous election, rather than their absolute value at the time of the current election. Still, the plot above shows the poor record of the tracker in predicting the direction of changes in party vote share. Overall, only 14 of the 26 predicted changes turned out to be in the right direction: no better than random guesses. Predictions in 2017 were particularly bad, as all but one of the predicted changes in fact went in the other direction. This was a harder scenario for the tracker, however, because only one year had elapsed since the previous election, so predicted changes in support were small (+/- 1-2%). The plot does show that the larger predicted vote changes (anything larger than about +/- 4%) tend at least to be in the correct direction (e.g., the predicted 4% drop for SDLP in 2016 led to an actual 2% drop).</p>
+            <p>Things are slightly better if we consider <i>changes</i> in tracker values from the previous election, rather than their absolute value at the time of the current election. Still, the plot above shows the limited success of the tracker in predicting changes in party vote share. Overall, 20 of the 27 predicted changes turned out to at least be in the right direction, but many were way off in magnitude. These predictions appear to be little better than guessing, but the plot does at least show that the larger predicted vote changes (anything larger than about +/- 2%) do tend a bit more often to be in the right direction.</p>
             
-            <p>Unfortunately then, the extra polling information that is carried by the tracker will be of only small value to a prediction of nationwide vote shares, above simply replicating the previous election values.</p>
+            <p>Unfortunately then, the extra polling information that is carried by the tracker will be of only small value to a prediction of nationwide vote shares, as an attempt to improve simply replicating the previous election values. However, where big shifts have occurred in the polling, we can attach some confidence to these changes. In 2022, this has occurred in the cases of DUP (decreased by 10.5% from their 2017 election result, at time of writing), TUV (increased by 8%), and Alliance (increased by 6%). These three changes are much bigger than anything that was seen ahead of the 2016 or 2017 Assembly elections, which means i) we're somewhat in uncharted territory in terms of predicting the election result, and ii) we should be a little skeptical that these large moves will actually occur in the election.</p>
 
-            <h2 class='section-heading'>Constituency prediction method 1: historical data</h2>
+            <h2 class='section-heading'>Predicting at constituency level</h2>
             
-            <p>TODO intro</p>
+            <p>The next figure plots each party's changes in first preference vote share by constituency against their nationwide change in poll tracker value, and shows that predicting constituency-level changes will be even harder. As in the previous plot, we want to see points in the upper-right or lower-left quadrants here, but in most cases, the constituency values for a party are spread across the x-axis, meaning that their vote share went up in some constituencies and down in others, and only to a small extent followed the change expected from the tracker change. What use was it, for example, to have (from the tracker) an expected national change of -5% for DUP in 2016, when their constituency results covered a range of -10% to +8%?</p>
             
             <img class='blog-plot' src="{{url_for('static', filename='blog_plots/election-pred-1_plot4.png')}}"/>
             
-            <p>We have already seen that changes in vote share measured from the tracker are not very reliable at predicting the <i>nationwide</i> vote share changes, and this plot shows that predicting constituency-level changes may be even harder. As in the previous plot, we want to see points in the upper-right or lower-left quadrants here, but in most cases, the constituency values for a party are spread across the x-axis, meaning that their vote share goes up in some constituencies and down in others. What use was it, for example, to have a predicted nationwide change of -2.7% for DUP in 2016, when their constituency results covered a range of -10% to +8% (the mean change of -1.3% was, at least, somewhat well predicted)?</p>
+            <p>The magnitude of regional variations in election-to-election changes in first preference results is clearly seen. To have any hope of modelling this, we will need to find predictors that vary by candidate rather than by party. As I will show in the next post, the availability of such features is, at the moment, very limited, but there is a little that we can do.</p>
             
-            <p>With this limitation in mind, I fitted a fairly simple, generalised linear regression model to predict change in party vote share by constituency, training on 2016, 2017, and 2019 elections, with change in tracker percent as the most important predictor, but with a few other terms added, to try and give the model some ability to correctly predict variations at the constituency level. These other terms are:</p>
+            <h2 class='section-heading'>Aims of the election forecast</h2>
+            
+            <p>It should be clear from above that a highly accurate forecast of the Assembly election at the constituency level is not going to be possible - polling data doesn't go back very far, we have little other useful data to predict with, and changes from one election to the next are small and can be strongly affected by local peculiarities in a constituency. However, a probabilistic forecast can be useful even with a low level of predictive skill, provided it is properly calibrated so as to convey its uncertainty. Also, a forecast can handle the step from first preference votes to seat outcomes via transfer modelling, and thus provide value over simply reading the national polling figures. My aims here are, therefore:</p>
             <ul>
-                <li>TODO</li>
-                <li>Constituency percent relative to countrywide percent at the last election: TODO</li>
-                <li>Constituency percent relative to the tracker value at the time of the last election: TODO</li>
-                <li>Did the candidate(s) run in the last election? TODO</li>
+              <li>Create an automated forecast system to convert polling percentanges into possible Assembly seat outcomes, that can run in the 1-2 years prior to elections</li>
+              <li>Accurately represent and communicate the uncertainties, arising from multiple sources, that are inherent in such a prediction</li>
+              <li>Learn from the 2022 election results and look to refine the system in future</li>
             </ul>
             
-            <p>The model decides, by looking at historical prediction errors, how much weight to put on the change in tracker percent since the last election (and on each of the other terms). Quantitatively, the model opts to alter the prediction from the previous election value by about 30% of the change in tracker value; that is, if a party scored 20% in a constituency in 2017 but has been polling 5% higher in 2022, this component of the model will move the prediction up 1.5% (5*0.3), to 21.5%. If the poll numbers were perfectly reliable, the model predictions would follow them exactly, and if they carried no reliable information at all, the model would ignore them: the 30% weight thus reflects the model's moderate confidence in changes in party support that are reported by the poll tracker.</p>
-            
-            <p>In practice, in 2022, this means that the large increase in support for TUV in the tracker will be heavily downweighted in the model. Frankly, there is no precedent in the tracker (since 2014) for a swing as large as this, so some caution seems sensible, but I do feel that large poll moves such as this can largely be trusted, and the model's caution is moreso a result of errors in the past with small changes of 1-2% in the tracker, which, we saw above, are essentially noise and should be ignored.</p>
-            
-            <p>TODO tracker fudging</p>
-            
-            <p>TODO model RMSE. At the constituency level, the RMSE for using the previous election's value is 3.2%, so this model does significantly better than that simple approach. TODO WHY?</p>
-            
-            <h2 class='section-heading'>Constituency prediction method 2: direct from polling</h2>
-            
-            <p>TODO would like to do MRP but don't have enough breakdowns and large enough counts</p>
-            
-            <p>TODO we can use voted for last time although will be noisy</p>
+            <p>In the next article I will describe the mechanics of the forecast system.</p>
 
           </div>
         </div>

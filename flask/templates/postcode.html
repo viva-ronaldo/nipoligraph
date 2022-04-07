@@ -13,7 +13,10 @@
             <a class="nav-link active" id="people-tab" data-toggle="pill" href="#people" type="button" role="tab" aria-controls="people" aria-selected="true">Representatives</a>
           </li>
           <li class="nav-item" role="presentation">
-            <a class="nav-link" id="demog-tab" data-toggle="pill" href="#demog" href='#demog' type="button" role="tab" aria-controls="demog" aria-selected="false">Demographics</a>
+            <a class="nav-link" id="demog-tab" data-toggle="pill" href="#demog" type="button" role="tab" aria-controls="demog" aria-selected="false">Demographics</a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" id="election-tab" data-toggle="pill" href="#election" type="button" role="tab" aria-controls="election" aria-selected="false">Elections</a>
           </li>
         </ul>
       </div>
@@ -27,7 +30,18 @@
           </div>
 
           <div class="row mb-2 mx-2 justify-content-center">
-            <p><small>Click individual MLA/MP names to view full profiles.</small></p>
+            
+            <div class='col-4'>
+              <p><small>Click the links on the cards to view full politician profiles, Twitter accounts, or AIMS profiles.</small></p>
+            </div>
+
+            <div class='col-2'>
+              <a href='https://www.writetothem.com/?pc={{postcode_choice}}&a=NIE,WMC'>
+                <img src='https://www.writetothem.com/envelope_bg.gif' style="width:167px;height:120px;">
+              </a>
+              <a href="https://www.writetothem.com/" title="Visit writetothem.com" style="display:block;position:absolute;bottom:0;width:100%;overflow:hidden; text-indent:-1234em;height:30px;bottom:0;">writetothem.com</a>
+            </div>
+
           </div>
           
           <div class='row mb-2 justify-content-center'>
@@ -164,7 +178,71 @@
             </aside>
           </div>
 
+        </div>
 
+        <div class="tab-pane fade" id="election" role="tabpanel" aria-labelledby="election-tab">
+
+          <div class='row mb-0 mx-2 justify-content-center pt-4'>
+            <div class='col-lg-8 col-md-10' id='postcode-elct-cands-table'>
+              {{cands_table_code | safe}}
+            </div>
+          </div>
+
+          <div class='row my-4 mx-2 justify-content-center pt-4'>
+            <div class='col-md-10'>
+              <table style='width: 100%;' id='postcode-elct-party-summary-table'>
+                <thead>
+                  <tr style='border-bottom: 2px solid #ddd; '>
+                    <th style='width: 12%;'>Party...</th>
+                    <th style='width: 20%; text-align: center;'>...are predicted, on average, to receive...</th>
+                    <th style='width: 20%; text-align: center;'>...first preference votes, which is...</th>
+                    <th style='width: 8%;'></th>
+                    <th style='width: 40%;'>...giving them...</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for i in range(elct_fcst_constit_party_stuff[0]|length) %}
+                    <tr style='border-bottom: 1px solid #ddd;'>
+                      <td style='padding-left: 5px'>{{elct_fcst_constit_party_stuff[0][i]}}</td>
+                      <td style='text-align: center;'><span style='font-size: {{elct_fcst_constit_party_stuff[7][i]}}em;'>{{'%.1f' % elct_fcst_constit_party_stuff[4][i]}}%</span></td>
+                      <td style='text-align: center;'>{% if elct_fcst_constit_party_stuff[5][i] != 'n/a' %} <span style='font-size: 1.1em; color: {{elct_fcst_constit_party_stuff[6][i]}};'>{{elct_fcst_constit_party_stuff[5][i]}}</span> on 2017 {% else %} n/a 2017 {% endif %}</td>
+                      {% if elct_fcst_constit_party_stuff[2][i]|sum == 0 %}
+                        <td style='text-align: right'></td>
+                      {% else %}
+                        <td style='text-align: right'><span class="seats_sparkline" values="{{elct_fcst_constit_party_stuff[2][i]|join(',')}}" sparkType="bar" sparkBarColor="{{elct_fcst_constit_party_stuff[3][i]}}"></span></td>
+                      {% endif %}
+                      <td><ul style='font-size: 0.9em; margin-top: 0.5rem; margin-bottom: 0.5rem; list-style-type: none; padding-left: 20px'> {{elct_fcst_constit_party_stuff[1][i] | safe}} </ul></td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
+          <div class='row mx-2 justify-content-center pt-4'>
+            <aside class="col-lg-7 col-md-9 col-sm-10 blog-sidebar" id='Technical-stuff'>
+              <div class="p-4 mb-3 bg-light rounded">
+                <h4 class="font-italic">Technical Stuff</h4>
+                <div class='small'>
+                  <p>The method to predict <i>party</i> first preference percentages by constituency is explained on <a href="{{url_for('polls')}}#election">the main elections page</a>. From those numbers, votes are distributed among multiple candidates from a party using another model that considers whether each candidate ran in 2017, was co-opted to a seat in the previous session, or is running for the first time, and how the the candidates' shared the party vote in 2017, if applicable. With these candidate first preference percentages (which are slightly different in each of the {{elct_n_ensemble}} iterations), the Single Transferable Vote (STV) process is simulated, by using the transfer matrix described <a href="{{url_for('blog_item', post_name='stv-transfers-1')}}">here</a> to handle votes transferred from elected and eliminated candidates. The overall method is described in more detail in <a href="{{url_for('blog_item', post_name='election-pred-2')}}">a blog post</a>.</p>
+                  <p>Both of these steps add uncertainty to the forecast (because neither can be predicted with perfect accuracy), which increases the range of possible outcomes. The most important final output from the forecast is the fraction of simulations in which each candidate is elected in the STV process, which can be interpreted as their probability of election.</p>
+                  {% if constit_choice in ['FOYLE','LAGAN VALLEY','FERMANAGH AND SOUTH TYRONE'] %}
+                    <p>This forecast otherwise knows nothing about the specific candidates (age, gender, etc. are not modelled). To prevent obvious 'errors', a small number of manual adjustments are made to candidates in unusual situations, including one in this constituency: 
+                    {% if constit_choice == 'FOYLE' %}
+                      the first preference vote for Shaun Harkin is decreased by 5%. The model mostly goes by parties, rather than candidates, so would otherwise predict PBP to roughly replicate their vote of 10% from 2017. However, much of this can be considered to have been a personal vote for Eamon McCann, and Harkin is unlikely to replicate the magnitude of this vote in 2022.
+                    {% elif constit_choice == 'LAGAN VALLEY' %}
+                      the first preference vote for Jeffrey Donaldson is increased by 3%, because the model would otherwise regard him as a 'new candidate', and rate his chances lower than an average DUP candidate. In fact it seems likely that, as the party leader and MP for this constituency, he will bring some personal vote with him and increase the DUP's combined vote over what it otherwise would have been. 
+                    {% elif constit_choice == 'FERMANAGH AND SOUTH TYRONE' %}
+                      the first preference vote for Tom Elliott is increased by 2%, because the model would otherwise regard him as a 'new candidate', and rate his chances lower than an average UUP candidate. In fact it seems likely that, as a former MP for this constituency and party leader, he will bring some personal vote with him and increase the UUP's combined vote over what it otherwise would have been. 
+                    {% endif %}
+                    </p>
+                  {% endif %}
+                  
+                </div>
+              </div>
+            </aside>
+          </div>
 
         </div>
 
@@ -184,7 +262,6 @@
 
     <script type="text/javascript" src="{{ url_for('static', filename='jquery.sparkline.2.1.2.js') }}"></script>
 
-    <script src="https://cdn.datatables.net/1.10.21/js/dataTables.bootstrap4.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.2.5/js/dataTables.responsive.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.2.5/js/responsive.bootstrap.min.js"></script>
   
@@ -201,12 +278,17 @@
       var constitChoice = {{constit_choice | tojson }};
       var constitStartingRank = {{constit_alphabetical_rank_order}};
 
-      let initialisedDT = false;
+      $(document).ready(function() {
+        let selectedTab = window.location.hash;
+        $('.nav-link[href="' + selectedTab + '"]' ).trigger('click');
+      });
+
+      let initialisedDTs_1 = false;
 
       $('a[href="#demog"]').on('click', function() {
         setTimeout(function(){
 
-          if (!initialisedDT) {
+          if (!initialisedDTs_1) {
             $('#demog_table_1').DataTable( {
                 paging: false,
                 info: false,
@@ -263,7 +345,7 @@
                 }
             } );
 
-            initialisedDT = true;
+            initialisedDTs_1 = true;
           };
 
           if (screen.width >= 500) {
@@ -276,7 +358,22 @@
         }, 200);
       } );
         
-      
+      $(function() {
+        $('.seats_sparkline').sparkline('html', {
+              type: 'bar', height: '30px', width: '80px',
+              enableTagOptions: true,
+              barWidth: 12,
+              chartRangeMin: 0, chartRangeMax: 1,
+              disableTooltips: false}); 
+      });
+
+      function clearDefault(el) {
+        if (el.defaultValue==el.value) el.value = "";
+      };
+      function fillDefault(el) {
+        if (el.value=="") el.value = "Your Postcode";
+      };
+
     </script>
 
 {% endblock %}

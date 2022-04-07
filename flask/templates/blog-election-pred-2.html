@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'nav.html' %}
+
+<article>
+    <div class='container-xl' style='min-height: 800px'>
+        
+        <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+                <div class="post-heading">
+                    <h1>Assembly election forecast</h1>
+                    <h2 class="subheading">2. The three-step ensemble method</h2>
+                </div>
+            </div>
+        </div>
+                        
+        <div class='row mb-4'>
+            <div class="col-lg-8 col-md-10 mx-auto">
+                    
+                <p>The task of forecasting a Single Transferable Vote (STV) multi-seat-constituency election can be broken into three components:</p>
+                <ol>
+                    <li>Predict <b>party first preference percentages in each constituency</b>, using nationwide polling information and anything else that is useful</li>
+                    <li>Where a party runs multiple candidates in a constituency, divide their first preference vote <b>among the party's candidates</b></li>
+                    <li>Use the candidate first preference percentages and <b>simulate the rounds of the STV count process</b> by predicting what fraction of votes to transfer between any two candidates</li>
+                </ol>
+                <p>Since each of these steps is subject to significant uncertainties, the whole process is run as an ensemble, in which some parameters are allowed to vary randomly in each instance, to produce a <i>probabilistic</i> forecast of seat wins as the final output. It is not possible to predict the winners of most of the seats with certainty, but we can derive some quantitative information on the likelihood of various results.</p>
+                
+                <p>I don't list every small detail of the forecast system below, but have not left out anything important.</p>
+                    
+                <h2 class='section-heading'>Party first preferences by constituency</h2>
+                
+                <p>The first step is modelled as a problem of predicting the <i>change</i> in each party's first preference vote since the previous (Assembly) election. This is because a prediction of zero change is a good starting point, as shown in <a href='{{prev_and_next_article_link[0]}}'>the previous post</a>, so it is sensible to 'centre' a model around this point, and try to predict deviations from the status quo. This is done with a linear regression model (GLM), the most important term in which is the <b>difference between a party's current polling percentage, as measured by the NIPG tracker, and their performance in the last election</b>. The more that a party's support appears to have risen nationwide, the larger their predicted increase in first preference vote in each constituency. An important detail to note here, though, is that the coefficient assigned by the model to this term is only about <b>0.6</b>, which means that any reported polling changes are only partially translated into predicted constituency-level changes. This reflects the limited reliability of such polling moves, as seen <a href='{{prev_and_next_article_link[0]}}'>previously</a>. The impact of this is examined further in the next post.</p>
+                
+                <p>The reliance on polling data unfortunately limits the historical data available to train this model to just the 2016 and 2017 Assembly elections. There is not enough (or perhaps any) polling data from 2011 with which to reconstruct what the NIPG tracker would have looked like just before the election. I considered using the 2019 local elections as additional training data, but decided against it as voting behaviours in local elections may not be quite the same as in Assembly elections. General and European elections are much too different to be useful.</p>
+                
+                <p>A large number of parties have appeared in some form in Assembly elections since 2016, as well as a large number of Independent candidates. Some of these parties are active for only one election; some run candidates in only a few constituencies; and some parties are barely distinguishable from Independent candidates. Since the forecast is based on <i>changes</i> from a previous election, and this becomes difficult when parties appear and disappear from one election to the next, I limited the model and its predictions to <b>only the major parties</b>: those that are covered by the NIPG tracker, which in 2016 and 2017 is the five biggest parties plus TUV, PBP, Green, and PUP; in 2022 the model is additionally used for Aontú. Candidates from other parties, and Independents, are simply set to receive the same first preference vote as they did in the last election, if they ran in the constituency; otherwise they receive a default prediction of 1.6% for Independents (the average vote they received in 2016-2017) or 0.5% for other small parties. These candidates don't have a big impact on the outcome of the seats, so predicting their first preference votes accurately is not crucial to the overall forecast.</p>
+
+                <p>The small amount of training data limits the accuracy of any model, and how complex a form it can realistically take. However, I was able to find a few more terms that marginally improve the predictive accuracy of the model. They are, in various combinations:</p>
+                
+                <ul>
+                    <li>Party first preference percentage in the constituency relative to their nationwide average the last election</li>
+                    <li>Were any of the party's candidates either elected in the constituency last time, or co-opted into the Assembly since then</li>
+                    <li>Did the party score at least 10% in the last election</li>
+                    <li>Did at least half of the party's candidates run in this constituency last time</li>
+                </ul>
+                
+                <h3>Accuracy</h3>
+
+                <p>For the major parties in 2016 and 2017, the root-mean-square error (RMSE) for a simple status quo forecast at party-constituency level (every candidate scores the same first preference percentage as last time) is about <b>3.2%</b>; using the poll tracker term lowers this to <b>3.0%</b>, and adding the other terms here brings it down a little further, to about <b>2.9%</b>. These improvements are small, and demonstrate how difficult it is to predict NI Assembly elections! The NIPG forecast has a large spread of possible outcomes because there is not (yet) enough data available with which to predict more precisely party first preference votes in a general way.</p>
+                
+                <h3>Edge case logic</h3>
+
+                <p>Where a party didn't stand in a constituency last time, a hypothetical previous election percentage must be added, to which the predicted change in percentage is added. In 2022, this occurs most notably for TUV in five constituencies; by considering their performance in other places in 2017, I used values of 2% for Belfast North, North Down, and Newry and Armagh, and 1% for Foyle and Belfast West. The party is starting from a base of nothing in these constituencies in 2022, so their performance is particularly hard to predict.</p>
+
+                <p>Aontú have joined the NIPG tracker since 2020, so they are (effectively) set to a previous value of zero, and their vote is then predicted to rise from zero according to their position in the tracker compared to an assumed tracker value of zero percent in 2017. Predicting their results is made more difficult by the fact that their nationwide popularity, as measured by the tracker, is concentrated (presumably) in the four constituencies in which they are running in 2022.</p>
+                
+                <p>Special treatment is also needed for candidates that ran in the previous election but have switched parties since then. At the time of writing, this occurs for three people in 2022: Julie-Ann Corr-Johnston (PUP to UUP), Harold McKee (UUP to TUV), and Alex Easton (DUP to Independent). Only a handful of switches have occurred since 2011, but the examples that do exist show that usually a candidate that leaves a large party to become an Independent, loses most of the vote associated with their old party; this vote is picked up by a new candidate for that party. Therefore, the rule used for party-to-Independent switchers is that they receive an average of the predicted votes for their new and old parties, weighted towards the new party, with variation in that weighting, which allows for the possibility of the candidate keeping almost all of their vote from the previous election. Party-to-party switchers get the vote of their new party, so Corr-Johnston and McKee are treated as 'normal' UUP and TUV candidates, respectively. Each of these switching cases is unique, however, so errors could be large here.</p>
+                
+                <h3>Ensemble modelling</h3>
+
+                <p>The output of this model (a first preference percentage for each party in each constituency) is perturbed by adding random components generated in two different ways, to create an ensemble of 1000 possible scenarios. Predicted party values are altered both at the nationwide level, to simulate polling uncertainty, and then at the constituency level, to represent the large range of constituency-level vote shifts that can occur for a single party nationwide vote shift. The strengths of these perturbations are chosen to roughly cover the spread of errors in the model's raw output (RMSE ~ 3%, with larger raw percentage errors possible at the high first preference end). Predictions are then normalised to add up to 100% in each constituency.</p>
+                
+                <p>Finally, multiple versions of this model are used, depending on the time until election day. The main difference between the versions is that the coefficient for poll change increases as we get closer to the election, from about 0.4 at one year before election date (because <a href="{{url_for('blog_item', post_name='polls-at-nine-months')}}">signals in the polling bear less relation to the election outcome at this stage in the cycle</a>) to the 0.6 mentioned above that applies just before the election date. The models get slightly more accurate as time to election decreases, but the difference in RMSE is negligible over the last six months (the polls apparently don't get any more accurate during this run-in period).</p>
+                
+                <h3>Possible improvements</h3>
+                
+                <p>In <a href='https://www.electoralcalculus.co.uk/blogs/pseph_logreg.html'>the UK</a> and elsewhere, more sophisticated electoral predictions can be made using additional terms in a regression model (sometimes called 'multi-level regression and post-stratification' or MRP). Rather than using just the nationwide polling numbers, we would prefer to get other information - such as age, economic group, or previous voting behaviour - from poll respondents, because we could then compare this to the mix of people that live in each constituency, and thus predict different percentages changes for a party in each constituency, rather than a simple nationwide shift as is done here.</p>
+                
+                <p>The most recent few <a href='https://www.lucidtalk.co.uk/'>LucidTalk</a> polls have included some information that makes this possible: party polling numbers are broken out by respondent age, gender, social grade, unionist/nationalist, and EU Referendum vote. I looked at the first two options but found that the variation by constituency that would be generated is negligible in the case of gender (all constituencies have almost the same male/female mix), and small in the case of age (the difference between the <a href="{{url_for('postcode', postcode_choice='NORTH DOWN')}}#demog">oldest</a> and <a href="{{url_for('postcode', postcode_choice='WEST BELFAST')}}#demog">youngest</a> constituencies is not very large; a party would need to show a shift in support that is concentrated strongly in either young or old voters for this to generate much variation by constituency). The other factors are worth investigation, but the lack of historical data for these variables is a limitation.</p>
+                
+                <p>The recent LucidTalk polls also provide party numbers split by who the respondents say that they voted for in the last election. This appears to offer the possibility of skipping the regression method (since we don't have this information before 2020) and simply plugging in these values to the electoral results in each constituency last time, and constructed each party's 2022 vote in this way: Party A will receive a vote from 70% of its own voters from last election, plus 15% of those that voted for Party B in this constituency, plus 10% of Party C voters, and so on.</p>
+                <p>I tried this using an average of the few polls that provided this information, and the results were reasonably consistent with the regression method, but I found them to be less believable, because they predict that the larger a party's vote in a constituency in 2017, the larger the decrease that is expected this time. This could be partly because it is not clear how best to deal with the '2017 non-voters' category, and the presence of various small parties in some constituencies and absence in others; I also suspect that people may be over-reporting their intention to change vote from one party to another (parties are reported to be securing only ~50-70% of their voters from 2017).</p>
+                
+                <p>There is no way to evaluate how accurate this method would be until after the 2022 election, but I think it could bring some improvement to a future forecast system, if it is appropriately weighted, and if LucidTalk continue to gather this data in their polling.</p>
+                
+                <h2 class='section-heading'>Party to candidate votes</h2>
+                
+                <p>The easiest of the three steps is to distribute these party first preferences among their candidates in each constituency, where there is more than one candidate standing for a party, which is often the case for the big five parties. The division of votes among the party's candidates does not have a huge bearing on the total number of seats won by the <i>party</i>, but it can significantly affect the chances of election of individual candidates, and is another source of uncertainty for the ensemble forecast.</p>
+                
+                <p>Party votes are usually fairly evenly divided between candidates, because the parties try to engineer it this way, as it can be, in certain cases, electorally advantageous to do so. Some unequal vote splits do occur, however, where one candidate is much more established (locally or nationally) than their running mate(s). I predict a candidate's share of the party vote using another GLM with terms for the candidate's share in the previous election, if they ran, and indicators of whether they were elected last time or have been co-opted into the Assembly during the previous session. This method tends to smooth out extreme splits that occurred in the previous election (which may not be a bad thing, since the party will likely be trying to avoid such a one-sided vote this time), and predicts incumbent candidates to receive a little more of the first preference vote than newcomers to the constituency. A random perturbation is applied to this vote share to represent the uncertainty that exists in this method.</p>
+                
+                <h2 class='section-heading'>Simulating STV counts</h2>
+                
+                <p>The final step is to simulate the STV count process using the predicted candidate first preference percentages combined with a matrix of transfer probabilities, as introduced in <a href="{{url_for('blog_item', post_name='stv-transfers-2')}}">an earlier series of articles</a>. This matrix predicts the fraction of votes that a particular donor party, when their candidate is eliminated or elected above the quota, will transfer to any other party that has candidates still available in the count, and its accurate estimation is crucial to simulating the STV process in each constituency.</p>
+                
+                <p>I used a hybrid of the 2016 and 2017 transfer matrices, each calculated as detailed in the link above; the two are reasonably similar, but have differences in overall transfer friendliness of around 10% for some of the parties. These differences, between elections only one year apart, indicate the kind of uncertainty that will exist in trying to predict the transfer matrix for 2022, which is what we are doing here. To try to anticipate changes that will occur from 2016/17 to 2022, I adjusted the hybrid matrix using the expected changes in countrywide first preferences, on the basis that if a party increases its first preference percentage, they also (in general) receive more transferred votes. This increases the overall transfer friendliness of TUV by about 15%, and increases (decreases) the Alliance (DUP) value by about 5%. Any parties in 2022 that were not present in the 2016 or 2017 elections (Aontú, and possibly other small parties yet to be declared) are added to the transfer matrix by copying the pattern of an existing party judged to be politically similar to the new party.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/election-pred-2_plot1.png')}}"/>
+                <p>A portion of the transfer matrix (excluding the possibility of a party transferring to itself) is shown above. Most constituency counts involve transfers of a substantial number of votes from some or all of the medium-to-large parties in the left-most column to some or all of the five biggest parties, shown in the other columns; some votes are dropped, when the voter does not provide any further preferences on their ballot. Perhaps the most important cell value for the 2022 election is TUV-to-DUP (0.47), because this transfer is likely occur in almost every constituency, if the TUV candidates receive first preference votes of not more than about 6-9%, which is what the forecast predicts. This means that <b>for each 2% of first preference votes that DUP loses to TUV, they could get about 1% of that back again in transfers</b>, provided that the TUV candidate is eliminated before the DUP candidate in that constituency. The value of 0.47 reflects how frequently TUV votes were transferred to DUP in 2016 and <a href='http://electionsni.org/results'>2017 (clearly demonstrated at ElectionsNI)</a>, but could be different in 2022; we don't really have a better way to predict what this fraction will be, so it is a potentially important source of uncertainty for the whole forecast.</p>
+                
+                <p>To handle the uncertainty in this and all of the transfer fractions, the columns of the transfer matrix are perturbed, so that a slightly different matrix is used in each instance of the ensemble. There can therefore be a number of different possible seat configurations resulting from the same set of candidate first preference percentages, because elimination of candidates occurs one by one, and the lowest two candidates in a round are often separated by a few hundred votes or less, with these totals being dependent on the transfers that have been received in the preceding rounds, and therefore on the precise values of the transfer matrix used. The round-by-round eliminations (particularly the last couple of rounds) introduce a threshold or 'knife-edge' property to the counts that make it impossible to predict seat outcomes with certainty, and necessitate the use of the probabilistic, ensemble forecasting approach.</p>
+                
+                <p>The code for simulating an STV count is a modified form of the <b>R</b> package <a href='https://github.com/viva-ronaldo/avr'>avr</a>. Note that, in each round of a count, the values of the matrix shown above will be adjusted, by row, based on which parties are available at that point in the count, but the ratios between two numbers in a row will remain the same. So, for example, any time that an SDLP candidate has the option of transferring to Alliance and Sinn Féin candidates (and possibly others), they will transfer roughly twice as many votes to Alliance as to Sinn Féin (0.39/0.18 &#8776; 2).</p>
+                
+                <h2 class='section-heading'>The end result</h2>
+                
+                <p>At the end of all of this, we get a set of 1000 seat outcomes for each constituency, from which we can obtain the probability for each candidate to be elected as simply the fraction of instances of the ensemble in which they were elected. We can also combine the constituency results to get the possible nationwide seat totals for each party, and mean values for seat totals and nationwide first preference percentages. A wide range of national outcomes are possible, according to this forecast, which is a result of the numerous sources of uncertainty that have been modelled: how the nationwide polling changes will convert to party first preference votes by constituency; how each party's votes will be shared among their candidates, particularly in cases with high-profile candidates standing or with candidates changing party since 2017; and how votes will be transferred between parties in each constituency, when candidates are eliminated or elected.</p>
+                
+                <p>The <a href="{{url_for('polls')}}#election">forecast summary page</a> is available now, from where more details on each constituency can be accessed on the respective <a href="{{url_for('postcode', postcode_choice='NORTH BELFAST')}}#election">postcode pages</a>. In the next post I'll provide some commentary on the output as it currently stands, and discuss the important points of sensitivity of the forecast.</p>
+            </div>
+        </div>
+        
+        <div class='row justify-content-between mb-4'>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[0] is not none %}
+                    <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+                {% endif %}
+            </div>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[1] is not none %}
+                    <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+                {% endif %}
+            </div>
+        </div>
+                    
+    </div>
+</article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}
