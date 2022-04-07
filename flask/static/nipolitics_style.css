@@ -327,6 +327,10 @@ footer a:hover .fa-circle, footer a:focus .fa-circle {
     html {
         font-size: 0.9em;
     }
+
+    #postcode-elct-cands-table table tbody, #postcode-elct-cands-table table thead {
+        font-size: 80%;
+    }
 }
 
 /* Use a scrollbar for polls vis only on mobile */
@@ -334,6 +338,10 @@ footer a:hover .fa-circle, footer a:focus .fa-circle {
     #poll-tracker-vis {
         overflow-x: scroll; 
         overflow-y: hidden; 
+    }
+
+    #postcode-elct-party-summary-table tbody, #postcode-elct-party-summary-table thead {
+        font-size: 70%;
     }
 }
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -496,7 +504,7 @@ a[href*='altair-viz'] {
 a[href*='numpy'] {
     background: transparent url('/static/icon_numpy.png') center left no-repeat;
     background-size: 16px 16px;
-    padding-left: 20px;
+    padding-left: 18px;
 }
 a[href*='/vega-lite'] {
     background: transparent url('/static/icon64x48_vegalite.png') center left no-repeat;
@@ -506,7 +514,7 @@ a[href*='/vega-lite'] {
 a[href*='pandas'] {
     background: transparent url('/static/icon_pandas.svg') center left no-repeat;
     background-size: 15px 20px;
-    padding-left: 20px;
+    padding-left: 18px;
 }
 a[href*='/rtweet'] {
     background: transparent url('/static/icon_rtweet.png') center left no-repeat;
@@ -537,6 +545,11 @@ a[href*='progresspie'] {
     background-size: 16px 16px;
     padding-left: 20px;
 }
+a[href*='huggingface'] {
+    background: transparent url('/static/icon_huggingface_logo-noborder.svg') center left no-repeat;
+    background-size: 20px 20px;
+    padding-left: 22px;
+}
 
 .help-tooltip {
     cursor: help;
@@ -548,10 +561,14 @@ a[href*='progresspie'] {
     line-height: 1.2;
 }
 
-#postcodeTab .nav-link.active {
+#postcodeTab .nav-link.active, #pollsTab .nav-link.active {
     background: var(--footer-sidebar-colour);
     color: white;
 }
-#postcodeTab a, a:hover {
+#postcodeTab a, a:hover, #pollsTab a, a:hover {
     color: var(--footer-sidebar-colour);
+}
+
+#all_cand_list td {
+    padding: 0.3em;
 }

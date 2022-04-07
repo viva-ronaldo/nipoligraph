@@ -244,11 +244,13 @@ member_tweet_sentiment = tweets_df[(tweets_df.created_at_yweek.isin(last_5_yweek
     .query('status_id >= 10').sort_values('sentiment_vader_compound', ascending=False)
 #Normalise here - only using for one plot (and rankings on indiv pages)
 member_tweet_sentiment['sentiment_vader_compound'] = member_tweet_sentiment['sentiment_vader_compound'] - member_tweet_sentiment['sentiment_vader_compound'].mean()
-member_tweet_sentiment['tooltip_text'] = member_tweet_sentiment.apply(
-    lambda row: f"{row['normal_name']}: mean score rel. to avg. = {row['sentiment_vader_compound']:+.2f} ({row['status_id']} tweets)", 
-    axis=1
-)
-
+if len(member_tweet_sentiment) > 0:
+    member_tweet_sentiment['tooltip_text'] = member_tweet_sentiment.apply(
+        lambda row: f"{row['normal_name']}: mean score rel. to avg. = {row['sentiment_vader_compound']:+.2f} ({row['status_id']} tweets)", 
+        axis=1
+    )
+else:
+    member_tweet_sentiment['tooltip_text'] = []
 # retweet_rate_last_month = tweets_df[(~tweets_df.is_retweet) & (tweets_df.created_at_yweek.isin(last_5_yweeks_tweets))]\
 #     .groupby('mla_party')\
 #     .agg({'retweet_count': np.mean, 'status_id': len}).reset_index()\
@@ -305,9 +307,12 @@ questioners = questions_df.groupby(['normal_name','PartyName','RequestedAnswerTy
         'RequestedAnswerType': 'Question type'  #for plot titles
     })
 #(get top 15 by each question type - now done in function below)
-questioners['tooltip_text'] = questioners.apply(
-    lambda row: f"{row['normal_name']}: {row['Questions asked']} {row['Question type'].lower()} question{('s' if row['Questions asked'] != 1 else ''):s} asked", axis=1
-)
+if len(questioners) > 0:
+    questioners['tooltip_text'] = questioners.apply(
+        lambda row: f"{row['normal_name']}: {row['Questions asked']} {row['Question type'].lower()} question{('s' if row['Questions asked'] != 1 else ''):s} asked", axis=1
+    )
+else:
+    questioners['tooltip_text'] = []
 
 answers_df = feather.read_dataframe(data_dir + 'niassembly_answers_alltopresent.feather')
 answers_df = answers_df.merge(mla_ids[['PersonId','normal_name','PartyName']]\
@@ -343,9 +348,12 @@ minister_time_to_answer = answers_df[answers_df.MinisterTitle != 'Assembly Commi
         'median_days_to_answer': 'Median days to answer',  
         'num_questions_answered': 'Questions answered'    #for plot axis title
     })
-minister_time_to_answer['tooltip_text'] = minister_time_to_answer.apply(
-    lambda row: f"{row['Minister_normal_name']}: median {row['Median days to answer']:g} day{('s' if row['Median days to answer'] != 1 else ''):s}", axis=1
-)
+if len(minister_time_to_answer) > 0:
+    minister_time_to_answer['tooltip_text'] = minister_time_to_answer.apply(
+        lambda row: f"{row['Minister_normal_name']}: median {row['Median days to answer']:g} day{('s' if row['Median days to answer'] != 1 else ''):s}", axis=1
+    )
+else:
+    minister_time_to_answer['tooltip_text'] = []
 minister_time_to_answer = minister_time_to_answer[minister_time_to_answer.Minister_normal_name.isin(mla_minister_roles.keys())]
 print('Done questions and answers')
 
@@ -364,8 +372,11 @@ votes_df = votes_df.sort_values('DivisionDate')
 votes_df['DivisionDate'] = votes_df['DivisionDate'].dt.date
 #To pass all votes list, create a column with motion title and url 
 #  joined by | so that I can split on this inside the datatable
-votes_df['motion_plus_url'] = votes_df.apply(
-    lambda row: f"{row['Title']}|http://aims.niassembly.gov.uk/plenary/details.aspx?&ses=0&doc={row['DocumentID']}&pn=0&sid=vd", axis=1)
+if len(votes_df) > 0:
+    votes_df['motion_plus_url'] = votes_df.apply(
+        lambda row: f"{row['Title']}|http://aims.niassembly.gov.uk/plenary/details.aspx?&ses=0&doc={row['DocumentID']}&pn=0&sid=vd", axis=1)
+else:
+    votes_df['motion_plus_url'] = []
 
 #Votes PCA
 votes_df['vote_num'] = votes_df.Vote.apply(lambda v: {'NO':-1, 'AYE':1, 'ABSTAINED':0}[v]) 
@@ -415,9 +426,12 @@ lda_top5s = [(lda_stuff['topic_name_dict'][el[0]], el[1]) for el in lda_top5s]
 plenary_contribs_topic_counts = plenary_contribs_topic_counts.merge(
     pd.DataFrame(lda_top5s, columns=['topic_name','top5_words'])
 )
-plenary_contribs_topic_counts['tooltip_text'] = plenary_contribs_topic_counts.apply(
-    lambda row: f"{row['topic_name']}: strongest words are {row['top5_words']}", axis=1
-)
+if len(plenary_contribs_topic_counts) > 0:
+    plenary_contribs_topic_counts['tooltip_text'] = plenary_contribs_topic_counts.apply(
+        lambda row: f"{row['topic_name']}: strongest words are {row['top5_words']}", axis=1
+    )
+else:
+    plenary_contribs_topic_counts['tooltip_text'] = []
 
 #plenary contrib emotions
 emotions_df = feather.read_dataframe(data_dir + 'plenary_hansard_contribs_emotions_averaged_201920sessions_topresent.feather')
@@ -429,13 +443,22 @@ emotions_party_agg = emotions_df.groupby(['PartyName','emotion_type']).apply(
     .rename(index=str, columns={0:'ave_emotion'})
 print('Done votes and contributions')
 
-diary_df = pd.read_csv(data_dir + 'diary_future_events.psv', sep='|')
+if os.stat(data_dir + 'diary_future_events.psv').st_size > 10:
+    diary_df = pd.read_csv(data_dir + 'diary_future_events.psv', sep='|')
+else:
+    diary_df = pd.DataFrame(columns=['EventId','EventDate','EventType',
+        'EventTypeId','AddressId','LocationRoom','Address1',
+        'TownCity','OrganisationName','StartTime','OrganisationId',
+        'EndTime','Weekday','Address'])
 #Use StartTime to get the date to avoid problems with midnight +/-1h BST
 diary_df['EventPrettyDate'] = pd.to_datetime(diary_df['StartTime'], utc=True).dt.strftime('%A, %-d %B')
-diary_df['EventName'] = diary_df.apply(
-    lambda row: row['OrganisationName']+' Meeting' if row['EventType']=='Committee Meeting' else row['EventType'], 
-    axis=1
-)
+if len(diary_df) > 0:
+    diary_df['EventName'] = diary_df.apply(
+        lambda row: row['OrganisationName']+' Meeting' if row['EventType']=='Committee Meeting' else row['EventType'], 
+        axis=1
+    )
+else:
+    diary_df['EventName'] = []
 diary_df['EventHTMLColour'] = diary_df.EventName.apply(lambda e: diary_colour_dict[e])
 #Exclude events that have now happened (will run filter again in assembly.html function)
 #diary_df = diary_df[diary_df['EventDate'] >= datetime.date.today().strftime('%Y-%m-%d')]
@@ -629,8 +652,11 @@ news_df['published_date_week'] = news_df.published_date.dt.week
 #early Jan can be counted as week 53 by pd.week - messes things up
 news_df.loc[(news_df.published_date_week==53) & (news_df.published_date.dt.day <= 7), 'published_date_week'] = 1
 news_df['published_date_year'] = news_df.published_date.dt.year
-news_df['published_date_yweek'] = news_df.apply(
-    lambda row: '{:04g}-{:02g}'.format(row['published_date_year'], row['published_date_week']), axis=1)
+if len(news_df) > 0:
+    news_df['published_date_yweek'] = news_df.apply(
+        lambda row: '{:04g}-{:02g}'.format(row['published_date_year'], row['published_date_week']), axis=1)
+else:
+    news_df['published_date_yweek'] = []
 
 news_df = news_df.merge(mla_ids[['normal_name','PartyName','PartyGroup']],
     how = 'inner', on = 'normal_name')
@@ -639,7 +665,10 @@ news_df = news_df.merge(mla_ids[['normal_name','PartyName','PartyGroup']],
 #    (news_df.published_date_week < news_df.published_date_week.max())]
 news_df = news_df.sort_values('published_date', ascending=False)
 news_df['date_pretty'] = pd.to_datetime(news_df.published_date).dt.strftime('%Y-%m-%d')
-news_df['title_plus_url'] = news_df.apply(lambda row: f"{row['title']}|{row['link']}", axis=1)
+if len(news_df) > 0:
+    news_df['title_plus_url'] = news_df.apply(lambda row: f"{row['title']}|{row['link']}", axis=1)
+else:
+    news_df['title_plus_url'] = []
 
 #Filter to most recent month
 news_sources = news_df[news_df.published_date.dt.date > datetime.date.today()-datetime.timedelta(days=30)][['link','source','PartyGroup']]\
@@ -648,11 +677,12 @@ news_sources = news_df[news_df.published_date.dt.date > datetime.date.today()-da
     .rename(index=str, columns={'link':'News articles'})\
     .sort_values('News articles', ascending=False)
 #(now filtering to top 10/15 below in function)
-if news_sources.shape[0] > 0:
+if len(news_sources) > 0:
     news_sources['tooltip_text'] = news_sources.apply(
         lambda row: f"{row['source']}: {row['News articles']} article mention{'s' if row['News articles'] != 1 else ''} of {row['PartyGroup'].lower()}s", 
-        axis=1
-    )
+        axis=1)
+else:
+    news_sources['tooltip_text'] = []
 
 #dedup articles by party before calculating averages by party - doesn't make a big difference
 news_sentiment_by_party_week = news_df[['published_date_year','published_date_week','link','PartyName','sr_sentiment_score']].drop_duplicates()\
@@ -699,9 +729,12 @@ elections_df['date'] = pd.to_datetime(elections_df.date)
 elections_df = elections_df.sort_values(['date','party'], ascending=[False,True])
 elections_df['date_year'] = elections_df.date.dt.strftime('%Y')
 elections_df = elections_df[elections_df.date > pd.to_datetime('2015-01-01')]
-elections_df['tooltip_text'] = elections_df.apply(
-    lambda row: f"{row['party']}: {row['pct']:g}% (election; {row['date_year']} {row['election_type']})", axis=1
-)
+if len(elections_df) > 0:
+    elections_df['tooltip_text'] = elections_df.apply(
+        lambda row: f"{row['party']}: {row['pct']:g}% (election; {row['date_year']} {row['election_type']})", axis=1
+    )
+else:
+    elections_df['tooltip_text'] = []
 
 polls_df = pd.merge(pd.read_csv(data_dir + 'poll_details.csv'),
     pd.read_csv(data_dir + 'poll_results.csv'),
@@ -712,9 +745,12 @@ polls_df['date'] = pd.to_datetime(polls_df.date)
 polls_df = polls_df.sort_values(['date','party'], ascending=[False,True])
 polls_df['date_pretty'] = polls_df.date.dt.strftime('%Y-%m-%d')
 polls_df = polls_df[polls_df.date > pd.to_datetime('2015-01-01')]
-polls_df['tooltip_text'] = polls_df.apply(
-    lambda row: f"{row['party']}: {row['pct']:g}% (poll; {row['organisation']}, n={row['sample_size']:.0f})", axis=1
-)
+if len(polls_df) > 0:
+    polls_df['tooltip_text'] = polls_df.apply(
+        lambda row: f"{row['party']}: {row['pct']:g}% (poll; {row['organisation']}, n={row['sample_size']:.0f})", axis=1
+    )
+else:
+    polls_df['tooltip_text'] = []
 #Calculate poll averages - now uses both polls and elections
 def get_current_avg_poll_pct(polls_df, elections_df, party, current_dt, 
     time_power = 4, 
@@ -768,6 +804,7 @@ print('Done polls')
 
 #Blog articles list
 blog_pieces = pd.read_csv(data_dir + 'blog_pieces_list.psv', sep='|').iloc[-1::-1]
+blog_pieces = blog_pieces[blog_pieces.date_added <= datetime.date.today().strftime('%Y-%m-%d')]
 #print(blog_pieces.title)
 print('Done blog')
 
@@ -776,6 +813,90 @@ postcodes_to_constits = pd.read_csv(data_dir + 'all_ni_postcode_constits_from_do
 
 combined_demog_table = pd.read_csv(data_dir + 'combined_demographics_out.csv')
 #These are in increasing order, i.e. lowest age gets age_rank_order=1
+
+#Election forecast
+#-----------------
+elct_files_date_string = '05apr'
+print('Using election forecast from',elct_files_date_string)
+elct_fcst_cw_fps = pd.read_csv(f'{data_dir}/election_forecast_out_1_cw_first_prefs_{elct_files_date_string}_cw.csv')
+elct_fcst_ens_party_seats = pd.read_csv(f'{data_dir}/election_forecast_out_2_ens_party_seats_{elct_files_date_string}_cw.csv')
+#out_4 is read in below
+elct_fcst_cands_summary = pd.read_csv(f'{data_dir}/election_forecast_out_3_cands_summary_{elct_files_date_string}_cw.csv')
+elct_fcst_seat_deltas = pd.read_csv(f'{data_dir}/election_forecast_out_5_party_constit_seat_deltas_{elct_files_date_string}_cw.csv')
+
+elct_fcst_cw_fps['party_short'] = elct_fcst_cw_fps.party_short.apply(lambda p: 'Ind.' if p=='Independent' else p)
+
+biggest_party_fracs = elct_fcst_ens_party_seats.sort_values(['it','n_seats'],ascending=False).groupby('it').apply(
+    lambda row: 'Tie' if row.iloc[0].n_seats==row.iloc[1].n_seats else row.iloc[0].party_short
+    ).value_counts(normalize=True, sort=True).reset_index().rename(columns={'index': 'party', 0: 'frac_biggest'})
+biggest_party_fracs['tooltip_text'] = biggest_party_fracs.apply(
+    lambda row: f"{row['party']} have the most seats in {100*row['frac_biggest']:.0f}% of simulations" if row['party'] != 'Tie' \
+    else f"Two parties tie for most seats in {100*row['frac_biggest']:.0f}% of simulations", axis=1)
+
+def convert_fraction_to_words(fraction):
+    if fraction > 0.95:
+        return 'an almost certain chance'
+    elif fraction > 0.86:
+        return 'a 9 in 10 chance'
+    elif fraction > 0.82:
+        return 'a 5 in 6 chance'
+    elif fraction > 0.77:
+        return 'a 4 in 5 chance'
+    elif fraction > 0.73:
+        return 'a 3 in 4 chance'
+    elif fraction > 0.68:
+        return 'a 7 in 10 chance'
+    elif fraction > 0.63:
+        return 'a 2 in 3 chance'
+    elif fraction > 0.55:
+        return 'a 3 in 5 chance'
+    elif fraction > 0.45:
+        return 'a 1 in 2 chance'
+    elif fraction > 0.37:
+        return 'a 2 in 5 chance'
+    elif fraction > 0.31:
+        return 'a 1 in 3 chance'
+    elif fraction > 0.27:
+        return 'a 3 in 10 chance'
+    elif fraction > 0.23:
+        return 'a 1 in 4 chance'
+    elif fraction > 0.18:
+        return 'a 1 in 5 chance'
+    elif fraction > 0.14:
+        return 'a 1 in 6 chance'
+    elif fraction > 0.11:
+        return 'a 1 in 8 chance'
+    elif fraction > 0.08:
+        return 'a 1 in 10 chance'
+    elif fraction > 0.06:
+        return 'a 1 in 15 chance'
+    elif fraction > 0.03:
+        return 'a 1 in 20 chance'
+    else:
+        return 'a <1 in 30 chance'
+
+def make_prob_string(row):
+    res = []
+    #don't show 0 seat probs?
+    for i in range(1,5):
+        if row['party_frac_seats_'+str(i)] > 0:
+            res.append((convert_fraction_to_words(row['party_frac_seats_'+str(i)]),
+                row['party_frac_seats_'+str(i)], i))
+    res.sort(key = lambda t: t[1], reverse=True)
+    res = [f"<b>{t[0]}</b> of getting {t[2]} seat{'s' if t[2] != 1 else ''}" for t in res]
+    if len(res) == 0:
+        return '<li>no realistic chance of getting any seats</li>'
+    elif len(res) == 1:
+        return '<li>' + res[0] + '</li>'
+    else:        
+        return '<li>' + '</li><li>'.join(res) + '</li>'  #if doing sublist, don't need an 'and'
+
+#Describe the possible party seat outcomes in words
+elct_fcst_cands_summary['party_seats_string'] = elct_fcst_cands_summary.apply(make_prob_string, axis=1)
+#Pretty print party pct changes from last time
+elct_fcst_cands_summary['delta_party_fp_pct_pprint'] = elct_fcst_cands_summary.delta_party_fp_pct.apply(lambda p: f"{p:+.1f}%")
+elct_fcst_cands_summary['delta_party_fp_pct_pprint'][
+    (elct_fcst_cands_summary.delta_party_fp_pct == elct_fcst_cands_summary.party_mean_fp_pct) | pd.isnull(elct_fcst_cands_summary.delta_party_fp_pct)] = 'n/a'
 
 #Totals for front page
 #---------------------
@@ -917,15 +1038,24 @@ def news():
 
 @app.route('/how-we-vote', methods=['GET'])
 def polls():
-    tmp = polls_df.loc[polls_df.pct.notnull()].copy()
-    tmp['date_plus_url'] = tmp.apply(
+    polls_tmp = polls_df.loc[polls_df.pct.notnull()].copy()
+    polls_tmp['date_plus_url'] = polls_tmp.apply(
         lambda row: f"{row['date_pretty']}|{row['link']}", axis=1
     )
-    tmp = tmp[['date_plus_url','organisation','sample_size','party','pct']]
+    polls_tmp = polls_tmp[['date_plus_url','organisation','sample_size','party','pct']]
+
+    elct_cands_tmp = elct_fcst_cands_summary[['fullname','frac_elected','constit','party_short']].copy()
+    elct_cands_tmp['constit'] = elct_cands_tmp.apply(
+        lambda row: f"{row['constit']}|postcode?postcode_choice={row['constit'].upper().replace(' ','+')}#election", axis=1)
+    #elct_cands_tmp['fullname'] = elct_cands_tmp.fullname.apply(
+    #    lambda n: )
+
     return render_template('polls.html',
-        poll_results_list = [e[1].values.tolist() for e in tmp.iterrows()],
+        poll_results_list = [e[1].values.tolist() for e in polls_tmp.iterrows()],
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
-        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()))
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
+        elct_all_cand_list = [e[1].values.tolist() for e in elct_cands_tmp.iterrows()],
+        elct_n_ensemble = elct_fcst_ens_party_seats.it.max())
 
 @app.route('/about', methods=['GET'])
 def about():
@@ -1218,19 +1348,22 @@ def postcode():
     args = request.args
     if 'postcode_choice' in args:
         postcode_choice = args.get('postcode_choice')
-        postcode_choice = postcode_choice.upper()
-        if postcode_choice in mla_ids.ConstituencyName.str.upper().tolist():
-            constit_choice = postcode_choice
-            heading_message = f"These are the representatives for the <b>{constit_choice}</b> constituency."
-        else:
-            constit_choice = postcodes_to_constits[postcodes_to_constits.Postcode==postcode_choice].Constituency.iloc[0].upper()
-            heading_message = f"{postcode_choice} is part of the <b>{constit_choice}</b> constituency."
-
-        #print(mla_ids.columns)
-        mla_choices = mla_ids[(mla_ids.active == 1) & (mla_ids.ConstituencyName.str.upper() == constit_choice)]
-        mla_choices = mla_choices.sort_values(['role','MemberLastName'])
     else:
-        constit_choice = 'None'
+        postcode_choice = 'BT1 3EW'
+
+    postcode_choice = postcode_choice.upper()
+    if postcode_choice in mla_ids.ConstituencyName.str.upper().tolist():
+        constit_choice = postcode_choice
+        heading_message = f"These are the representatives for the <b>{constit_choice}</b> constituency."
+        #Get any postcode from this constit to use for the Write To Them link
+        postcode_choice = postcodes_to_constits[postcodes_to_constits.Constituency.str.upper()==constit_choice].Postcode.iloc[0]
+    else:
+        constit_choice = postcodes_to_constits[postcodes_to_constits.Postcode==postcode_choice].Constituency.iloc[0].upper()
+        heading_message = f"{postcode_choice} is part of the <b>{constit_choice}</b> constituency."
+
+    #print(mla_ids.columns)
+    mla_choices = mla_ids[(mla_ids.active == 1) & (mla_ids.ConstituencyName.str.upper() == constit_choice)]
+    mla_choices = mla_choices.sort_values(['role','MemberLastName'])
 
     normal_names_list = mla_choices.normal_name.tolist()
 
@@ -1323,6 +1456,8 @@ def postcode():
         else:
             retweet_rate_rank_string_list.append('n/a')
 
+    #Demographics
+
     demogs_row_is_constit = np.where(combined_demog_table.constit.str.upper() == constit_choice)[0][0]
     demogs_for_constit = combined_demog_table.iloc[demogs_row_is_constit]
 
@@ -1354,6 +1489,34 @@ def postcode():
 
     comb_rank_text = comb_rank_text.replace('1th ','').replace('2th','2nd').replace('3th','3rd')
 
+    #Elections
+    #Read in html table code for candidate results
+    with open(f"{data_dir}/election_forecast_out_4_cand_table_{constit_choice.replace(' ','-').lower()}_{elct_files_date_string}_cw.txt", 'r') as f:
+        cands_table = f.read()
+
+    elct_fcst_constit_party_stuff = elct_fcst_cands_summary[elct_fcst_cands_summary.constit.str.upper() == constit_choice]
+    elct_fcst_constit_party_stuff = elct_fcst_constit_party_stuff[['party_short','party_seats_string','party_mean_fp_pct','delta_party_fp_pct','delta_party_fp_pct_pprint'] + 
+        [c for c in elct_fcst_constit_party_stuff.columns if 'frac_seats' in c]].drop_duplicates()
+    elct_fcst_constit_party_stuff = elct_fcst_constit_party_stuff.sort_values('party_mean_fp_pct', ascending=False)
+    
+    elct_fcst_seat_histograms_list = elct_fcst_constit_party_stuff[sorted([c for c in elct_fcst_constit_party_stuff.columns if 'frac_seats' in c])]\
+            .fillna(0).apply(lambda row: row.tolist(), axis=1).tolist()
+    #Parties with no elected didn't get seat fracs written; keep these as all 0s so we can skip drawing the sparkline on the page
+
+    #Make it a list of lists to pass to page
+    elct_fcst_constit_party_stuff = [
+        elct_fcst_constit_party_stuff.party_short.tolist(),  #party
+        elct_fcst_constit_party_stuff.party_seats_string.tolist(),  #description
+        elct_fcst_seat_histograms_list,  #seat probs histogram
+        ['grey' if (re.match('Ind',p) or p not in party_colours.party_name.tolist()) else party_colours[party_colours.party_name==p].colour.iloc[0] for p in elct_fcst_constit_party_stuff.party_short],  #colour
+        elct_fcst_constit_party_stuff.party_mean_fp_pct.tolist(),  #party fp pct
+        elct_fcst_constit_party_stuff.delta_party_fp_pct_pprint.tolist(),  #party fp pct change from last time
+        ['lime' if d >= 3 else ('palegreen' if d >= 1 else ('red' if d <= -3 else ('darksalmon' if d <= -1 else 'black')))
+            for d in elct_fcst_constit_party_stuff.delta_party_fp_pct],  #display colour for delta fp pct
+        [round(1.0 + min(pct,60)*0.9/60, 2) for pct in elct_fcst_constit_party_stuff.party_mean_fp_pct]  #display size for fp pct
+    ]
+    
+
     return render_template('postcode.html',
         postcode_choice = postcode_choice,
         constit_choice = constit_choice,
@@ -1380,7 +1543,10 @@ def postcode():
         constit_population = f"{demogs_for_constit.total_population:,}",
         constit_second_message = comb_rank_text,
         constit_MDM_rank_order = combined_demog_table['MDM_mean_rank'].rank().astype(int).iloc[demogs_row_is_constit],
-        constit_alphabetical_rank_order = combined_demog_table['constit'].rank().astype(int).iloc[demogs_row_is_constit])
+        constit_alphabetical_rank_order = combined_demog_table['constit'].rank().astype(int).iloc[demogs_row_is_constit],
+        elct_fcst_constit_party_stuff = elct_fcst_constit_party_stuff,
+        cands_table_code = cands_table,
+        elct_n_ensemble = elct_fcst_ens_party_seats.it.max())
 
 
 #Plots are not pages themselves
@@ -2182,6 +2348,218 @@ def plot_constituency_depriv_metrics_fn(constit_choice, mobile_mode = False):
 
     plot = plot.configure_axis(titleFontSize=14, labelFontSize=13, grid=False)
     plot = plot.configure_title(fontSize=18, font='Arial')
+
+    return plot.to_json()
+
+#Election cw pct bars
+#TODO change file to group Ind, small parties together
+@app.route('/data/elct_cw_bars_plot_web')
+def elct_cw_bars_fn_web():
+    return elct_cw_bars_fn()
+@app.route('/data/elct_cw_bars_plot_mobile')
+def elct_cw_bars_fn_mobile():
+    return elct_cw_bars_fn(mobile_mode = True)
+
+def elct_cw_bars_fn(mobile_mode = False):
+    elct_fcst_cw_fps['tooltip_text'] = elct_fcst_cw_fps.apply(
+        lambda row: f"{row['party_short']} 2022 predicted {row['cw_pct']:.1f}%" if row['year']==2022 else f"{row['party_short']} 2017 first pref. {row['cw_pct']:.1f}%",
+        axis=1
+    )
+
+    plot = alt.Chart(elct_fcst_cw_fps).mark_bar(width = 20 if mobile_mode else 32)\
+        .encode(
+            y=alt.Y('cw_pct', title='First pref. vote / %', axis=alt.Axis(grid=False, 
+                labelFontSize = 10 if mobile_mode else 13, 
+                titleFontSize = 11 if mobile_mode else 14, 
+                labelPadding = 3 if mobile_mode else 5, 
+                titlePadding = 5 if mobile_mode else 18)),
+            x=alt.X('year:N', sort='ascending', axis=alt.Axis(grid=False, labels=False, ticks=False, title=None)),
+            column=alt.Column('party_short:N', sort=alt.EncodingSortField(field='y', op='max'),
+                spacing = 4 if mobile_mode else 15,
+                title=None, 
+                header=alt.Header(orient='bottom', 
+                    labelFontSize = 10 if mobile_mode else 13, 
+                    labelAngle = -30 if mobile_mode else 0, 
+                    labelPadding = 280 if mobile_mode else 275,
+                    labelAlign='center', labelOrient='bottom')),
+            opacity=alt.Opacity('year', scale=alt.Scale(range=[0.4,1]), legend=None),
+            color = alt.Color('party_short', 
+                scale=alt.Scale(
+                    domain=party_colours[party_colours.party_name.isin(elct_fcst_cw_fps.party_short)]['party_name'].tolist(), 
+                    range=party_colours[party_colours.party_name.isin(elct_fcst_cw_fps.party_short)]['colour'].tolist()
+                    ), legend=None),
+            tooltip='tooltip_text:N')\
+        .properties(title = '', 
+            #width here is for each Column, and has to fit with mark_bar(width) to give the right overlap
+            width = 22 if mobile_mode else 48,
+            height = 250,
+            background = 'none')\
+        .configure_view(stroke='transparent')
+
+    return plot.to_json()
+
+
+#Election cw seats bubble plot
+@app.route('/data/elct_cw_seats_range_plot_web')
+def elct_cw_seats_range_fn_web():
+    return elct_cw_seats_range_fn()
+@app.route('/data/elct_cw_seats_range_plot_mobile')
+def elct_cw_seats_range_fn_mobile():
+    return elct_cw_seats_range_fn(mobile_mode = True)
+
+def elct_cw_seats_range_fn(mobile_mode = False):
+    elct_n_ensemble = elct_fcst_ens_party_seats.it.max()    
+    elct_seats_vcounts = elct_fcst_ens_party_seats[['party_short','n_seats']].value_counts().reset_index().rename(columns={0: 'n_cases'})
+    elct_seats_vcounts['tooltip_text_individual'] = elct_seats_vcounts.apply(lambda row: f"{row['party_short']} win {row['n_seats']} seat{'s' if row['n_seats'] != 1 else ''} in {row['n_cases']}/{elct_n_ensemble} simulations", axis=1)
+
+    elct_seats_vcounts['seat_cases'] = elct_seats_vcounts['n_seats'] * elct_seats_vcounts['n_cases']
+    tmp = elct_seats_vcounts.groupby('party_short', as_index=False).agg(mean_n_seats = ('seat_cases', lambda x: sum(x)/elct_n_ensemble))
+    tmp['tooltip_text_mean'] = tmp.apply(lambda row: f"{row['party_short']} are predicted to win an average of {row['mean_n_seats']:.1f} seats", axis=1)
+    tmp = elct_seats_vcounts.merge(tmp, how='left', on='party_short')
+    y_party_order = tmp.sort_values('mean_n_seats', ascending=False).party_short.unique().tolist()
+    tmp['party_short'] = tmp.party_short.apply(lambda p: 'Ind.' if p=='Independent' else p)
+
+    p1 = alt.Chart(tmp).mark_circle(
+        opacity=0.7 #, stroke='black', strokeWidth=0.5
+    ).encode(
+        alt.X('n_seats:Q', axis=alt.Axis(labelFontSize = 10 if mobile_mode else 13, 
+            titleFontSize = 11 if mobile_mode else 14, tickCount=8, grid=False, title='Number of seats')),
+        alt.Y('party_short:N', 
+            sort=y_party_order,
+            title=None, axis=alt.Axis(labelFontSize = 11 if mobile_mode else 13, 
+                labelPadding = 10 if mobile_mode else 20)),
+        alt.Size('n_cases:Q',
+            scale=alt.Scale(range=[20, 2000], type='pow', exponent=1.5),
+            legend=None
+        ),
+        color = alt.Color('party_short', 
+                    scale=alt.Scale(
+                        domain=party_colours[party_colours.party_name.isin(tmp.party_short)]['party_name'].tolist(), 
+                        range=party_colours[party_colours.party_name.isin(tmp.party_short)]['colour'].tolist()
+                        ), 
+                    legend=None),
+        tooltip = 'tooltip_text_individual:N'
+    )
+
+    p2 = alt.Chart(tmp.drop_duplicates(subset=['party_short']))\
+        .mark_tick(size=30, thickness=6, opacity=0.3, stroke='black')\
+        .encode(
+            x='mean_n_seats:Q',
+            y=alt.Y('party_short:N', sort=y_party_order),
+            color = alt.Color('party_short', 
+                        scale=alt.Scale(
+                            domain=party_colours[party_colours.party_name.isin(tmp.party_short)]['party_name'].tolist(), 
+                            range=party_colours[party_colours.party_name.isin(tmp.party_short)]['colour'].tolist()
+                            ), 
+                        legend=None),
+            tooltip = 'tooltip_text_mean:N'
+        )
+
+    plot = (p1 + p2).properties(
+        #width = 220 if mobile_mode else 440,
+        width = 'container',
+        height = 320
+    )
+
+    return plot.to_json()
+
+#Election party delta pcts faceted by constit
+@app.route('/data/elct_cw_delta_seats_map_plot_web')
+def elct_cw_delta_seats_map_fn_web():
+    return elct_cw_delta_seats_map_fn()
+@app.route('/data/elct_cw_delta_seats_map_plot_mobile')
+def elct_cw_delta_seats_map_fn_mobile():
+    return elct_cw_delta_seats_map_fn(mobile_mode = True)
+
+def elct_cw_delta_seats_map_fn(mobile_mode = False):
+
+    map = alt.Chart(alt.topo_feature('https://martinjc.github.io/UK-GeoJSON/json/ni/topo_wpc.json', feature='wpc')).mark_geoshape(
+        fill='#fdfbee',
+        stroke='gray'
+    )
+
+    constit_coords = pd.DataFrame([
+        {'constit': 'East Antrim', 'lon': -5.87285, 'lat': 54.81905},
+        {'constit': 'East Belfast', 'lon': -5.85854, 'lat': 54.60098},
+        {'constit': 'East Londonderry', 'lon': -6.84, 'lat': 55.05},
+        {'constit': 'Fermanagh and South Tyrone', 'lon': -7.588976, 'lat': 54.287027},
+        {'constit': 'Foyle', 'lon': -7.30, 'lat': 54.98},
+        {'constit': 'Lagan Valley', 'lon': -6.12, 'lat': 54.44},
+        {'constit': 'Mid Ulster', 'lon': -6.72667, 'lat': 54.69},
+        {'constit': 'Newry and Armagh', 'lon': -6.58295, 'lat': 54.243925},
+        {'constit': 'North Antrim', 'lon': -6.25, 'lat': 54.94},
+        {'constit': 'North Belfast', 'lon': -5.93428, 'lat': 54.68},
+        {'constit': 'North Down', 'lon': -5.64764, 'lat': 54.65096},
+        {'constit': 'South Antrim', 'lon': -6.25, 'lat': 54.68273},
+        {'constit': 'South Belfast', 'lon': -5.92457, 'lat': 54.525},
+        {'constit': 'South Down', 'lon': -6.05, 'lat': 54.20305},
+        {'constit': 'Strangford', 'lon': -5.65, 'lat': 54.5},
+        {'constit': 'Upper Bann', 'lon': -6.41, 'lat': 54.477043},
+        {'constit': 'West Belfast', 'lon': -6.07, 'lat': 54.58},
+        {'constit': 'West Tyrone', 'lon': -7.32, 'lat': 54.668427}
+    ])
+
+    tmp = elct_fcst_seat_deltas.merge(constit_coords, how='inner', on='constit')
+
+    tmp['abs_prob_seat_change'] = tmp.apply(lambda row: max([row['prob_gain_seat'], row['prob_lose_seat']]), axis=1)
+    tmp['dir_prob_seat_change'] = tmp.apply(lambda row: +1 if row['prob_gain_seat'] > 0 else -1, axis=1)
+    tmp['tooltip_text'] = tmp.apply(lambda row: f"{row['party_short']} have a{'n' if row['abs_prob_seat_change']//0.1 == 8 or row['abs_prob_seat_change'] in [0.08,0.11,0.18] else ''} {row['abs_prob_seat_change']*100:.0f}% chance of {'gaining' if row['dir_prob_seat_change']==1 else 'losing'} a seat in {row['constit']}", axis=1)
+
+    tmp['row_order'] = tmp.groupby(['constit','dir_prob_seat_change'])['abs_prob_seat_change'].rank(method='first', ascending=False) - 1
+    tmp['lon_delta'] = tmp.row_order.apply(lambda x: (1 if x % 2 == 1 else -1) * ((x+1) // 2))
+    tmp = tmp.merge(tmp.groupby('constit', as_index=False).agg(max_abs_change = ('abs_prob_seat_change',max)), how='inner', on='constit')
+    tmp['lon_plot'] = tmp.lon + tmp.lon_delta * tmp.max_abs_change**0.5 * 0.11
+    tmp['lat_plot'] = tmp.lat + tmp.dir_prob_seat_change * tmp.max_abs_change**0.5 * 0.035
+
+    tmp['constit_page_url'] = tmp.apply(lambda row: f"/postcode?postcode_choice={row['constit'].upper().replace(' ','+')}#election", axis=1)
+
+    max_triangle_size = 200 if mobile_mode else 800
+
+    points = alt.Chart(tmp).mark_point(opacity=1, stroke='silver', strokeWidth=1.5, filled=True).encode(
+        longitude='lon_plot:Q',
+        latitude='lat_plot:Q',
+        size=alt.Size('abs_prob_seat_change:Q', scale=alt.Scale(domain=[0,1], range=[25, max_triangle_size], type='pow', exponent=1.5), legend=None),
+        shape=alt.Shape('dir_prob_seat_change:N', scale=alt.Scale(domain=[-1,1], range=['triangle-down','triangle-up']), legend=None),
+        color = alt.Color('party_short', 
+                    scale=alt.Scale(
+                        domain=party_colours[party_colours.party_name.isin(elct_fcst_seat_deltas.party_short)]['party_name'].tolist(), 
+                        range=party_colours[party_colours.party_name.isin(elct_fcst_seat_deltas.party_short)]['colour'].tolist()
+                        ), legend=None),
+        tooltip = 'tooltip_text:N'
+    )
+    if not mobile_mode:
+        points = points.encode(href = 'constit_page_url:N')
+
+    plot = (map + points).properties(
+        width='container',
+        height=450
+    )    
+
+    return plot.to_json()
+
+#Election most seats ring plot
+@app.route('/data/elct_cw_most_seats_plot_web')
+def elct_cw_most_seats_fn_web():
+    return elct_cw_most_seats_fn()
+@app.route('/data/elct_cw_most_seats_plot_mobile')
+def elct_cw_most_seats_fn_mobile():
+    return elct_cw_most_seats_fn(mobile_mode = True)
+
+def elct_cw_most_seats_fn(mobile_mode = False):
+    plot = alt.Chart(biggest_party_fracs).mark_arc(opacity=0.8, stroke='black', strokeWidth=1.5,
+        innerRadius = 50 if mobile_mode else 80, 
+        ).encode(
+        theta=alt.Theta(field="frac_biggest", type="quantitative"),
+        color=alt.Color('party:N', scale=alt.Scale(range=['maroon','darkgreen','lavender'], 
+            domain=['DUP','Sinn Fein','Tie']),
+            legend=alt.Legend(title='', labelFontSize=13, orient='bottom')),
+        tooltip='tooltip_text:N',
+    ).properties(
+        width = 'container',
+        height = 180 if mobile_mode else 250,
+        background = 'none',
+        padding=15
+    )
 
     return plot.to_json()
 
