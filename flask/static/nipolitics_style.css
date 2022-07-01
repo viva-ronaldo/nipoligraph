@@ -468,7 +468,7 @@ footer a:hover .fa-circle, footer a:focus .fa-circle {
   margin-bottom: 0;
 }
 .blog-plot {
-    width: 100%;
+    width: 92%;
     margin: 20px 20px;
     padding-bottom: 20px;
     padding-top: 10px;
@@ -565,8 +565,9 @@ a[href*='huggingface'] {
     background: var(--footer-sidebar-colour);
     color: white;
 }
-#postcodeTab a, a:hover, #pollsTab a, a:hover {
+#postcodeTab button, button:hover, #pollsTab button, button:hover {
     color: var(--footer-sidebar-colour);
+    border: 0;
 }
 
 #all_cand_list td {

@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'nav.html' %}
+
+<article>
+    <div class='container-xl' style='min-height: 800px'>
+        
+        <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+                <div class="post-heading">
+                    <h1>AE2022 forecast post-mortem</h1>
+                    <h2 class="subheading">2. Candidate first preference votes</h2>
+                </div>
+            </div>
+        </div>
+                    
+        <div class='row mb-4'>
+            <div class="col-lg-8 col-md-10 mx-auto">
+
+                <h2 class='section-heading'>Ensemble average predictions</h2>
+
+                <p>From party first preference predictions, shown in <a href="{{url_for('blog_item', post_name='election-postmortem-1')}}">the previous article</a>, the second part of the forecast required dividing this vote between multiple candidates for the same party in a constituency. This step generally increases any errors acquired in the previous part, as it often seems to be quite unpredictable how a party's vote will split between the candidates. As a result, the correlation between predicted and actual first preference percentages, shown below, is lower than the equivalent value from the party predictions (0.96), indicating a less accurate set of predictions (the RMSE is lower, because with candidates we are dealing with smaller absolute vote share values than is the case with parties).</p>
+
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-2_plot1.png')}}"/>
+
+                <p>We can examine each party's candidates in turn, starting with Sinn Féin:</p>
+
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-2_plot2.png')}}"/>
+                
+                <p>The problem here was more in the underprediction of the Sinn Féin vote in general, rather than in dividing it among candidates. Sinn Féin are better than other parties at obtaining roughly equal first preference votes for all the candidates in a constituency (so-called 'vote management'), and there weren't many big, surprising skews here. One exception is Danny Baker in West Belfast: the forecast expected him to do reasonably well due to his alphabetical advantage on the ballot, but also expected othe ther three candidates to be helped by their incumbent MLA status, so made Órlaithí Flynn the most likely to receive the highest vote share. Michelle O'Neill received 5% more in vote share than her colleagues in Mid Ulster, which was a similar split to 2017, but the forecast model put too much weight on alphabetical advantage (Linda Dillon) here. Another quite imbalanced vote occurred in Foyle, where Ciara Ferguson underperformed against the forecast because Padraig Delargy took 62% of the total Sinn Féin vote, more than the average prediction of 54%.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-2_plot3.png')}}"/>
+
+                <p>The DUP votes saw big imbalances in several constituencies, two of which, in Lagan Valley (LV; Jeffrey Donaldson and Paul Givan) and North Down (ND; Stephen Dunne and Jennifer Gilmour), were not well predicted. I included a manual adjustment to the LV forecast to boost Donaldson by 5% due to his status as party leader and a veteran representative of the constituency, which was otherwise unknown to the model, but this was nowhere near large enough, as he received more than twice as many votes as did Givan. In Strangford, the model correctly predicted that the likely order of the DUP candidates would be Michelle McIlveen, Harry Harvey, and Peter Weir (suffering due to his position on the ballot), but it greatly underestimated the spread of the votes (McIlveen, Harvey, and Weir received 45%, 32%, and 23% of the total DUP vote, respectively). </p>
+
+                <p>Both DUP candidates in ND underperformed against the forecast because the vote for Alex Easton, a former DUP MLA turned Independent in this election, was hugely underestimated by the model. This was extremely difficult to predict: there have only been a few past instances of MLAs leaving a party and running as an Independent, and none <i>increased</i> their vote, as Easton has done in 2022; usually, they have lost most of their vote to the replacement candidate from their former party, such as Jonathan Bell in Strangford, whose vote fell from 10% in 2016 to 4% in 2017. With that being said, it was clearly a possibility for Easton to do much better than this, given his very strong performance in the ND constituency since as long ago as 2007, and the forecast uncertainty for this candidate should have been much higher than it was, to reflect this possibility.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-2_plot4.png')}}"/>
+                
+                <p>Many Alliance candidates were predicted very accurately, but there were several big underpredictions in key places: Kate Nicholl in South Belfast, both Andrew Muir and Connie Egan in North Down, Sorcha Eastwood in Lagan Valley, and Kellie Armstrong in Strangford. In all four places, the strong performance was enough to move Alliance from one to two seats in the constituency. In Strangford, a very imbalanced vote almost cost Nick Mathison that second seat, as he survived a very close elimination battle with the SDLP candidate, Conor Houston; if Alliance's combined 24% vote had been split, say, 14/10, rather than 17/7, they would have more comfortably had both candidates elected. As it was, Mathison's survival may have depended on the highly imbalanced DUP vote, which led to Peter Weir being eliminated before Mathison or Houston, allowing <a href='https://www.bbc.co.uk/news/election/2022/northern-ireland/constituencies/N06000016#stv-scoreboard'>some transfers to take place</a> that favoured Mathison over Houston.</p>
+
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-2_plot5.png')}}"/>
+                
+                <p>Votes for UUP candidates were not well predicted: the party was overpredicted generally, but several candidates bucked this trend, some of which did so at the expense of their running mates, in very imbalanced votes (Robbie Butler and Laura Turner in Lagan Valley, John Stewart and Roy Beggs in East Antrim, and, most dramatically, Robin Swann and Bethany Ferris in North Antrim, where the 21% total UUP vote was split 19/2). This huge personal vote for Swann was not modelled: there were no figures of similar popularity, to my knowledge, in the 2016 or 2017 elections, so the model could not anticipate how his current status would affect the first preference voting. The forecast was only able to predict a very modest 7/6 split (for an average UUP vote of 13%) between Swann and Ferris.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-2_plot6.png')}}"/>
+
+                <p>SDLP candidates also underperformed against the forecast almost everywhere; in four cases (Pat Catney, Dolores Kelly, Karen McKevitt, and Nichola Mallon), the party lost a seat as a result. Mallon's vote was overpredicted by 4.5%, and the contrast of this with the underprediction of Swann shows that a simple model correction to increase the predicted vote for current ministers would not always be helpful. In Foyle, the model predicted Sinead McLaughlin to receive more first preference votes than Brian Tierney; in fact, Tierney received slightly more, but McLaughlin passed him <a href='https://www.bbc.co.uk/news/election/2022/northern-ireland/constituencies/N06000008#stv-scoreboard'>after a few rounds of transfers</a>, and was elected as the second SDLP seat in that constituency.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-2_plot7.png')}}"/>
+
+                <p>TUV candidates were mostly an unknown quantity in this election, and it is no surprise that many over- or underperformed against the forecast by several percent. Most notably, the overperformance of Keith Ratcliffe (Newry & Armagh, overperformed by 4%), Mel Lucas (South Antrim, 3%), and Stephen Cooper (Strangford, 5%) brought the party close to gaining a second seat nationally, but all fell short, due to a lack of transfers received. Cooper came closest, and the NIPG forecast did, at least, predict him to be the most likely second TUV winner, although gave him only a 3% chance of being elected. TUV did not even stand a candidate in Newry & Armagh in 2017, so the 9% received by Radcliffe in 2022 is particularly notable.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-2_plot8.png')}}"/>
+
+                <p>Focusing on predicted and actual votes below 6% shows that predictions for candidates from the smaller parties were far from accurate in some cases. This was expected, because getting a correct prediction for these candidates is unlikely to affect the outcome of the seats in a constituency, so was not the focus of the development of the forecast model. Aontú and PUP candidates were difficult to predict because, although the parties appear in at least some nationwide polls, they only run candidates in some constituencies, so some assumption must be made about how their overall poll support is likely to be concentrated geographically. Regardless of this, Aontú overperformed against the polls significantly, and two candidates received first preference votes of around 4%, despite the party polling at only around 0.5% overall. Green and PBP candidates underperformed against the forecast, and the polls, almost without exception. The raw prediction for Shaun Harkin had a manual adjustment of -5% applied, to account for the personal vote for Eamonn McCann, from 2017, that was likely to be lost to the party in 2022. This proved to be too large a reduction, by about 2%, but this was a decent prediction, on balance. Variation in support for Independent candidates that did not run in 2017 cannot be predicted by the model, and it was inevitable that a few candidates would receive a much bigger vote than the uniform ~1% that was predicted for them, on average.</p>
+
+                <h2 class='section-heading'>Forecast uncertainty calibration</h2>
+
+                <p>Shown above were the <i>average</i> predicted first preference percentages, but the forecast is an ensemble and each simulation in the ensemble produces a slightly different vote prediction for each candidate, to account for the uncertainties involved in reaching that prediction. For the forecast to be useful, this uncertainty should be accurately represented, such that the range of predicted values for the candidates matches the range of observed results overall. One way to measure this is to compare each candidate's first preference result to their 10th- to 90th-percentile predicted range, which is a range that includes all but the smallest 10% and largest 10% predictions: in around 80% of cases sampled, we expect the result to lie within this range.</p>
+
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-2_plot9.png')}}"/>
+
+                <p>The plot above shows that modelled ranges were too small, and only 58% of results lie within these ranges, meaning that the forecast was <b>overconfident</b>. The most overconfident predictions were for UUP candidates, of which only 6 of 27 fell within the predicted range; most were below the 10th percentile, as the party underperformed against the forecast. This suggests that the uncertainty in the nationwide vote was underestimated, with the consequence being that when an error, such as overprediction of UUP, occurred, it affected most of their candidates in the same direction. That is, errors in the forecast were modelled too much as independent, rather than correlated. Perturbations applied to account for uncertainties in the spread of nationwide vote among constituencies, and of party votes among multiple candidates in a constituency, may have been adequate, but larger perturbations may be required at the first step, on the nationwide first preference shares. On the other hand, predicted ranges for candidates at the low end of the vote share spectrum were sufficient to cover the spread of results. These ranges accounted for both overperformance by Aontú candidates, and underperformance by candidates from parties such as PBP or PUP, in this election.</p>
+
+            </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[0] is not none %}
+                    <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+                {% endif %}
+            </div>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[1] is not none %}
+                    <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+                {% endif %}
+            </div>
+        </div>
+                    
+    </div>
+</article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'nav.html' %}
+
+<article>
+    <div class='container-xl' style='min-height: 800px'>
+        
+        <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+                <div class="post-heading">
+                    <h1>AE2022 forecast post-mortem</h1>
+                    <h2 class="subheading">4. Transfer fractions</h2>
+                </div>
+            </div>
+        </div>
+                    
+        <div class='row mb-4'>
+            <div class="col-lg-8 col-md-10 mx-auto">
+
+                <h2 class='section-heading'>The transfer matrix for 2022</h2>
+                
+                <p>The last part of the election forecast - and another potential source of error - is the transfer of votes during the rounds of the STV count. This is handled by the <i>transfer matrix</i>, which contains the probability of a vote transferring from party A to party B, or being dropped, if all other parties are still active in the count. These probabilities are normalised at each round for the parties that are actually available to receive a transfer.</p>
+            
+                <p>The transfer matrix for the 2022 election was computed as before, using the method described <a href="{{url_for('blog_item', post_name='stv-transfers-1')}}">here</a>, and the count sheet data from <a href='https://www.eoni.org.uk/Elections/Election-results-and-statistics/Election-results-and-statistics-2003-onwards/Elections-2022/NI-Assembly-Election-2022-Result-Sheets'>EONI</a> (a collated version from <a href='https://twitter.com/ElectionsNI'>ElectionsNI</a> with a few corrections; this corrected version is available <a href="{{url_for('static', filename='assembly_2022_all_constits_counts_corrected.xlsx')}}" download>here</a>). Only rounds in which a single party transfers votes can be used for this calculation, and several adjustments are made to account for the different selection of parties available to receive votes at each instance of a transfer that occurred. The intention of the grid below is that it represents not literally the fraction of votes that were transferred between parties in 2022, but the fraction of votes that would transfer between the parties in a 'standard' situation when all of the parties in the columns are available. The best way to read the grid is to compare the relative values of columns <i>within a row</i>, as this shows how party A tends to share its votes between parties B, C, etc.</p>
+                
+                <p>Note that the PUP, Green, Workers, PBP, and Aontú transfers were only observed on 3 or 4 occasions each, so values in these rows should be considered less certain than the others, which were each observed on at least 9 occasions.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-4_plot1.png')}}"/>
+                
+                <p>Strong self transfer fractions of ~0.6-0.8 are apparent on the diagonal (parties that never had the chance to transfer to themselves are filled in with the average for this value). The weakest self transfer fraction this year was for SDLP, although this was calculated from only three occurrences (Belfast South and two in Foyle); they transferred relatively many votes to Alliance, Green, or Sinn Féin, instead.</p>
+                
+                <p>Fairly strong transfers (green-yellow colours) occurred from TUV to DUP, Sinn Féin to SDLP, Green to PBP and vice versa, and from SDLP to Alliance, among others. Looking down columns, the prevalence of green colours in the Green, Alliance, PBP, and SDLP columns means that these parties were relatively transfer-friendly, and picked up transfers from a range of sources (or at least, would have done, when they stayed in the count long enough). Looking along rows, it can be seen that UUP transferred more to DUP than to Alliance, and Alliance transferred more to SDLP than to UUP. Independents transferred to quite an even mix of other parties. The right-most column shows that the fractions of votes lost (not transferred due to exhausted ballots) was highest when the vote was transferred from Aontú, Independent, SDLP, or PBP.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-4_plot2.png')}}"/>
+                
+                <p>The next plot shows the change in these transfer probabilities from 2017. Weakened self transfers for SDLP and Workers are clearly seen. Increased transfer probabilities occurred for TUV to DUP, UUP and PUP to TUV, and for DUP and UUP self transfers. Sinn Féin to SDLP and Alliance, SDLP to Alliance, and Green and Workers to PBP were other notable increases in transfer fractions. UUP to SDLP transfers weakened, and SDLP to UUP transfers also weakened slightly. Transfers between PBP and Sinn Féin, in both directions, also weakened. The fraction of votes lost was down for DUP, UUP, and Sinn Féin, but up for SDLP, Workers, PBP, and TUV; comparing this with the total number of votes available to transfer by party, this suggests ballots being slightly more likely to be exhausted in 2022 than 2017, after normalising for the availability of parties at each transfer.</p>
+                
+                <h2 class='section-heading'>Transfer trends 2007-2022</h2>
+                
+                <p>We can compare the strength of the self transfer fraction over time using the raw transfer fractions (since adjusting for number of parties available <a href="{{url_for('blog_item', post_name='stv-transfers-1')}}">is not necessary in the self transfer case</a>; note, results will differ slightly from the transfer matrix above), as an update to the plot <a href="{{url_for('blog_item', post_name='stv-transfers-3')}}">in this post</a>. As seen previously, the strength of SDLP self transfers decreased, but values for the other big parties increased (albeit measured from only two instances in the case of Alliance; TUV had no self transfer instances in 2022, or 2017). This continues an overall trend of stronger self transfers that has been observed since 2011. The low value for SDLP comes primarily from a weak transfer from Durkan's surplus in Foyle (only 61% went to the other two SDLP candidates, and 17% of these first preference votes were dropped, meaning that most of these ballots had only 'Durkan 1' on them) and quite a lot of votes (19%) transferred from Trainor to Alliance candidates rather than O'Toole in Belfast South. </p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-4_plot8.png')}}"/>
+                
+                <p>The next plot summarisesthe movement of votes between groups of parties. Results are somewhat dependent on the averaging method used, but they generally show that votes are generally transferred within the nationalist or unionist blocs, particularly on the unionist side, and this effect strengthened in 2022, at least on the unionist side, driven most by stronger UUP transfers to TUV rather than to SDLP and Green, and fewer votes dropped. Votes very rarely transfer from one bloc to the other, in either direction. </p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-4_plot9.png')}}"/>
+                
+                <h2 class='section-heading'>Party relationship changes</h2>
+                
+                <p>Tracking some of these transfer fraction pairs over time makes it easier to understand their magnitudes. In each of the plots below, the fractions are normalised to when only the parties listed in the subtitle are available as transfer destinations, in addition to votes being dropped, and no self transfer option is available. For example, in the first plot, the 'SDLP->UUP' line shows the fraction of votes that would be transferred from SDLP to UUP, rather than dropped, if UUP were the only party remaining in the count.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-4_plot3.png')}}"/>
+                
+                <p>The drop in transfers between UUP and SDLP from 2017 was quite large, but fractions returned to levels seen in 2011 and 2016. SDLP partly made up for this by receiving more transfers from Sinn Féin, continuing a trend from the 2017 election. However, there are generally more total votes available from UUP (eliminated candidates) than from Sinn Féin (mostly surpluses), so these two changes seem to have hurt SDLP overall.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-4_plot4.png')}}"/>
+                
+                <p>Transfers between unionist parties appear to have been an odd mixture. There were strong transfers from TUV to DUP, up from 2017. Transfers between UUP and DUP weakened since 2017, which continues a slow trend from 2007 onwards. However, transfers from UUP to TUV were sharply up. The high values for each of these transfer fractions (although not as high as Sinn Féin to SDLP, above) mean that many voters put two or three of these parties on the ballot, allowing the vote (if needed) to transfer within the unionist bloc, rather than being dropped.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-4_plot5.png')}}"/>
+                
+                <p>Transfers between Green and PBP in both directions went up in 2022, while transfers to Alliance from both Green and PBP decreased. Alliance received more transfers from Sinn Féin and SDLP than in 2017, however, and there were significantly more votes available from these two parties than from Green and PBP, so these changes were a net gain for Alliance.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-4_plot6.png')}}"/>
+                
+                <p>The parties can be positioned in 2-d space by projecting the parties' outgoing transfer vectors onto principal components; shown above. The absolute positions of the points have no meaning, but the relative positions do: parties close together in the plot tend to transfer their votes in similar patterns. We find two main blocs, one for the unionist parties and the other for the nationalist and Left parties. Independents behave differently from both of these groups, as expected. (Aontú are excluded to allow comparison to 2017, next). The position of Alliance closer to the nationalist parties than to Green/Workers/PBP is driven more by strong Sinn Féin and SDLP transfers Alliance rather than transfers from Alliance to the nationalist parties, although Alliance did transfer more to nationalist than to unionist parties (note, this conclusion could be slightly biased by the Alliance transfer being observed in only 9 of the 18 constituencies, a selection with a nationalist lean; see next post).</p>
+                
+                <p>By applying the same projection to the 2017 transfer data and plotting the difference between the two, we can get a sense of how the relationships between the parties changed from 2017 to 2022. The outward moveement on the PC1 axis suggests the two groups became more polarised: parties in each group transferring more similarly to the other parties in the group and less similarly to the parties in the other group. This is consistent with the trends shown above for transfers between unionist parties and between the Left parties.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-4_plot7.png')}}"/>
+                
+                
+            </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[0] is not none %}
+                    <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+                {% endif %}
+            </div>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[1] is not none %}
+                    <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+                {% endif %}
+            </div>
+        </div>
+                    
+    </div>
+</article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}
+

@@ -103,13 +103,6 @@
             
         </div>
 
-        <div class="row justify-content-center py-2" style='background-color: lightsteelblue;'>
-          <div class="col-lg-4 col-md-6 py-3 mx-auto text-center" style='background-color: lightsteelblue;'>
-            <h3>Latest in-depth analysis and features</h3>
-            <a href="{{ url_for('blog') }}" class="btn btn-info btn-lg my-0">Read the blog</a>
-          </div>
-        </div>
-
         <div class="row justify-content-center mt-4">
 
             <div class='col-xl-5 px-2 py-1'>
@@ -173,9 +166,58 @@
             </div>
         </div>
 
-        <div class='row justify-content-center'>
-          <div class='col-md-6'>
-            <a class="twitter-timeline" href="https://twitter.com/nipoligraph" data-height='400px'>Latest tweets by nipoligraph</a> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+        <div class="row justify-content-center py-3" style='background-color: lightsteelblue;'>
+          <div class="col-lg-4 col-md-6 mx-auto text-center" style='background-color: lightsteelblue;'>
+            <h3>In-depth analysis and features</h3>
+          </div>
+        </div>
+
+        <div class="row justify-content-md-center py-2" style='background-color: lightsteelblue;'>
+
+          <div class="col-lg-4 col-md-6 pb-2 text-center" style='background-color: lightsteelblue;'>
+            <div id="carouselExampleIndicators" class="carousel slide" data-bs-ride="carousel" data-bs-interval=5000>
+              <div class="carousel-indicators">
+                <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                <button type="button" data-bs-target="#carouselExampleIndicators" data-bs-slide-to="2" aria-label="Slide 3"></button>
+              </div>
+              <div class="carousel-inner">
+                {% for row in blog_pieces.itertuples() %}
+                  {% if loop.index == 1 %}
+                    <div class="carousel-item active">
+                  {% else %}
+                    <div class="carousel-item">
+                  {% endif %}
+                    {% if row.category=='news' %}
+                      <a href="blog/{{row.link}}"><img src="{{url_for('static', filename='WHAT WE REPORT.jpg')}}" class="d-block w-100" alt="What We Report background"/></a>
+                    {% elif row.category=='assembly' %}
+                      <a href="blog/{{row.link}}"><img src="{{url_for('static', filename='WHAT THEY DO.jpg')}}" class="d-block w-100" alt="What They Do background" /></a>
+                    {% elif row.category=='twitter' %}
+                      <a href="blog/{{row.link}}"><img src="{{url_for('static', filename='WHAT THEY SAY.jpg')}}" class="d-block w-100" alt="What They Say background" /></a>
+                    {% elif row.category=='polls' %}
+                      <a href="blog/{{row.link}}"><img src="{{url_for('static', filename='HOW WE VOTE.jpg')}}" class="d-block w-100" alt="How We Vote background" /></a>
+                    {% else %}
+                      <a href="blog/{{row.link}}"><img src="{{ url_for('static', filename='ni_poligraph_logo_mountains_grey.png') }}" class="d-block w-100" alt='NI PoliGraph logo' /></a>
+                    {% endif %}
+                    <div class="carousel-caption d-none d-md-block">
+                      <h5 style='font-size:0.8em'>{{row.title}} <i>({{row.date_added}})</i></h5>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+              
+            </div>
+          </div>
+
+          <div class='col-lg-2 col-md-3 pb-2 text-center align-self-center'>
+            <a href="{{ url_for('blog') }}" class="btn btn-info btn-lg my-0">Read the blog</a>
+          </div>
+
+        </div>  
+
+        <div class='row justify-content-center pt-3'>
+          <div class='col-md-6 mx-auto' style='text-align: center;'>
+            <a class="twitter-timeline" href="https://twitter.com/nipoligraph" data-tnt="true" data-width="450px" data-height="400px">Latest tweets by nipoligraph</a> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
           </div>
         </div>
 

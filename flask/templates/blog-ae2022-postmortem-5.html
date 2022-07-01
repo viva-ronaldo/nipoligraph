@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'nav.html' %}
+
+<article>
+    <div class='container-xl' style='min-height: 800px'>
+        
+        <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+                <div class="post-heading">
+                    <h1>AE2022 forecast post-mortem</h1>
+                    <h2 class="subheading">5. Predicted vs actual transfers</h2>
+                </div>
+            </div>
+        </div>
+                    
+        <div class='row mb-4'>
+            <div class="col-lg-8 col-md-10 mx-auto">
+                
+                <p>The transfer matrix that was used for the NIPG 2022 forecast was an average of the historic 2016 and 2017 matrices, with an adjustment based on the predicted changes in first preference votes (parties expected to increase their vote from 2017 were assumed to become more transfer-friendly), and adjustments to the UUP-Alliance, UUP-DUP, TUV-DUP, and TUV-UUP probabilities to <a href='https://twitter.com/nipoligraph/status/1513626571495682053'>move them towards the University of Liverpool survey data from April 2022</a>. When doing this analysis I found an error in the code for creating this matrix that led to votes lost being overpredicted. The results shown below are <i>after correcting this error</i>, so they are <i>not exactly from what was used in the published forecast</i>, but they reflect the true accuracy of the transfer model, after the bug was corrected. This fix would have made a difference of a few tenths of a seat to the average party seat predictions.</p>
+                
+                <p>The plot below shows the predicted transfer matrix minus the actual 2022 matrix.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-5_plot1.png')}}"/>
+                
+                <p>The patterns are very similar to the 2022 vs 2017 plot shown earlier, as expected. The two adjustments made following the ULiv survey had mixed success. The survey found that UUP votes would transfer twice as strongly to Alliance as to DUP; my original matrix predicted the opposite, so I moved the probabilities to become equal. The actual ratio was 2:1 DUP:Alliance, so the original matrix would have been a better prediction; this can be seen in the UUP row in the plot, where the Alliance (DUP) transfer was overestimated (underestimated). The other change was to push more TUV transfers to DUP rather than UUP: this was a move in the right direction, as the actual DUP:UUP ratio was 2.5, though my value of 1.65 was still too low; this error can be seen in the plot as the blue square for TUV->DUP.</p>
+                
+                <p>Even if the matrix had been perfectly predicted, individual transfers at constituency level would still be a source of error. The forecast has no constituency-level mechanism for predicting transfer probabilities, but accounts for this variation by adding noise to each iteration of the forecast ensemble. We can review the <i>average</i> predicted transfer fractions for all of the transfer instances that involved a single transferring party, including the fraction of votes that were lost or dropped in each instance. Here are all of the 747 single-party transfer pairs that occurred, from 108 transfer rounds, coloured by the party receiving the transfer:</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-5_plot2.png')}}"/>
+                
+                #  Best for SDLP (0.95), TUV (0.94), Alli (0.94); worst for Ind (0.22), PBP (0.68), Aontu (0.79), SF (0.79)
+                
+                <p>The correlation for the predicted vs actual transfer fractions, including votes lost, was <b>0.81</b>, or <b>0.85</b> if we restrict to cases with at least 300 votes being transferred (as actual fractions can be very noisy when only a few tens of votes are being shared (in the elimination transfer case). By party, the correlation was highest for SDLP (0.95), TUV (0.94) and Alliance (0.94), and lowest for Sinn Féin (0.79), PBP (0.68), and Independent (0.26, which is not unexpected, as the model has almost no knowledge of how an Independent voter will transfer). Generally, fewer votes were lost (not transferred, as the ballots were exhausted) in 2022 than was predicted: the weighted average prediction was 22%, but only 18% were lost (in single-party transfers). Transfers from Sinn Féin, UUP, and Alliance most greatly exceeded predictions in terms of votes transferred rather than lost. As suggested by the grids above, the biggest party-level errors in transfer predictions included underestimates of the Sinn Féin-SDLP, Sinn Féin-Alliance, UUP-DUP, and Alliance-SDLP transfers.</p>
+                
+                <p>Plots of all transfers for each transferring party, below, make it possible to see both party-level biases and individual outlier cases.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-5_plot3.png')}}"/>
+                
+                <p>Sinn Féin transfers were the least well modelled of the main parties. Transfers to SDLP and Alliance candidates were systematically underestimated, as these transfer frequencies increased since 2017 at the expense of transfers to PBP and votes being dropped. Self transfers between Sinn Féin candidates were also underestimated, except in one case: in Upper Bann, a stronger O'Dowd to Mackle transfer in the last round <i>could</i> have given Sinn Féin the seat, ahead of Alliance (Tennyson), although this would have needed to be a very strong transfer. These underestimated transfer fractions were balanced by overestimates of fractions of votes being dropped.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-5_plot4.png')}}"/>
+                
+                <p>DUP transfers were much better predicted: self transfers of around 0.8, and low fractions to Alliance, UUP, and other parties. One exception was an extremely strong transfer from Dodds to Beattie in Upper Bann: 808 of 831 votes were transferred to UUP here, which makes it the most efficient transfer of the election; stronger than any self transfer! An Alliance candidate was available for this transfer, but recieved only 1.5% of the votes. The other outlier was a very strong transfer (85%) to Sugden (Independent Unionist) in East Londonderry. (The point in the lower-right appears to be an error in the reported data from EONI: the surplus from Bunting in Belfast East (44 votes) was apparently not transferred anywhere. It is inconceivable that all ~7000 of these first preference votes were exhausted by the time of this transfer, so it must be a mistake in either in the count or the reporting. These votes could not have changed the outcome of the election, however. I have contacted EONI about this; will update here if the issue is explained.)</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-5_plot5.png')}}"/>
+                
+                <p>Transfers from Alliance were reasonably well predicted, but transfers to SDLP were consistently higher than expected. The two instances of Alliance self transfer here show the limitations in the current model. In the Long-McReynolds case (East Belfast), the transfer occurred in the first round, when all other parties were available, yet it was very strong (0.80); for example, 14 times as many votes went to Alliance as to Green, when the transfer matrix would predict this ratio to be only about 5. In the Armstrong-Mathison case (Strangford), only four parties were available, which might have suggested a stronger self transfer (e.g., there was no Green option available at this point), but a surprising number of votes (33%, more than the predicted 8%) were dropped here rather than transferred to Alliance. Although this transfer occurred in a later round, the votes were entirely first-preference Alliance votes, so it seems that a substantial fraction of votes were for 'Armstrong 1' and no-one else.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-5_plot6.png')}}"/>
+                
+                <p>Predictions for SDLP transfers were good. In Strangford, the transfer of 61% from Houston to Mathison was crucial in getting the latter elected.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-5_plot7.png')}}"/>
+                
+                <p>As shown previously, UUP transferred more to TUV and less to SDLP in 2022 than in previous elections, which explains the prediction errors here. The most extreme case of this was in Mid Ulster (Graham-Moore), when the predicted split of UUP transfers was 24% and 16% to SDLP and TUV, respectively, but the actual values were 14% and 55%, with many fewer votes dropped than was predicted. The arrangement of the TUV and Alliance points in roughly vertical lines indicates that transfers in different constituencies were modelled similarly, but yielded very different transfer fractions in practice. These are constituency-level factors that I'd like to capture with a later, improved transfer model.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-5_plot8.png')}}"/>
+                
+                <p>TUV transfers were very well predicted, including the strong transfers to DUP, which were slightly underestimated on average. The weak transfer from TUV to UUP in Upper Bann (Foster-Beattie) was an outlier, and made for a tense finish to that count, although Beattie was ultimately elected.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-5_plot9.png')}}"/>
+
+                <p>Finally, transfers from Independents were, unsurprisingly, badly predicted. In most cases these candidates are unknown quantities from the model's perspective, and they are modelled to transfer like the average Independent candidate, which isn't very accurate. Several of the worst errors, marked on the plot, could have been reduced if the unionist or nationalist bias of the Independent candidate were better understood.</p>
+                
+                <h2 class='section-heading'>Ideas for improvement</h2>
+                
+                <p>What are some effects that could exist to explain transfer differences at the constituency or candidate level, and could perhaps be used to improve the model in future? One could be to group constituencies in some way and model transfers for each party differently for each group of constituencies. The most obvious way to do this is by the nationalist or unionist lean of the constituency. Doing this for Alliance transfers to Sinn Féin or SDLP, we see that this fraction was underestimated, but not in the unionist constituencies of Belfast East, Strangford, and to an extent East Londonderry. This suggests that the average Alliance voter tends to be a bit more nationalist in places like Newry and Armagh or West Tyrone than does the voter in Belfast East. </p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-5_plot10.png')}}"/>
+                
+                <p>The same thing is seen for Independent to nationalist transfers, suggesting an obvious improvement: to modify the Independent transfer probabilities depending on the nationalist/unionist mix of the constituency.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-5_plot11.png')}}"/>
+                
+                <p>I also checked if the gender of the candidates could affect the transfers: most likely, is there any tendency for people to vote for only male or only female candidates? If so, we would expect to see predicted transfer fractions biased low on male-male or female-female transfers. Perhaps surprisingly, the results show no evidence of this at all: there was no gender pattern in transfers in 2022.</p>
+                
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-5_plot12.png')}}"/>
+                
+                <p>Finally, there is a tendency to overpredict the fraction of votes lost in early transfer rounds rather than later ones. It makes sense that votes are less likely to be dropped in early rounds because more of the votes being transferred will be first preferences, so the voter only needs to have filled their ballot down to a second preference to have a chance of the vote being transferred. In later rounds, the problem of incomplete ballots is more likely to arise. The transfer model does not explicitly account for the round effect; it only does so implicitly by looking at the number of parties still available to transfer to. These two things are strongly anti-correlated, but still, there is room for improvement by adding a factor to increase the fraction of votes lost as the count round increases.</p>
+                
+                
+            </div>
+        </div>
+        
+        
+
+        <div class='row justify-content-between mb-4'>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[0] is not none %}
+                    <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+                {% endif %}
+            </div>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[1] is not none %}
+                    <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+                {% endif %}
+            </div>
+        </div>
+                    
+    </div>
+</article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}
+

@@ -10,15 +10,16 @@
       <div class="row mb-2 justify-content-center pt-4">
         <ul class="nav nav-pills" id="postcodeTab" role="tablist">
           <li class="nav-item" role="presentation">
-            <a class="nav-link active" id="people-tab" data-toggle="pill" href="#people" type="button" role="tab" aria-controls="people" aria-selected="true">Representatives</a>
+            <button class="nav-link active" id="people-tab" data-bs-toggle="pill" href="#people" type="button" role="tab" aria-controls="people" aria-current='page'>Representatives</a>
           </li>
           <li class="nav-item" role="presentation">
-            <a class="nav-link" id="demog-tab" data-toggle="pill" href="#demog" type="button" role="tab" aria-controls="demog" aria-selected="false">Demographics</a>
+            <button class="nav-link" id="demog-tab" data-bs-toggle="pill" href="#demog" type="button" role="tab" aria-controls="demog" aria-selected="false">Demographics</a>
           </li>
-          <li class="nav-item" role="presentation">
-            <a class="nav-link" id="election-tab" data-toggle="pill" href="#election" type="button" role="tab" aria-controls="election" aria-selected="false">Elections</a>
-          </li>
+          <!--<li class="nav-item" role="presentation">
+            <button class="nav-link" id="election-tab" data-bs-toggle="pill" href="#election" type="button" role="tab" aria-controls="election" aria-selected="false">Elections</a>
+          </li>-->
         </ul>
+
       </div>
       
       <div class="tab-content" id="postcodeTabContent">
@@ -180,7 +181,7 @@
 
         </div>
 
-        <div class="tab-pane fade" id="election" role="tabpanel" aria-labelledby="election-tab">
+        <!--<div class="tab-pane fade" id="election" role="tabpanel" aria-labelledby="election-tab">
 
           <div class='row mb-0 mx-2 justify-content-center pt-4'>
             <div class='col-lg-8 col-md-10' id='postcode-elct-cands-table'>
@@ -227,7 +228,7 @@
                 <div class='small'>
                   <p>The method to predict <i>party</i> first preference percentages by constituency is explained on <a href="{{url_for('polls')}}#election">the main elections page</a>. From those numbers, votes are distributed among multiple candidates from a party using another model that considers whether each candidate ran in 2017, was co-opted to a seat in the previous session, or is running for the first time, and how the the candidates' shared the party vote in 2017, if applicable. With these candidate first preference percentages (which are slightly different in each of the {{elct_n_ensemble}} iterations), the Single Transferable Vote (STV) process is simulated, by using the transfer matrix described <a href="{{url_for('blog_item', post_name='stv-transfers-1')}}">here</a> to handle votes transferred from elected and eliminated candidates. The overall method is described in more detail in <a href="{{url_for('blog_item', post_name='election-pred-2')}}">a blog post</a>.</p>
                   <p>Both of these steps add uncertainty to the forecast (because neither can be predicted with perfect accuracy), which increases the range of possible outcomes. The most important final output from the forecast is the fraction of simulations in which each candidate is elected in the STV process, which can be interpreted as their probability of election.</p>
-                  {% if constit_choice in ['FOYLE','LAGAN VALLEY','FERMANAGH AND SOUTH TYRONE'] %}
+                  {% if constit_choice in ['FOYLE','LAGAN VALLEY','FERMANAGH AND SOUTH TYRONE','MID ULSTER'] %}
                     <p>This forecast otherwise knows nothing about the specific candidates (age, gender, etc. are not modelled). To prevent obvious 'errors', a small number of manual adjustments are made to candidates in unusual situations, including one in this constituency: 
                     {% if constit_choice == 'FOYLE' %}
                       the first preference vote for Shaun Harkin is decreased by 5%. The model mostly goes by parties, rather than candidates, so would otherwise predict PBP to roughly replicate their vote of 10% from 2017. However, much of this can be considered to have been a personal vote for Eamon McCann, and Harkin is unlikely to replicate the magnitude of this vote in 2022.
@@ -235,6 +236,8 @@
                       the first preference vote for Jeffrey Donaldson is increased by 3%, because the model would otherwise regard him as a 'new candidate', and rate his chances lower than an average DUP candidate. In fact it seems likely that, as the party leader and MP for this constituency, he will bring some personal vote with him and increase the DUP's combined vote over what it otherwise would have been. 
                     {% elif constit_choice == 'FERMANAGH AND SOUTH TYRONE' %}
                       the first preference vote for Tom Elliott is increased by 2%, because the model would otherwise regard him as a 'new candidate', and rate his chances lower than an average UUP candidate. In fact it seems likely that, as a former MP for this constituency and party leader, he will bring some personal vote with him and increase the UUP's combined vote over what it otherwise would have been. 
+                    {% elif constit_choice == 'MID ULSTER' %}
+                      the first preference vote for Stefan Taylor is decreased by 1%, because he was <a href='https://www.bbc.co.uk/news/uk-northern-ireland-61277573'>suspended by the party in the week before the election</a>, but remains on the ballot; although, it is unknown how many potential Green voters will be aware of this on polling day. 
                     {% endif %}
                     </p>
                   {% endif %}
@@ -244,7 +247,7 @@
             </aside>
           </div>
 
-        </div>
+        </div>-->
 
       </div>
                 
@@ -280,12 +283,13 @@
 
       $(document).ready(function() {
         let selectedTab = window.location.hash;
+        console.log('clicking',selectedTab)
         $('.nav-link[href="' + selectedTab + '"]' ).trigger('click');
       });
 
       let initialisedDTs_1 = false;
 
-      $('a[href="#demog"]').on('click', function() {
+      $('.nav-link[href="#demog"]').on('click', function() {
         setTimeout(function(){
 
           if (!initialisedDTs_1) {

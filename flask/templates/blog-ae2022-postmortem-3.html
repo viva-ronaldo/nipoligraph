@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'nav.html' %}
+
+<article>
+    <div class='container-xl' style='min-height: 800px'>
+        
+        <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+                <div class="post-heading">
+                    <h1>AE2022 forecast post-mortem</h1>
+                    <h2 class="subheading">3. Seat predictions</h2>
+                </div>
+            </div>
+        </div>
+                    
+        <div class='row mb-4'>
+            <div class="col-lg-8 col-md-10 mx-auto">
+
+                <p>The aim of the forecast was to identify, probabilistically, which candidates were likely to be elected and which were not, and use this to estimate how many seats each party would win in total. Now I evaluate how well it performed in this regard. How the forecast model gets from candidate first preference vote percentages to elected probabilities - STV simulations involving estimated transfer fractions - will be covered in the next post.</p>
+
+                <h2 class='section-heading'>Candidates elected</h2>
+
+                <p>First, we can order all the 238 candidates (there were actually 239, but I found on election day that I'd missed one PBP candidate from the constituency lists) by their predicted chance of being elected, and compare this to the election results.</p>
+
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-3_plot1.png')}}"/>
+
+                <p>Four of the five 'longest shots' (according to the model) that were elected were from Alliance, which was not unexpected because the model was pessimistic on the party's likely rise in vote from 2017. The party overperformed the average forecast by 1.5% in nationwide vote, but they further seem to have concentrated that strong performance in a few constituencies, resulting in the election of the four candidates shown here, each of whom was given a less than 10% chance by the model. The election probability for Alex Easton was probably underestimated, in hindsight, as discussed previously. In the case of Tom Elliott, the model downplayed his chances of election as it favoured Rosemary Barton among the two UUP candidates in the constituency, based on limited information.</p>
+
+                <p>At the other end, a few candidates missed out on election after being considered near-certainties by the model. The two DUP candidates in North Antrim were considered safe, but the party underperformed substantially here, meaning that Mervyn Storey missed out. Roy Beggs and Jennifer Gilmour were on the wrong side of very imbalanced votes with a party colleague, in East Antrim and North Down, respectively. The model did not consider it likely that the vote shares for Rachel Woods and Nichola Mallon would be as low as they ended up, and gave both around a 90% chance of being elected.</p>
+
+                <p>But, a candidate with a predicted 90% chance of being elected, who is not elected, does not equal a 'wrong' prediction; in fact, the model would have expected one in ten candidates like Woods or Mallon to lose their seats, so it was not completely unexpected that both did so. To evaluate a probabilistic forecast like this, we group candidates by their forecast probabaility of election, and check how many in each group were in fact elected. This produces a <i>reliability diagram</i>, shown below.</p>                
+
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-3_plot2.png')}}"/>
+
+                <p>The perfect forecast would produce a diagonal line at a 45-degree angle, along the 1:1 line (dashed). In this case, the solid line lying slightly on the 'flat' side of the ideal line shows that the forecast was slightly overconfident. Of the candidates in the '>98%' bucket, only 95% were elected (37/39), but the probabilities suggested that all 39 candidates would likely be elected. At the other end, 5 of the 35 candidates (14%; identified in the previous plot) in the '0.1-10%' bucket were elected, much more than the ~1 that would be expected, statistically, from the forecast probabilities.</p>
+
+                <p>Some key numbers for the candidate elected forecast as a predictive modelling task: the accuracy was 0.89; the area under the receiver operating characteristic curve (AUC) was 0.96; and the <a href='https://en.wikipedia.org/wiki/Brier_score'>Brier score</a> was 0.081. A simple, baseline prediction of 0.38 for each candidate (the fraction of candidates that were elected) gives a Brier score of 0.235, so the Brier skill score for the NIPG model is 0.66 (the ideal score is 1). Candidate election prediction is a relatively easy classification task, because a large fraction of the 239 candidates (about 100, most of those from minor parties) can easily be identified as having no realistic chance of being elected, and the majority of the incumbent candidates are very likely to be re-elected; the challenge lies in accurately predicting the chances of the remaining, 'in-between' candidates.</p>
+
+                <h2 class='section-heading'>Party seat totals</h2>
+
+                <p>The average predicted seats for each party are shown below, both from the pre-election forecast and from a recalculated forecast once the first preference percentages were known. As we know, the average forecast underestimated Alliance's vote share by 1.5%, but their overperformance in first preference votes was concentrated in a few key places that yielded seat gains, meaning that the average predicted seats was low by almost 5. Nevertheless, a 17-seat outcome for Alliance was considered possible by the forecast, but was at the 96th percentile of possible outcomes.</p>
+
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-3_plot3.png')}}" style='width: 75%; display: block; margin: auto'/>
+
+                <p>The UUP seat total was greatly overestimated, because at their polled level of first preference vote share, they were expected to threaten to take seats in several places (Lagan Valley, West Tyrone, Newry & Armagh, South Belfast, and Mid Ulster). As it turned out, their first preference vote was considerably lower than predicted, and they gained no seats, and lost one, in East Antrim. Some of those gains were expected to come from Sinn Féin, who beat the forecast in first preference vote by 2.5%, and were able to hold all of their seats from 2017.</p>
+
+                <p>The second set of seat errors shows where the forecast went wrong, or in some cases was just uncertain of the result, in the transfers phase, after all candidate first preference percentages were known. Errors are much smaller than the pre-election forecast, but the final seat totals still could not be precisely predicted. The biggest error was a continued understimate of Alliance, who won a full seat more than was predicted at the first preferences stage. This is because they won in a number of close finishes, notably in Strangford and North Antrim, in each of which the model at that stage predicted them as having about a 40% chance of winning, although they also lost out in another close battle in East Londonderry, which they were given about a 50% chance of winning.</p>
+
+                <p>The next biggest error was on TUV, where the model gave Stephen Cooper a 70% chance of winning the seat in Strangford, but he was narrowly beaten by the Alliance candidate, Nick Mathison (after Mathison came through a very close elimination against Conor Houston and then received a large transfer fraction from the SDLP candidate). The positive and negative errors for UUP and DUP, respectively, mostly come from the last seat in Foyle, which was considered as roughly a toss-up between Ryan McCready and Gary Middleton, and ultimately went to Middleton, which bumped DUP up from the predicted 24.5 to 25 seats. Sinn Féin were given about a half chance of winning a 28th seat, most likely in Upper Bann, or possibly East Londonderry, but they missed out in both places. Finally, the PBP seat total was predicted as only 0.4 because the election of Gerry Carroll in West Belfast was simulated to be much less than certain, with both SDLP and DUP having some chance in this constituency, based on the first preference situation.</p>
+
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-3_plot4.png')}}"/>
+
+                <p>The party seat total results are displayed against the forecasted ranges, above. Alliance were at the very high end of their ranges, as discussed above, and Sinn Féin were also near the high end of expectations (around the 90th percentile). UUP and SDLP were at the low end, as were Green, for whom the median prediction was 1.5 seats, and who were predicted as only a 9% chance to finish with no seats. For the group of Independent candidates to win two seats was predicted to be an 8% possibility, but as discussed previously, the uncertainty on Alex Easton's performance was probably too low, which made this two-seat outcome seem an overly remote possibility. DUP finished right in the middle of their forecasted range, and TUV and PBP finished with the overwhelmingly most likely predicted outcomes of one seat each.</p>
+
+            </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[0] is not none %}
+                    <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+                {% endif %}
+            </div>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[1] is not none %}
+                    <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+                {% endif %}
+            </div>
+        </div>
+                    
+    </div>
+</article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}
+

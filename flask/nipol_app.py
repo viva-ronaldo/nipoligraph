@@ -816,7 +816,7 @@ combined_demog_table = pd.read_csv(data_dir + 'combined_demographics_out.csv')
 
 #Election forecast
 #-----------------
-elct_files_date_string = '05apr'
+elct_files_date_string = '03may_ulivtmadjust'
 print('Using election forecast from',elct_files_date_string)
 elct_fcst_cw_fps = pd.read_csv(f'{data_dir}/election_forecast_out_1_cw_first_prefs_{elct_files_date_string}_cw.csv')
 elct_fcst_ens_party_seats = pd.read_csv(f'{data_dir}/election_forecast_out_2_ens_party_seats_{elct_files_date_string}_cw.csv')
@@ -938,7 +938,8 @@ def index():
     return render_template('index.html',
         totals_dict = totals_dict,
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
-        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()))
+        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
+        blog_pieces = blog_pieces[:3])
 
 @app.route('/what-they-say', methods=['GET'])
 def twitter():

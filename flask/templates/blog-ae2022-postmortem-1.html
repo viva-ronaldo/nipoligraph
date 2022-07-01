@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'nav.html' %}
+
+<article>
+    <div class='container-xl' style='min-height: 800px'>
+        
+        <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+                <div class="post-heading">
+                    <h1>AE2022 forecast post-mortem</h1>
+                    <h2 class="subheading">1. Party first preference votes</h2>
+                </div>
+            </div>
+        </div>
+                    
+        <div class='row mb-4'>
+            <div class="col-lg-8 col-md-10 mx-auto">
+
+                <p>The Assembly election 2022 has finally been and gone, and didn't disappoint, delivering both some surprises and a lot that went as predicted. This is the first part of a series of posts looking at the NIPG forecast: how accurate it was, and what possible future improvements can be identified.</p>
+
+                <h2 class='section-heading'>Nationwide first preference vote share</h2>
+
+                <p>The most important part of the forecast is the overall level of first preference support for the parties. Before the election, <a href="{{url_for('blog_item', post_name='election-pred-1')}}">I noted</a> that opinion polls, averaged in the form of <a href="{{url_for('polls')}}#tracker">the NIPG tracker</a>, give a reasonable estimate of the first preference values at the next election, but are not very reliable for detecting shifts in these values since the last election. With this in mind, the election forecast model was set up to predict changes in first preference percentage, and allowed to use only as much of the changes suggested by the polls as can be trusted, based on historical (2011-2017) observations. In practice this meant that the NIPG forecast values roughly split the difference between using the <a href='https://en.wikipedia.org/wiki/2017_Northern_Ireland_Assembly_election'>2017 values</a> unchanged, and using the <a href='https://twitter.com/nipoligraph/status/1521602488725643272'>latest poll tracker values</a> directly.</p>
+
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-1_plot1.png')}}"/>
+
+                <p>This is only one election, but in this case, this choice paid off: the forecast first preference percentages for the main parties were more accurate than predictions using the poll values directly. The DUP level was predicted very well, and the TUV level fairly well: the big swing from DUP to TUV seen in the polls was not fully realised, and <a href='http://www.niassembly.gov.uk/globalassets/documents/raise/publications/2017-2022/2022/2422.pdf'>support for each party</a> partially reverted back to the 2017 results, as anticipated by the forecast. The underestimate of Sinn Féin's support (polls predicted a drop from 28% to about 25%, rather than a rise to 29%) was somewhat mitigated by the forecast, which predicted a smaller drop to 26.5%. The forecast underestimated the Alliance value by 1.5%, but the polls overestimated it by an equal amount. The forecast did not, however, anticipate the drop of almost 2% and almost 3% for UUP and SDLP, respectively; the polls showed a hint of this drop for SDLP, but not for UUP.</p>
+
+                <p>The prediction of which party, DUP or Sinn Féin, would win the most seats depended crucially on the overall first preference results for both. If Sinn Féin's vote had fallen by a couple of percent, as predicted by both the NIPG forecast and the polls, they would have been unlikely to be able to hold 3-4 of their seats from 2017, and thus may not have won more seats than DUP. The forecast therefore made DUP the more likely to be the biggest party, but <a href='https://twitter.com/nipoligraph/status/1521980607991103488'>a 30% chance given to Sinn Féin</a> partly reflected the quite strong possibility that the polled levels of support would prove to be wrong by several percent.</p>
+
+                <p>So, looking to future elections, I am wondering, was there any way to anticipate that Sinn Féin would overperform against the polls so significantly? Anecdotal reports suggest that some voters may have swung from SDLP to Sinn Féin in the last few days before the election, after the last poll was taken, in which case there would be no prospect of predicting this, and allowing for large uncertainties in the outcome is the best that we can do. If, on the other hand, there was a small bias in the polls, are there any other sources of data that could show this and help avoid the forecast error? Social media activity volume or sentiment related to each party is a possibility, and news media coverage (quantity and/or content) is another. There was no way to include these in the 2022 forecast model, because historical data from the time of previous elections were not available, but I intend to look at these for 2022 and see if monitoring them could yield improvement in future.</p>
+
+                <h2 class='section-heading'>Party first preferences by constituency</h2>
+
+                <p>Modelling the nationwide vote shares accurately is one thing, but this hardly ensures that swings at constituency level will be accurately predicted. Party changes in nationwide support will naturally be concentrated more or less in different parts of the country, and local personality factors - which are only slightly accounted for by the forecast model - can create some large forecast errors in single constituencies. The plot below shows the predicted and actual party first preference vote percentage in all 18 constituencies.</p>
+
+                <img class='blog-plot' src="{{url_for('static', filename='blog_plots/ae2022-postmortem-1_plot2.png')}}"/>
+
+                <p>The correlation is very high, which is expected, since it is highly predictable that Sinn Féin will receive a larger vote in West Belfast than will DUP in Mid Ulster, and that DUP vote will be much larger than the PBP vote in South Down. In other words, we know that any forecast will be able to get most of the points lying fairly close to the 1:1 line, so it is more interesting to look at the points that <i>do not</i>, as these are the forecast errors that we want to minimise. The most obvious of these are the widespread underprediction of Sinn Féin's vote, especially in the constituencies where their vote was largest, such as West Belfast and South Down. This was mostly caused by their general overperformance against the poll tracker. This overperformance seems to have been somewhat focused in their strongest areas (the biggest forecast miss was by 9% in West Belfast), although the party received a higher vote than predicted in all but four constituencies (East Antrim, Foyle, East Belfast, and North Down).</p>
+
+                <p>The Alliance first preference vote was underpredicted by 1.5% overall, but the forecast was accurate to within 1% in seven of the constituencies, while it significantly underpredicted the vote in Strangford (by 5%), North Down (10%), and Lagan Valley (10%), in all of which the party gained a seat. The vote was underpredicted by about 3% in East Antrim, South Belfast, and Upper Bann, also places in which the party gained a seat. Alliance's rise in the polls was thus not uniformly distributed across the country, and this led to a significant underestimation of their seats won (see <a href="{{url_for('blog_item', post_name='election-postmortem-2')}}">next post</a>). Modelling these geographic patterns in changes in support will be a key area for improvement to look at in future. The result in Lagan Valley is worth noting: it was apparent from the very large vote received by Sorcha Eastwood in the 2019 General election (GE) that the party's support had, probably, risen substantially in the area since 2017; however, I couldn't see a reliable way to incorporate GE results into the forecast, so the model was blind to this information. Large swings from one GE to the next are not uncommon, and depend too sensitively on which parties choose not to run in a certain year (or worse, do run, but perhaps don't campaign as heavily as might be expected) to be useful in a model like this. I will revisit this conclusion, however, to see if some kind of manual flag term could be used to indicate to the model when support for a party or candidate <i>might</i> have changed more than can otherwise be seen from poll changes since the last Assembly election.</p>
+
+                <p>DUP first preference votes were very well forecasted: all were accurate to within about 3%, with the exception of North Down (ND) and North Antrim (NA), which were overpredicted by 8% and 9%, respectively. In both places, DUP lost a seat that was regarded as very safe in the NIPG forecast, due to this underperformance. Both seem to have been driven by unusually large personal votes, for Alex Easton in ND and for Robin Swann in NA; these will be examined in the next post. The predictions of 5-7% for TUV in all constituencies other than NA turned out to be reasonably accurate, but the party did score larger votes and beat the forecast by more than 3% in four places (South Antrim, Newry & Armagh, West Tyrone, and Strangford).</p>
+
+                <p>UUP and SDLP percentages were overpredicted across the board, due to the underperformance of both parties against the polls and the nationwide forecast (each by about 2%). UUP significantly underperformed against the forecast in places where they were predicted to have a chance of gaining seats: Lagan Valley (5% below forecast), Mid Ulster (5%), Newry & Armagh (4%), and West Tyrone (4%). SDLP underperformed in all but one constituency (East Londonderry). Three of the four biggest SDLP forecast errors were places in which they lost a seat: South Down (7% below forecast), North Belfast (5%), and Upper Bann (3%). Their other lost seat was in Lagan Valley, which occurred moreso to the big Alliance overperformance at the expense of UUP and DUP.</p>
+
+            </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[0] is not none %}
+                    <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+                {% endif %}
+            </div>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[1] is not none %}
+                    <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+                {% endif %}
+            </div>
+        </div>
+                    
+    </div>
+</article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}
