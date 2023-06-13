@@ -8,13 +8,13 @@
 
     <div class="overlay"></div>
 
-    <div class="jumbotron" style="display: flex; align-items: end; background-image: url('{{ url_for('static', filename='WHAT THEY DO.jpg') }}'); background-size: cover; filter: grayscale({{0 if session_to_plot=='2020-2022' else (0.3 if session_to_plot=='2016-2017' else (0.6 if session_to_plot=='2011-2016' else 0.8))}})">
+    <div class="jumbotron" style="display: flex; align-items: end; background-image: url('{{ url_for('static', filename='WHAT THEY DO.jpg') }}'); background-size: cover; filter: grayscale({{0.8 if session_to_plot=='2007-2011' else (0.6 if session_to_plot=='2011-2016' else (0.4 if session_to_plot=='2016-2017' else (0.2 if session_to_plot=='2020-2022' else 0)))}})">
 
       <div class="row d-flex ml-4 justify-content-start">
         <div class="col-md-6 ml-4 py-3" style='color: white'>
-          {% if session_to_plot == '2020-2022' %}
+          {% if session_to_plot == current_session %}
             <h1 class='display-3'>What They <b>Do</b></h1>
-            <p>This page is focused on the current Assembly session, which started on 11 January 2020, and tracks the activity of members and ministers via questions asked and answered, contributions to debates, and votes.</p>
+            <p>This page is focused on the current Assembly session, which (nominally) started in June 2022, and tracks the activity of members and ministers via questions asked and answered, contributions to debates, and votes.</p>
           {% else %}
             <h1 class='display-3'>What They <span style='text-decoration: line-through;'>Do</span> <b>Did</b></h1>
             <p>This page shows historical Assembly data from the <b>{{session_to_plot}} session</b>, and tracks the activity of members and ministers via questions asked and answered, contributes to debates, and votes.</p>
@@ -38,7 +38,7 @@
         </form>
       </div>
 
-      {% if session_to_plot == '2020-2022' %}
+      {% if session_to_plot == current_session %}
         <div class="row mb-2 justify-content-md-center">
 
           <div class="my-header px-5 py-3 pt-md-5 pb-md-2 mx-auto text-center">
@@ -186,22 +186,26 @@
                   <td><b>{{nat_tabled_passed_details[2]}}</b> ({{nat_tabled_passed_details[0]}}/{{nat_tabled_passed_details[1]}}) motions tabled by <b>nationalists</b> have passed</td>
                   <td><span id='nat_votes_passed_sparkline'></span></td>
                 </tr>
-
-                <tr>
-                  <td colspan='2'><b>{{mix_tabled_passed_details[2]}}</b> ({{mix_tabled_passed_details[0]}}/{{mix_tabled_passed_details[1]}}) motions tabled by more than one group have passed</td>
-                </tr>
+                {% if mix_tabled_passed_details[1] > 0 %}
+                  <tr>
+                    <td colspan='2'><b>{{mix_tabled_passed_details[2]}}</b> ({{mix_tabled_passed_details[0]}}/{{mix_tabled_passed_details[1]}}) motions tabled by more than one group have passed</td>
+                  </tr>
+                {% endif %}
                 <tr>
                   <td colspan='2'><b>{{uni_nat_split_details[0]}}</b> ({{(100*uni_nat_split_details[0]/votes_passed_details[1]) |round|int}}%) votes were split unionist/nationalist (<b>{{num_uni_nat_split_passes}}</b> passed)</td>
                 </tr>
-
+                {% if alli_like_uni_details[0] > 0 %}
+                  <tr>
+                    <td>In <b>{{alli_like_uni_details[1]}}</b> split votes, Alliance have voted with unionists in <b>{{alli_like_uni_details[0]}}</b> vote{{'s' if alli_like_uni_details[0] == 1 else ''}} and with nationalists in <b>{{alli_like_nat_details[0]}}</b> vote{{'s' if alli_like_nat_details[0] == 1 else ''}}</td>
+                    <td><span id='alli_split_sparkline'></span></td>
+                  </tr>
+                {% endif %}
+                {% if green_like_uni_details[0] > 0 %}
                 <tr>
-                  <td>In <b>{{alli_like_uni_details[1]}}</b> split votes, Alliance have voted with unionists in <b>{{alli_like_uni_details[0]}}</b> vote{{'s' if alli_like_uni_details[0] > 1 else ''}} and with nationalists in <b>{{alli_like_nat_details[0]}}</b> vote{{'s' if alli_like_nat_details[0] > 1 else ''}}</td>
-                  <td><span id='alli_split_sparkline'></span></td>
-                </tr>
-                <tr>
-                  <td>In <b>{{green_like_uni_details[1]}}</b> split votes, Green have voted with unionists in <b>{{green_like_uni_details[0]}}</b> vote{{'s' if green_like_uni_details[0] > 1 else ''}} and with nationalists in <b>{{green_like_nat_details[0]}}</b> vote{{'s' if green_like_nat_details[0] > 1 else ''}}</td>
+                  <td>In <b>{{green_like_uni_details[1]}}</b> split votes, Green have voted with unionists in <b>{{green_like_uni_details[0]}}</b> vote{{'s' if green_like_uni_details[0] == 1 else ''}} and with nationalists in <b>{{green_like_nat_details[0]}}</b> vote{{'s' if green_like_nat_details[0] == 1 else ''}}</td>
                   <td><span id='green_split_sparkline'></span></td>
                 </tr>
+                {% endif %}
 
               </table>
 

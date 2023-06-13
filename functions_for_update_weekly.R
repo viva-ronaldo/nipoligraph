@@ -112,12 +112,17 @@ update_vote_list <- function(votes_file, vote_results_file) {
 }
 
 update_and_get_politicians_list <- function(path_to_politicians_file='data/all_politicians_list.csv') {
-    tmp <- GET(sprintf('http://data.niassembly.gov.uk/members.asmx/GetAllCurrentMembers_JSON'))
-    mlas <- fromJSON(content(tmp, as='text'))$AllMembersList$Member
-    
     politicians <- read.csv(path_to_politicians_file)
-    
-    new_mlas <- subset(mlas, !(MemberName %in% politicians$MemberName))
+    # Sometimes get no response from address; we don't need to do the update, can fall back to using current politicians list
+    tryCatch({
+        tmp <- GET(sprintf('http://data.niassembly.gov.uk/members.asmx/GetAllCurrentMembers_JSON'))
+        mlas <- fromJSON(content(tmp, as='text'))$AllMembersList$Member
+        new_mlas <- subset(mlas, !(MemberName %in% politicians$MemberName))
+    },
+    error = function(e) {
+        message("Couldn't reach data.niassembly.gov.uk; using existing politicians list")
+        new_mlas <- data.frame()
+    })
     if (nrow(new_mlas) > 0) {
         politicians <- rbind(politicians,
                              new_mlas %>% mutate(role='MLA', normal_name=paste(MemberFirstName, MemberLastName), added=as.character(Sys.Date()), active=1) %>%
@@ -145,22 +150,26 @@ update_and_get_politicians_list <- function(path_to_politicians_file='data/all_p
 }
 
 update_assembly_lists <- function() {
-    #Diary of business
-    tmp <- GET(sprintf('http://data.niassembly.gov.uk/plenary.asmx/GetBusinessDiary_JSON?startDate=%s&endDate=2025-01-01', Sys.Date()))
-    diary <- fromJSON(content(tmp, as='text'))$BusinessDiary$DiaryItem
-    write.table(diary, 'data/diary_future_events.psv', quote=FALSE, row.names=FALSE, sep='|')
-    
-    #Latest committee memberships 
-    tmp <- GET('http://data.niassembly.gov.uk/members.asmx/GetAllMemberRoles_JSON?')
-    roles_list <- fromJSON(content(tmp, as='text'))$AllMembersRoles$Role
-    committees_list <- subset(roles_list, Role %in% c('Committee Member','Committee Chair','Committee Deputy Chair'))
-    write.csv(committees_list[,c('PersonId','Organisation','Role')], 'data/current_committee_memberships.csv', quote=TRUE, row.names=FALSE)
-    
-    #Latest minister list - handy for catching changes quickly
-    minister_list <- subset(roles_list, tolower(Role) %in% c('minister','first minister','deputy first minister','junior minister','speaker','deputy speaker','principal deputy speaker'))
-    minister_list$AffiliationTitle[minister_list$AffiliationTitle == 'deputy First Minister'] <- 'Deputy First Minister'
-    minister_list$AffiliationTitle[minister_list$AffiliationTitle == 'junior Minister'] <- 'Junior Minister in Executive Office'
-    write.csv(minister_list[,c('PersonId','Organisation','AffiliationTitle')], 'data/current_ministers_and_speakers.csv', quote=TRUE, row.names=FALSE)
+    tryCatch({
+        #Diary of business
+        tmp <- GET(sprintf('http://data.niassembly.gov.uk/plenary.asmx/GetBusinessDiary_JSON?startDate=%s&endDate=2025-01-01', Sys.Date()))
+        diary <- fromJSON(content(tmp, as='text'))$BusinessDiary$DiaryItem
+        write.table(diary, 'data/diary_future_events.psv', quote=FALSE, row.names=FALSE, sep='|')
+        
+        #Latest committee memberships 
+        tmp <- GET('http://data.niassembly.gov.uk/members.asmx/GetAllMemberRoles_JSON?')
+        roles_list <- fromJSON(content(tmp, as='text'))$AllMembersRoles$Role
+        committees_list <- subset(roles_list, Role %in% c('Committee Member','Committee Chair','Committee Deputy Chair'))
+        write.csv(committees_list[,c('PersonId','Organisation','Role')], 'data/current_committee_memberships.csv', quote=TRUE, row.names=FALSE)
+        
+        #Latest minister list - handy for catching changes quickly
+        minister_list <- subset(roles_list, tolower(Role) %in% c('minister','first minister','deputy first minister','junior minister','speaker','deputy speaker','principal deputy speaker'))
+        minister_list$AffiliationTitle[minister_list$AffiliationTitle == 'deputy First Minister'] <- 'Deputy First Minister'
+        minister_list$AffiliationTitle[minister_list$AffiliationTitle == 'junior Minister'] <- 'Junior Minister in Executive Office'
+        write.csv(minister_list[,c('PersonId','Organisation','AffiliationTitle')], 'data/current_ministers_and_speakers.csv', quote=TRUE, row.names=FALSE)
+    }, 
+    error=function(e) { message('Failed to complete update_assembly_lists; continuing') }
+    )
 
     invisible()
 }
@@ -201,6 +210,8 @@ add_pca_scores_to_tweets <- function(new_mla_tweets) {
 }
 
 get_tidy_hansardcomponents_object <- function(plenary_doc_id, session_choice) {
+    #2020-2022, 2022-2027, and future will go to all_politicians_list; 
+    #  hist_mla_ids contains lists up to 2020-2022 but it is all 294 members in each session so doesn't seem to have been useful
     if (session_choice < '2020-2022') {
         niassembly_mla_list <- subset(read_feather('./data/hist_mla_ids_by_session.feather'),
                                             session_name == session_choice)[,c('MemberLastName','normal_name')]

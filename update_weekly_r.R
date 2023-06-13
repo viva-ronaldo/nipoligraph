@@ -1,14 +1,17 @@
-library(dplyr)
+suppressPackageStartupMessages(library(dplyr))
 library(httr)
 library(jsonlite)
 library(feather)
-library(rtweet)
+suppressPackageStartupMessages(library(rtweet))
 library(stringr)
 library(tidytext)
 library(magrittr)
 library(sentimentr)
-library(network)
-library(GGally)
+suppressPackageStartupMessages(library(network))
+suppressPackageStartupMessages(library(GGally))
+suppressPackageStartupMessages(library(igraph))
+library(intergraph)
+
 
 if (Sys.info()['user']=='rstudio') setwd('/home/rstudio/nipol')
 
@@ -28,6 +31,11 @@ source('./functions_for_update_weekly.R')
 #DONE score tweets sentiment in python
 #DONE tweet network
 
+current_session_name <- '2022-2027'
+
+current_min_session_name_for_plenary <- '2022-2023'
+#e.g. 2022-2023 for the larger 2022-2027 session
+
 #First check for any new MLAs and add to the politicians file, then return the list
 politicians <- update_and_get_politicians_list()
 
@@ -36,29 +44,38 @@ update_assembly_lists()
 
 #Questions and answers ----
 
+#TODO move to function and add tryCatch?
+
 #Get questions with different method than originally, to use time filtering; go back further than should be necessary, just in case
 tmp <- GET(sprintf('http://data.niassembly.gov.uk/questions.asmx/GetQuestionsForOralAnswer_TabledInRange_JSON?startDate=%s&endDate=%s',
-                   Sys.Date()-21, '2025-01-01'))
+                   Sys.Date()-21, Sys.Date()+500))
 tmp <- fromJSON(content(tmp, as='text'))$QuestionsList$Question
 
 tmp2 <- GET(sprintf('http://data.niassembly.gov.uk/questions.asmx/GetQuestionsForWrittenAnswer_TabledInRange_JSON?startDate=%s&endDate=%s',
-                   Sys.Date()-21, '2025-01-01'))
+                   Sys.Date()-21, Sys.Date()+500))
 tmp2 <- fromJSON(content(tmp2, as='text'))$QuestionsList$Question
 
 new_questions <- data.frame()
-if (!is.null(tmp)) {
+#Some questions can be asked to Assembly Commission, which has no MinisterPersonId,
+#  and if these are the only questions found, MinisterPersonId is omitted from the response.
+#  We can skip those questions (is.na(MinisterPersonId)) but skip entirely if MinisterPersonId is not in response.
+if (!is.null(tmp) & 'MinisterPersonId' %in% names(tmp)) {
     tmp$RequestedAnswerType <- 'oral'
     new_questions <- rbind(new_questions,
-                           tmp %>% select(DocumentId, TabledDate, TablerPersonId, MinisterPersonId,
-                                          QuestionText, RequestedAnswerType))
+                           tmp %>% 
+                               filter(!is.na(MinisterPersonId)) %>%
+                               select(DocumentId, TabledDate, TablerPersonId, MinisterPersonId,
+                                      QuestionText, RequestedAnswerType))
 }
-if (!is.null(tmp2)) {
+if (!is.null(tmp2) & 'MinisterPersonId' %in% names(tmp2)) {
     tmp2$RequestedAnswerType <- 'written'
     new_questions <- rbind(new_questions,
-                           tmp2 %>% select(DocumentId, TabledDate, TablerPersonId, MinisterPersonId,
-                                           QuestionText, RequestedAnswerType))
+                           tmp2 %>% 
+                               filter(!is.na(MinisterPersonId)) %>%
+                               select(DocumentId, TabledDate, TablerPersonId, MinisterPersonId,
+                                      QuestionText, RequestedAnswerType))
 }
-questions_file_path <- 'data/niassembly_questions_alltopresent.feather'
+questions_file_path <- 'data/niassembly_questions.feather'
 existing_questions <- read_feather(questions_file_path)
 if (nrow(new_questions) > 0) {
     existing_questions <- rbind(existing_questions, new_questions) %>% filter(!duplicated(.[,c('DocumentId','MinisterPersonId')]))
@@ -68,7 +85,7 @@ if (nrow(new_questions) > 0) {
 } 
 
 #Get answers with function
-answers_file_path <- 'data/niassembly_answers_alltopresent.feather'
+answers_file_path <- 'data/niassembly_answers.feather'
 existing_answers <- read_feather(answers_file_path)
 pending_questions <- existing_questions$DocumentId[!(existing_questions$DocumentId %in% existing_answers$DocumentId)]
 if (length(pending_questions) > 0) {
@@ -83,14 +100,14 @@ message('Doing votes')
 update_vote_list('data/division_votes.feather', 'data/division_vote_results.feather')
 
 #Contributions ----
-contribs_filepath <- 'data/plenary_hansard_contribs_201920sessions_topresent.feather'
+contribs_filepath <- 'data/plenary_hansard_contribs.feather'
 existing_contribs <- read_feather(contribs_filepath)
 tmp <- GET('http://data.niassembly.gov.uk/hansard.asmx/GetAllHansardReports_JSON?')
 new_reports_list <- fromJSON(content(tmp, as='text'))$AllHansardComponentsList$HansardComponent %>%
-    filter(PlenarySessionName >= '2019-2020', !(ReportDocId %in% existing_contribs$ReportDocId))
+    filter(PlenarySessionName >= current_min_session_name_for_plenary, !(ReportDocId %in% existing_contribs$ReportDocId))
 new_contribs <- data.frame()
 for (doc_id in new_reports_list$ReportDocId) {
-    session_hansard_contribs <- get_tidy_hansardcomponents_object(doc_id, '2020-2022')
+    session_hansard_contribs <- get_tidy_hansardcomponents_object(doc_id, current_session_name)
     #at least one plenary was just two minutes' silence so returns 0 rows
     if (nrow(session_hansard_contribs) > 0) {
         session_hansard_contribs$ReportDocId <- doc_id
@@ -121,7 +138,7 @@ mla_emotions <- rbind(mla_emotions,
         emotion_by(split_text, by=speaker))
 message('Done plenary emotion chunk 3')
 message('Writing plenary contribs with emotions')
-write_feather(mla_emotions, 'data/plenary_hansard_contribs_emotions_averaged_201920sessions_topresent.feather')
+write_feather(mla_emotions, 'data/plenary_hansard_contribs_emotions_averaged.feather')
 
 rm(existing_contribs, new_contribs)
 
@@ -130,20 +147,28 @@ rm(existing_contribs, new_contribs)
 
 #Add sentiment on the summaries, now updated elsewhere
 news_articles <- read_feather('data/newscatcher_articles_sep2020topresent.feather')
+news_articles_with_sentiment <- read_feather('data/newscatcher_articles_slim_w_sentiment_sep2020topresent.feather')
+new_news_articles <- anti_join(news_articles, news_articles_with_sentiment, 
+        by=c('normal_name', 'published_date', 'title'))
+message(sprintf('%i new articles to score for sentiment', nrow(new_news_articles)))
 
-news_articles$article_id <- seq_along(news_articles$normal_name)
-news_sentiments <- news_articles %>%
-    mutate(summary_split = get_sentences(summary)) %$%
-    sentiment_by(summary_split, list(normal_name,article_id),
-                 polarity_dt = lexicon::hash_sentiment_jockers_rinker %>% filter(!grepl('^econo|justice|money|assembly|traditional|socialist|progressive|conservative|voter|elect|holiday|guardian|star|independence|united',x)))
-news_articles <- left_join(news_articles,
-                           news_sentiments %>% select(article_id, sr_sentiment_score=ave_sentiment),
-                           by='article_id') %>%
-    select(-article_id)
-message('Writing news slim sentiment')
-write_feather(news_articles[,c('normal_name','published_date','source','link','title','sr_sentiment_score')],
-              'data/newscatcher_articles_slim_w_sentiment_sep2020topresent.feather')
+if (nrow(new_news_articles) > 0) {
+    new_news_articles$article_id <- seq_along(new_news_articles$normal_name)
+    new_news_sentiments <- new_news_articles %>%
+        mutate(summary_split = get_sentences(summary)) %$%
+        sentiment_by(summary_split, list(normal_name,article_id),
+                     polarity_dt = lexicon::hash_sentiment_jockers_rinker %>% filter(!grepl('^econo|justice|money|assembly|traditional|socialist|progressive|conservative|voter|elect|holiday|guardian|star|independence|united',x)))
+    new_news_articles <- left_join(new_news_articles,
+        new_news_sentiments %>% select(article_id, sr_sentiment_score=ave_sentiment),
+            by='article_id') %>%
+        select(-article_id)
 
+    news_articles <- rbind(news_articles_with_sentiment, 
+        new_news_articles[,c('normal_name','published_date','source','link','title','sr_sentiment_score')])
+    message('Writing news slim sentiment')
+    write_feather(news_articles,
+                  'data/newscatcher_articles_slim_w_sentiment_sep2020topresent.feather')
+}
 
 #Tweets ----
 
@@ -164,13 +189,16 @@ twitter_ids <- read.csv('data/politicians_twitter_accounts_ongoing.csv', strings
 #6/6/21: John Stewart,UUP,1391853244016644100,John Stewart,johnstewartuup,2021-05-10 20:30:57,20,219
 
 #Other notes:
-#Late May 2021 user_id 275799277 changed screen_name from DUPleader to ArleneFosterUK; no problem here
-#paulabradleymla deleted account ~March 2021
-#May 2021 John Stewart closed old account and started as johnstewartuup, user_id 1391853244016644100
+#- Late May 2021 user_id 275799277 changed screen_name from DUPleader to ArleneFosterUK; no problem here
+#- paulabradleymla deleted account ~March 2021
+#- May 2021 John Stewart closed old account and started as johnstewartuup, user_id 1391853244016644100
+#- Missed some in early August to late October 2022 because the update didn't run and won't be able to
+#    get them all retrospectively for the big users.
 
 twitter_ids <- subset(twitter_ids, !(user_id %in% c('262862076', #Paula Bradley, deleted
                                                     '1079572046') #John Stewart, deleted and replaced
                                      ))
+cat(sprintf('Get tweets for %i users\n', nrow(twitter_ids)))
 
 # ## create token named "twitter_token"
 # twitter_token <- create_token(
@@ -194,12 +222,16 @@ go_back_to_time <- max(existing_mla_tweets$created_at)
 #new_mla_tweets <- get_all_tweets_back_to_date(mla_ids, go_back_to_time)
 #can maybe just do in one go if guaranteeing noone will have more than 1000 (in a week)
 #  About 600 should be enough to cover Aiken, Long
-cat('Get Twitter users 1-40\n')
-new_mla_tweets <- tweets_data(get_timelines(user = twitter_ids$user_id[1:40], n = 600))  #get all at once
-cat('Get Twitter users 41-70\n')
-new_mla_tweets <- rbind(new_mla_tweets, tweets_data(get_timelines(user = twitter_ids$user_id[41:70], n = 600)))
-cat('Get Twitter users 71-end\n')
-new_mla_tweets <- rbind(new_mla_tweets, tweets_data(get_timelines(user = twitter_ids$user_id[71:length(twitter_ids$user_id)], n = 600)))
+cat('Get Twitter users 1-20\n')
+new_mla_tweets <- tweets_data(get_timelines(user = twitter_ids$user_id[1:20], n = 600))  #get all at once
+cat('Get Twitter users 21-40\n')
+new_mla_tweets <- rbind(new_mla_tweets, tweets_data(get_timelines(user = twitter_ids$user_id[21:40], n = 600)))
+cat('Get Twitter users 41-60\n')
+new_mla_tweets <- rbind(new_mla_tweets, tweets_data(get_timelines(user = twitter_ids$user_id[41:60], n = 600)))
+cat('Get Twitter users 61-80\n')
+new_mla_tweets <- rbind(new_mla_tweets, tweets_data(get_timelines(user = twitter_ids$user_id[61:80], n = 600)))
+cat('Get Twitter users 81-end\n')
+new_mla_tweets <- rbind(new_mla_tweets, tweets_data(get_timelines(user = twitter_ids$user_id[81:length(twitter_ids$user_id)], n = 600)))
 new_mla_tweets <- new_mla_tweets[new_mla_tweets$created_at >= go_back_to_time, ]
 new_mla_tweets <- new_mla_tweets[!duplicated(new_mla_tweets), ]
 new_mla_tweets <- new_mla_tweets[, c('user_id','status_id','created_at','screen_name',
@@ -327,9 +359,7 @@ write.csv(tmp, 'flask/static/tweets_network_last3months_edges.csv', quote=FALSE,
 #Get top 5s of network measures
 myplot$data$betw_centr <- sna::betweenness(retweets_network, cmode='directed')
 myplot$data$info_centr <- sna::infocent(retweets_network) 
-library(igraph)
-library(intergraph)
-myplot$data$page_rank <- igraph::page_rank(asIgraph(retweets_network))$vector
+myplot$data$page_rank <- page_rank(asIgraph(retweets_network))$vector
 data.frame(rank=seq(5), 
            info_centr = arrange(myplot$data, -info_centr) %>% head(5) %>% pull(plot_label_all),
            page_rank = arrange(myplot$data, -page_rank) %>% head(5) %>% pull(plot_label_all),

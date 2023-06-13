@@ -1,4 +1,5 @@
-from flask import Flask, render_template, url_for, request, flash, jsonify, redirect
+from flask import Flask, render_template, url_for, \
+    request, flash, jsonify, redirect, send_from_directory
 import datetime, re, getpass, os, time
 import pickle, json, feather
 import pandas as pd
@@ -34,11 +35,12 @@ app.url_map.strict_slashes = False
 #Regular update:
 #- mlas_2019_tweets_apr2019min_to_present.feather
 #- vader_scored_tweets_apr2019min_to_present.csv
-#- niassembly_questions_alltopresent.feather
-#- niassembly_answers_alltopresent.feather
+#- niassembly_questions.feather
+#- niassembly_answers.feather
 #- division_votes.feather
 #- division_vote_results.feather
 #- lda_scored_plenary_contribs.csv
+#- plenary_hansard_contribs_emotions_averaged.feather
 #- diary_future_events.psv
 #- current_ministers_and_speakers.csv
 #- current_committee_memberships.csv
@@ -58,11 +60,14 @@ else:
 pca_votes_threshold_fraction = 0.70
 news_volume_average_window_weeks = 7
 poll_track_timestep = 100 if test_mode else 10
-valid_session_names = ['2020-2022','2016-2017','2011-2016','2007-2011'] #order for dropdown menu
+#Assembly page sessions
+valid_session_names = ['2022-2027','2020-2022','2016-2017','2011-2016','2007-2011'] #order for dropdown menu
+CURRENT_ASSEMBLY_SESSION = valid_session_names[0]
 #Some plot settings 
 hover_exclude_opacity_value = 0.4  #when hovered case goes to 1.0, what do rest go to
 larger_tick_label_size = 14  #for web mode, on some/all plots
-
+#Election forecast is usually off
+show_election_forecast = False
 
 #use the colours we get from 'tableau20' but make repeatable and for reuse on indiv page
 plenary_contribs_colour_dict = {
@@ -209,8 +214,8 @@ tweets_df = tweets_df[tweets_df['normal_name'].isin(mla_ids['normal_name'])]
 tweets_df['tweet_type'] = tweets_df.is_retweet.apply(lambda b: 'retweet' if b else 'original')
 #tweets_df['created_at_week'] = tweets_df['created_at'].dt.isocalendar().week
 tweets_df['created_at_week'] = tweets_df['created_at'].dt.week
-#early Jan can be counted as week 53 by pd.week - messes things up
-tweets_df.loc[(tweets_df.created_at_week==53) & (tweets_df.created_at.dt.day <= 7), 'created_at_week'] = 1
+#early Jan can be counted as week 52 or 53 by pd.week - messes things up
+tweets_df.loc[(tweets_df.created_at_week >= 52) & (tweets_df.created_at.dt.day <= 7), 'created_at_week'] = 1
 tweets_df['created_at_yweek'] = tweets_df.apply(
     lambda row: '{:s}-{:02g}'.format(row['created_ym'][:4], row['created_at_week']), axis=1)
 
@@ -290,11 +295,10 @@ print('Done Twitter')
 
 #Assembly 
 #--------
-questions_df = feather.read_dataframe(data_dir + 'niassembly_questions_alltopresent.feather')
+questions_df = feather.read_dataframe(data_dir + 'niassembly_questions.feather')
+
 questions_df = questions_df.merge(mla_ids[['PersonId','normal_name','PartyName']],
     left_on = 'TablerPersonId', right_on = 'PersonId', how='left')
-#Filtering to current session
-questions_df = questions_df.query("TabledDate > '2020-02-01'")
 #For plot facet labels
 questions_df['RequestedAnswerType'] = questions_df.RequestedAnswerType.apply(
     lambda rat: 'Oral' if rat=='oral' else ('Written' if rat=='written' else rat)
@@ -314,7 +318,8 @@ if len(questioners) > 0:
 else:
     questioners['tooltip_text'] = []
 
-answers_df = feather.read_dataframe(data_dir + 'niassembly_answers_alltopresent.feather')
+answers_df = feather.read_dataframe(data_dir + 'niassembly_answers.feather')
+
 answers_df = answers_df.merge(mla_ids[['PersonId','normal_name','PartyName']]\
         .rename(index=str, columns={'normal_name': 'Tabler_normal_name', 
             'PersonId': 'TablerPersonId',' PartyName': 'Tabler_party_name'}), 
@@ -323,9 +328,10 @@ answers_df = answers_df.merge(mla_ids[['PersonId','normal_name','PartyName']]\
         .rename(index=str, columns={'normal_name': 'Minister_normal_name', 
             'PersonId': 'MinisterPersonId', 'PartyName': 'Minister_party_name'}), 
     on='MinisterPersonId', how='left')
-answers_df['Days_to_answer'] = (pd.to_datetime(answers_df['AnsweredOnDate']) - pd.to_datetime(answers_df['TabledDate'])).dt.days 
+#answers_df['Days_to_answer'] = (pd.to_datetime(answers_df['AnsweredOnDate'], utc=True) - pd.to_datetime(answers_df['TabledDate'], utc=True)).dt.days   #fails to convert if there is a mix of offsets
+answers_df['Days_to_answer'] = answers_df.apply(lambda row: (pd.to_datetime(row['AnsweredOnDate'][:10]) - pd.to_datetime(row['TabledDate'][:10])).days, axis=1)
 #Filtering to current session (there are some 2017-2019 entries but all have missing MinisterPersonId anyway)
-answers_df = answers_df.query("TabledDate > '2020-02-01'")
+#answers_df = answers_df.query("TabledDate > '2022-06-01'")
 
 # minister_answers = answers_df[answers_df.MinisterTitle != 'Assembly Commission']\
 #     .groupby(['Minister_normal_name','Minister_party_name']).DocumentId.count().reset_index()\
@@ -359,9 +365,11 @@ print('Done questions and answers')
 
 #Votes
 votes_df = feather.read_dataframe(data_dir + 'division_votes.feather')
+
 vote_results_df = feather.read_dataframe(data_dir + 'division_vote_results.feather')
 vote_results_df = vote_results_df.merge(mla_ids[['PersonId','PartyName']], 
     on='PersonId', how='left')
+
 vote_results_df = vote_results_df[vote_results_df.PartyName.notnull()]  #drop a few with missing member and party names
 vote_results_df['PartyName'] = vote_results_df.PartyName.apply(lambda p: party_names_translation[p])
 votes_df = votes_df.merge(vote_results_df, on='EventId', how='inner')
@@ -414,7 +422,7 @@ v_comms = feather.read_dataframe(data_dir + 'division_votes_v_comms.feather')
 #plenary_contribs_df = plenary_contribs_df[plenary_contribs_df.speaker.isin(mla_ids.normal_name)]
 
 scored_plenary_contribs_df = pd.read_csv(data_dir + 'lda_scored_plenary_contribs.csv')
-scored_plenary_contribs_df = scored_plenary_contribs_df[scored_plenary_contribs_df.speaker.isin(mla_ids.normal_name)]
+#scored_plenary_contribs_df = scored_plenary_contribs_df[scored_plenary_contribs_df.speaker.isin(mla_ids.normal_name)]
 
 plenary_contribs_topic_counts =  scored_plenary_contribs_df.groupby('topic_name').count().reset_index()\
     [['topic_name','session_id']].rename(index=str, columns={'session_id': 'n_contribs'})
@@ -434,7 +442,9 @@ else:
     plenary_contribs_topic_counts['tooltip_text'] = []
 
 #plenary contrib emotions
-emotions_df = feather.read_dataframe(data_dir + 'plenary_hansard_contribs_emotions_averaged_201920sessions_topresent.feather')
+emotions_df = feather.read_dataframe(data_dir + 'plenary_hansard_contribs_emotions_averaged.feather')
+#TODO empty file? It should get remade next update when there are some entries
+
 emotions_df = emotions_df.merge(mla_ids[['normal_name','PartyName']], 
     left_on='speaker', right_on='normal_name', how='inner')
 emotions_party_agg = emotions_df.groupby(['PartyName','emotion_type']).apply(
@@ -466,6 +476,10 @@ diary_df['EventHTMLColour'] = diary_df.EventName.apply(lambda e: diary_colour_di
 
 #Assembly historical
 #-------------------
+
+#Read in original hist files for 2007-2019 sessions, and append
+#  later sessions that become historical, which is 2020-2022
+
 #Session dates 
 def assign_session_name(date_string):
     if date_string < '2007-03-07':
@@ -478,19 +492,28 @@ def assign_session_name(date_string):
         session_name = '2016-2017'
     elif date_string < '2020-01-11':
         session_name = '2017-2019'
-    else:
+    elif date_string < '2022-06-01':
         session_name = '2020-2022'
+    else:
+        session_name = '2022-2027'
     return session_name
 #There were some questions submitted in the 2017-2019 period but don't plot this session
 
-#TODO this is the slowest read in section
+hist_mla_ids = pd.concat([
+    feather.read_dataframe(data_dir + 'hist_mla_ids_by_session.feather'),
+    feather.read_dataframe(data_dir + 'hist_20202022_mla_ids_by_session.feather')
+    ])
+print(f'{len(hist_mla_ids)} rows in hist mla ids')
 
-hist_mla_ids = feather.read_dataframe(data_dir + 'hist_mla_ids_by_session.feather')
 hist_mla_ids['PartyGroup'] = hist_mla_ids.PartyName.apply(lambda p: party_group_dict[p])
 hist_mla_ids['PartyName_long'] = hist_mla_ids.PartyName.apply(lambda p: party_names_translation_long[p])
 hist_mla_ids['PartyName'] = hist_mla_ids.PartyName.apply(lambda p: party_names_translation[p])
 
-hist_questions_df = feather.read_dataframe(data_dir + 'historical_niassembly_questions_asked.feather')
+hist_questions_df = pd.concat([
+    feather.read_dataframe(data_dir + 'historical_niassembly_questions_asked.feather'),
+    feather.read_dataframe(data_dir + 'historical_20202022_niassembly_questions_asked.feather')
+    ])
+print(f'{len(hist_questions_df)} rows in hist questions')
 hist_questions_df['session_name'] = hist_questions_df.TabledDate.apply(assign_session_name)
 #Join after adding session_name
 hist_questions_df = hist_questions_df.merge(hist_mla_ids[['PersonId','normal_name','PartyName','session_name']],
@@ -511,7 +534,11 @@ hist_questioners['tooltip_text'] = hist_questioners.apply(
 )
 
 #Historical answers
-hist_answers_df = feather.read_dataframe(data_dir + 'historical_niassembly_answers.feather')
+hist_answers_df = pd.concat([
+    feather.read_dataframe(data_dir + 'historical_niassembly_answers.feather'),
+    feather.read_dataframe(data_dir + 'historical_20202022_niassembly_answers.feather')
+    ])
+print(f'{len(hist_answers_df)} rows in hist answers')
 hist_answers_df['session_name'] = hist_answers_df.AnsweredOnDate.apply(assign_session_name)
 hist_answers_df = hist_answers_df.merge(hist_mla_ids[['PersonId','normal_name','PartyName','session_name']]\
         .rename(index=str, columns={'normal_name': 'Tabler_normal_name', 
@@ -541,9 +568,18 @@ hist_minister_time_to_answer['tooltip_text'] = hist_minister_time_to_answer.appl
 print('Done historical questions and answers')
 
 #Historical votes
-hist_votes_df = feather.read_dataframe(data_dir + 'historical_division_votes.feather')
+hist_votes_df = pd.concat([
+    feather.read_dataframe(data_dir + 'historical_division_votes.feather'),
+    feather.read_dataframe(data_dir + 'historical_20202022_division_votes.feather')
+    ])
+print(f'{len(hist_votes_df)} rows in hist votes')
 hist_votes_df = hist_votes_df.rename(index=str, columns={'EventID':'EventId'})
-hist_vote_results_df = feather.read_dataframe(data_dir + 'historical_division_vote_results.feather')
+
+hist_vote_results_df = pd.concat([
+    feather.read_dataframe(data_dir + 'historical_division_vote_results.feather'),
+    feather.read_dataframe(data_dir + 'historical_20202022_division_vote_results.feather')
+    ])
+print(f'{len(hist_vote_results_df)} rows in hist vote_results')
 #Reorder operations from above
 hist_votes_df = hist_votes_df.merge(hist_vote_results_df, on='EventId', how='inner')
 
@@ -604,10 +640,18 @@ for session_name in hist_votes_df.session_name.unique():
 # )
 
 #hist votes commentary - can do all at once and filter later by column vote_date
-hist_v_comms = feather.read_dataframe(data_dir + 'historical_division_votes_v_comms.feather')
+hist_v_comms = pd.concat([
+    feather.read_dataframe(data_dir + 'historical_division_votes_v_comms.feather'),
+    feather.read_dataframe(data_dir + 'historical_20202022_division_votes_v_comms.feather')
+    ])
+print(f'{len(hist_v_comms)} rows in hist votes comms, {sum(hist_v_comms.session_name.notnull())} with session_name')
 print('Done historical votes')
 
-hist_plenary_contribs_df = pd.read_csv(data_dir + 'hist_lda_scored_plenary_contribs.csv')
+hist_plenary_contribs_df = pd.concat([
+    pd.read_csv(data_dir + 'hist_lda_scored_plenary_contribs.csv'),
+    pd.read_csv(data_dir + 'hist_20202022_lda_scored_plenary_contribs.csv')
+    ])
+print(f'{len(hist_plenary_contribs_df)} rows in hist plenary contribs')
 hist_plenary_contribs_df['session_name'] = hist_plenary_contribs_df.PlenaryDate.apply(assign_session_name)
 
 hist_plenary_contribs_topic_counts =  hist_plenary_contribs_df\
@@ -620,7 +664,11 @@ hist_plenary_contribs_topic_counts['tooltip_text'] = hist_plenary_contribs_topic
     lambda row: f"{row['topic_name']}: strongest words are {row['top5_words']}", axis=1
 )
 
-hist_emotions_df = feather.read_dataframe(data_dir + 'hist_plenary_hansard_contribs_emotions_averaged.feather')
+hist_emotions_df = pd.concat([
+    feather.read_dataframe(data_dir + 'hist_plenary_hansard_contribs_emotions_averaged.feather'),
+    feather.read_dataframe(data_dir + 'hist_20202022_plenary_hansard_contribs_emotions_averaged.feather')
+    ])
+print(f'{len(hist_emotions_df)} rows in hist emotions')
 hist_emotions_df = hist_emotions_df.merge(hist_mla_ids[['normal_name','PartyName','session_name']], 
     left_on=['speaker','session_name'], 
     right_on=['normal_name','session_name'], 
@@ -634,7 +682,7 @@ print('Done historical contributions')
 #News 
 #----
 news_df = pd.concat([
-    feather.read_dataframe(data_dir + 'newscatcher_articles_slim_w_sentiment_julaugsep2020.feather'),
+    #feather.read_dataframe(data_dir + 'newscatcher_articles_slim_w_sentiment_julaugsep2020.feather'),
     feather.read_dataframe(data_dir + 'newscatcher_articles_slim_w_sentiment_sep2020topresent.feather')
 ]).drop_duplicates()
 #Don't trust the consistency of results before 2020w34
@@ -816,87 +864,88 @@ combined_demog_table = pd.read_csv(data_dir + 'combined_demographics_out.csv')
 
 #Election forecast
 #-----------------
-elct_files_date_string = '03may_ulivtmadjust'
-print('Using election forecast from',elct_files_date_string)
-elct_fcst_cw_fps = pd.read_csv(f'{data_dir}/election_forecast_out_1_cw_first_prefs_{elct_files_date_string}_cw.csv')
-elct_fcst_ens_party_seats = pd.read_csv(f'{data_dir}/election_forecast_out_2_ens_party_seats_{elct_files_date_string}_cw.csv')
-#out_4 is read in below
-elct_fcst_cands_summary = pd.read_csv(f'{data_dir}/election_forecast_out_3_cands_summary_{elct_files_date_string}_cw.csv')
-elct_fcst_seat_deltas = pd.read_csv(f'{data_dir}/election_forecast_out_5_party_constit_seat_deltas_{elct_files_date_string}_cw.csv')
+if show_election_forecast:
+    elct_files_date_string = '03may_ulivtmadjust'
+    print('Using election forecast from',elct_files_date_string)
+    elct_fcst_cw_fps = pd.read_csv(f'{data_dir}/election_forecast_out_1_cw_first_prefs_{elct_files_date_string}_cw.csv')
+    elct_fcst_ens_party_seats = pd.read_csv(f'{data_dir}/election_forecast_out_2_ens_party_seats_{elct_files_date_string}_cw.csv')
+    #out_4 is read in below
+    elct_fcst_cands_summary = pd.read_csv(f'{data_dir}/election_forecast_out_3_cands_summary_{elct_files_date_string}_cw.csv')
+    elct_fcst_seat_deltas = pd.read_csv(f'{data_dir}/election_forecast_out_5_party_constit_seat_deltas_{elct_files_date_string}_cw.csv')
 
-elct_fcst_cw_fps['party_short'] = elct_fcst_cw_fps.party_short.apply(lambda p: 'Ind.' if p=='Independent' else p)
+    elct_fcst_cw_fps['party_short'] = elct_fcst_cw_fps.party_short.apply(lambda p: 'Ind.' if p=='Independent' else p)
 
-biggest_party_fracs = elct_fcst_ens_party_seats.sort_values(['it','n_seats'],ascending=False).groupby('it').apply(
-    lambda row: 'Tie' if row.iloc[0].n_seats==row.iloc[1].n_seats else row.iloc[0].party_short
-    ).value_counts(normalize=True, sort=True).reset_index().rename(columns={'index': 'party', 0: 'frac_biggest'})
-biggest_party_fracs['tooltip_text'] = biggest_party_fracs.apply(
-    lambda row: f"{row['party']} have the most seats in {100*row['frac_biggest']:.0f}% of simulations" if row['party'] != 'Tie' \
-    else f"Two parties tie for most seats in {100*row['frac_biggest']:.0f}% of simulations", axis=1)
+    biggest_party_fracs = elct_fcst_ens_party_seats.sort_values(['it','n_seats'],ascending=False).groupby('it').apply(
+        lambda row: 'Tie' if row.iloc[0].n_seats==row.iloc[1].n_seats else row.iloc[0].party_short
+        ).value_counts(normalize=True, sort=True).reset_index().rename(columns={'index': 'party', 0: 'frac_biggest'})
+    biggest_party_fracs['tooltip_text'] = biggest_party_fracs.apply(
+        lambda row: f"{row['party']} have the most seats in {100*row['frac_biggest']:.0f}% of simulations" if row['party'] != 'Tie' \
+        else f"Two parties tie for most seats in {100*row['frac_biggest']:.0f}% of simulations", axis=1)
 
-def convert_fraction_to_words(fraction):
-    if fraction > 0.95:
-        return 'an almost certain chance'
-    elif fraction > 0.86:
-        return 'a 9 in 10 chance'
-    elif fraction > 0.82:
-        return 'a 5 in 6 chance'
-    elif fraction > 0.77:
-        return 'a 4 in 5 chance'
-    elif fraction > 0.73:
-        return 'a 3 in 4 chance'
-    elif fraction > 0.68:
-        return 'a 7 in 10 chance'
-    elif fraction > 0.63:
-        return 'a 2 in 3 chance'
-    elif fraction > 0.55:
-        return 'a 3 in 5 chance'
-    elif fraction > 0.45:
-        return 'a 1 in 2 chance'
-    elif fraction > 0.37:
-        return 'a 2 in 5 chance'
-    elif fraction > 0.31:
-        return 'a 1 in 3 chance'
-    elif fraction > 0.27:
-        return 'a 3 in 10 chance'
-    elif fraction > 0.23:
-        return 'a 1 in 4 chance'
-    elif fraction > 0.18:
-        return 'a 1 in 5 chance'
-    elif fraction > 0.14:
-        return 'a 1 in 6 chance'
-    elif fraction > 0.11:
-        return 'a 1 in 8 chance'
-    elif fraction > 0.08:
-        return 'a 1 in 10 chance'
-    elif fraction > 0.06:
-        return 'a 1 in 15 chance'
-    elif fraction > 0.03:
-        return 'a 1 in 20 chance'
-    else:
-        return 'a <1 in 30 chance'
+    def convert_fraction_to_words(fraction):
+        if fraction > 0.95:
+            return 'an almost certain chance'
+        elif fraction > 0.86:
+            return 'a 9 in 10 chance'
+        elif fraction > 0.82:
+            return 'a 5 in 6 chance'
+        elif fraction > 0.77:
+            return 'a 4 in 5 chance'
+        elif fraction > 0.73:
+            return 'a 3 in 4 chance'
+        elif fraction > 0.68:
+            return 'a 7 in 10 chance'
+        elif fraction > 0.63:
+            return 'a 2 in 3 chance'
+        elif fraction > 0.55:
+            return 'a 3 in 5 chance'
+        elif fraction > 0.45:
+            return 'a 1 in 2 chance'
+        elif fraction > 0.37:
+            return 'a 2 in 5 chance'
+        elif fraction > 0.31:
+            return 'a 1 in 3 chance'
+        elif fraction > 0.27:
+            return 'a 3 in 10 chance'
+        elif fraction > 0.23:
+            return 'a 1 in 4 chance'
+        elif fraction > 0.18:
+            return 'a 1 in 5 chance'
+        elif fraction > 0.14:
+            return 'a 1 in 6 chance'
+        elif fraction > 0.11:
+            return 'a 1 in 8 chance'
+        elif fraction > 0.08:
+            return 'a 1 in 10 chance'
+        elif fraction > 0.06:
+            return 'a 1 in 15 chance'
+        elif fraction > 0.03:
+            return 'a 1 in 20 chance'
+        else:
+            return 'a <1 in 30 chance'
 
-def make_prob_string(row):
-    res = []
-    #don't show 0 seat probs?
-    for i in range(1,5):
-        if row['party_frac_seats_'+str(i)] > 0:
-            res.append((convert_fraction_to_words(row['party_frac_seats_'+str(i)]),
-                row['party_frac_seats_'+str(i)], i))
-    res.sort(key = lambda t: t[1], reverse=True)
-    res = [f"<b>{t[0]}</b> of getting {t[2]} seat{'s' if t[2] != 1 else ''}" for t in res]
-    if len(res) == 0:
-        return '<li>no realistic chance of getting any seats</li>'
-    elif len(res) == 1:
-        return '<li>' + res[0] + '</li>'
-    else:        
-        return '<li>' + '</li><li>'.join(res) + '</li>'  #if doing sublist, don't need an 'and'
+    def make_prob_string(row):
+        res = []
+        #don't show 0 seat probs?
+        for i in range(1,5):
+            if row['party_frac_seats_'+str(i)] > 0:
+                res.append((convert_fraction_to_words(row['party_frac_seats_'+str(i)]),
+                    row['party_frac_seats_'+str(i)], i))
+        res.sort(key = lambda t: t[1], reverse=True)
+        res = [f"<b>{t[0]}</b> of getting {t[2]} seat{'s' if t[2] != 1 else ''}" for t in res]
+        if len(res) == 0:
+            return '<li>no realistic chance of getting any seats</li>'
+        elif len(res) == 1:
+            return '<li>' + res[0] + '</li>'
+        else:        
+            return '<li>' + '</li><li>'.join(res) + '</li>'  #if doing sublist, don't need an 'and'
 
-#Describe the possible party seat outcomes in words
-elct_fcst_cands_summary['party_seats_string'] = elct_fcst_cands_summary.apply(make_prob_string, axis=1)
-#Pretty print party pct changes from last time
-elct_fcst_cands_summary['delta_party_fp_pct_pprint'] = elct_fcst_cands_summary.delta_party_fp_pct.apply(lambda p: f"{p:+.1f}%")
-elct_fcst_cands_summary['delta_party_fp_pct_pprint'][
-    (elct_fcst_cands_summary.delta_party_fp_pct == elct_fcst_cands_summary.party_mean_fp_pct) | pd.isnull(elct_fcst_cands_summary.delta_party_fp_pct)] = 'n/a'
+    #Describe the possible party seat outcomes in words
+    elct_fcst_cands_summary['party_seats_string'] = elct_fcst_cands_summary.apply(make_prob_string, axis=1)
+    #Pretty print party pct changes from last time
+    elct_fcst_cands_summary['delta_party_fp_pct_pprint'] = elct_fcst_cands_summary.delta_party_fp_pct.apply(lambda p: f"{p:+.1f}%")
+    elct_fcst_cands_summary['delta_party_fp_pct_pprint'][
+        (elct_fcst_cands_summary.delta_party_fp_pct == elct_fcst_cands_summary.party_mean_fp_pct) | pd.isnull(elct_fcst_cands_summary.delta_party_fp_pct)] = 'n/a'
 
 #Totals for front page
 #---------------------
@@ -907,7 +956,9 @@ n_active_mlas = (mla_ids.role=='MLA').sum()
 n_active_mlas_excl_ministers = n_active_mlas - len(mla_minister_roles.keys())
 
 file_change_times = [os.path.getmtime(x) for x in \
-    [data_dir + 'tweets_slim_4jun2021_to_present.feather']]
+    [data_dir + 'tweets_slim_4jun2021_to_present.feather',
+     data_dir + 'diary_future_events.psv',
+     data_dir + 'newscatcher_articles_slim_w_sentiment_sep2020topresent.feather']]
 last_updated_date = time.strftime('%A, %-d %B', time.localtime(max(file_change_times)))
 
 totals_dict = {
@@ -961,7 +1012,7 @@ def assembly():
     if 'assembly_session' in args:
         session_to_plot = args.get('assembly_session')
     else:
-        session_to_plot = '2020-2022'
+        session_to_plot = CURRENT_ASSEMBLY_SESSION
 
     #Exclude events that have now happened
     #diary_df_filtered = diary_df[diary_df['EventDate'] >= datetime.date.today().strftime('%Y-%m-%d')]
@@ -969,8 +1020,7 @@ def assembly():
     #But not more than 6 items, so as not to clutter page
     diary_df_filtered = diary_df_filtered.head(6)
 
-    #TODO handle the url=what-they-do/ case
-    if session_to_plot in ['2020-2022','']:
+    if session_to_plot in [CURRENT_ASSEMBLY_SESSION, '']:
         n_mlas = mlas_2d_rep.shape[0]
         n_votes = votes_df.EventId.nunique()
         v_comms_tmp = v_comms.copy()
@@ -993,6 +1043,7 @@ def assembly():
 
     return render_template('assembly.html',
         session_to_plot = session_to_plot,
+        current_session = CURRENT_ASSEMBLY_SESSION,
         session_names_list = valid_session_names,
         diary = diary_df_filtered, 
         n_mlas = n_mlas, 
@@ -1045,18 +1096,22 @@ def polls():
     )
     polls_tmp = polls_tmp[['date_plus_url','organisation','sample_size','party','pct']]
 
-    elct_cands_tmp = elct_fcst_cands_summary[['fullname','frac_elected','constit','party_short']].copy()
-    elct_cands_tmp['constit'] = elct_cands_tmp.apply(
-        lambda row: f"{row['constit']}|postcode?postcode_choice={row['constit'].upper().replace(' ','+')}#election", axis=1)
-    #elct_cands_tmp['fullname'] = elct_cands_tmp.fullname.apply(
-    #    lambda n: )
+    if show_election_forecast:
+        elct_cands_tmp = elct_fcst_cands_summary[['fullname','frac_elected','constit','party_short']].copy()
+        elct_cands_tmp['constit'] = elct_cands_tmp.apply(
+            lambda row: f"{row['constit']}|postcode?postcode_choice={row['constit'].upper().replace(' ','+')}#election", axis=1)
 
-    return render_template('polls.html',
-        poll_results_list = [e[1].values.tolist() for e in polls_tmp.iterrows()],
-        full_mla_list = sorted(mla_ids.normal_name.tolist()),
-        postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
-        elct_all_cand_list = [e[1].values.tolist() for e in elct_cands_tmp.iterrows()],
-        elct_n_ensemble = elct_fcst_ens_party_seats.it.max())
+        return render_template('polls.html',
+            poll_results_list = [e[1].values.tolist() for e in polls_tmp.iterrows()],
+            full_mla_list = sorted(mla_ids.normal_name.tolist()),
+            postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
+            elct_all_cand_list = [e[1].values.tolist() for e in elct_cands_tmp.iterrows()],
+            elct_n_ensemble = elct_fcst_ens_party_seats.it.max())
+    else:
+        return render_template('polls.html',
+            poll_results_list = [e[1].values.tolist() for e in polls_tmp.iterrows()],
+            full_mla_list = sorted(mla_ids.normal_name.tolist()),
+            postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()))
 
 @app.route('/about', methods=['GET'])
 def about():
@@ -1162,7 +1217,7 @@ def indiv():
             sample_recent_tweets['quoted_url'] = sample_recent_tweets.apply(
                 lambda row: re.findall('//t.*', row['text'])[0] if row['involves_quote'] else '', axis=1
             )
-            sample_recent_tweets['text'] = sample_recent_tweets.text.str.replace('//t.*','')
+            sample_recent_tweets['text'] = sample_recent_tweets.text.str.replace('//t.*', '', regex=True)
             sample_recent_tweets = sample_recent_tweets[sample_recent_tweets.text != '']
         if sample_recent_tweets.shape[0] > 5:
             sample_recent_tweets = sample_recent_tweets.sample(5)\
@@ -1357,7 +1412,8 @@ def postcode():
         constit_choice = postcode_choice
         heading_message = f"These are the representatives for the <b>{constit_choice}</b> constituency."
         #Get any postcode from this constit to use for the Write To Them link
-        postcode_choice = postcodes_to_constits[postcodes_to_constits.Constituency.str.upper()==constit_choice].Postcode.iloc[0]
+        #  (a few of them are no longer found on Write To Them, but unlikely to pick those)
+        postcode_choice = postcodes_to_constits[postcodes_to_constits.Constituency.str.upper()==constit_choice].Postcode.sample(1).iloc[0]
     else:
         constit_choice = postcodes_to_constits[postcodes_to_constits.Postcode==postcode_choice].Constituency.iloc[0].upper()
         heading_message = f"{postcode_choice} is part of the <b>{constit_choice}</b> constituency."
@@ -1368,19 +1424,22 @@ def postcode():
 
     normal_names_list = mla_choices.normal_name.tolist()
 
-    #print(mla_choices.columns)
-
-    rep_image_urls_list = [f"http://aims.niassembly.gov.uk/images/mla/{row.PersonId}_s.jpg" if row.role=='MLA' 
-        else None 
-        for row in mla_choices.itertuples()]
-    
     rep_image_urls_list = []
     votes_present_string_list = []
     top_contrib_topic_list_list = []
 
     for row in mla_choices.itertuples():
         if row.role == 'MLA':
-            rep_image_urls_list.append(f"http://aims.niassembly.gov.uk/images/mla/{row.PersonId}_s.jpg")
+            #Use the downloaded photo if it exists, otherwise (new MLA) go to AIMS, but it will break on Chrome https
+            if test_mode:
+                photo_location = url_for('static', filename=f'politician_photos/{row.PersonId}_s.jpg')[1:]
+            else:
+                #on pythonanywhere, cwd is at level of /nipol
+                photo_location = f'nipol/flask/static/politician_photos/{row.PersonId}_s.jpg'
+            if os.path.exists(photo_location):
+                rep_image_urls_list.append(url_for('static', filename=f'politician_photos/{row.PersonId}_s.jpg'))
+            else:
+                rep_image_urls_list.append(f"http://aims.niassembly.gov.uk/images/mla/{row.PersonId}_s.jpg")
         elif row.normal_name in mp_api_numbers.keys() and row.normal_name not in member_other_photo_links.keys():
             rep_image_urls_list.append(f"https://members-api.parliament.uk/api/Members/{mp_api_numbers[row.normal_name]:s}/Portrait?cropType=ThreeFour")
         elif row.normal_name in member_other_photo_links.keys():
@@ -1491,31 +1550,37 @@ def postcode():
     comb_rank_text = comb_rank_text.replace('1th ','').replace('2th','2nd').replace('3th','3rd')
 
     #Elections
-    #Read in html table code for candidate results
-    with open(f"{data_dir}/election_forecast_out_4_cand_table_{constit_choice.replace(' ','-').lower()}_{elct_files_date_string}_cw.txt", 'r') as f:
-        cands_table = f.read()
+    if show_election_forecast:
+        #Read in html table code for candidate results
+        with open(f"{data_dir}/election_forecast_out_4_cand_table_{constit_choice.replace(' ','-').lower()}_{elct_files_date_string}_cw.txt", 'r') as f:
+            cands_table = f.read()
 
-    elct_fcst_constit_party_stuff = elct_fcst_cands_summary[elct_fcst_cands_summary.constit.str.upper() == constit_choice]
-    elct_fcst_constit_party_stuff = elct_fcst_constit_party_stuff[['party_short','party_seats_string','party_mean_fp_pct','delta_party_fp_pct','delta_party_fp_pct_pprint'] + 
-        [c for c in elct_fcst_constit_party_stuff.columns if 'frac_seats' in c]].drop_duplicates()
-    elct_fcst_constit_party_stuff = elct_fcst_constit_party_stuff.sort_values('party_mean_fp_pct', ascending=False)
-    
-    elct_fcst_seat_histograms_list = elct_fcst_constit_party_stuff[sorted([c for c in elct_fcst_constit_party_stuff.columns if 'frac_seats' in c])]\
-            .fillna(0).apply(lambda row: row.tolist(), axis=1).tolist()
-    #Parties with no elected didn't get seat fracs written; keep these as all 0s so we can skip drawing the sparkline on the page
+        elct_fcst_constit_party_stuff = elct_fcst_cands_summary[elct_fcst_cands_summary.constit.str.upper() == constit_choice]
+        elct_fcst_constit_party_stuff = elct_fcst_constit_party_stuff[['party_short','party_seats_string','party_mean_fp_pct','delta_party_fp_pct','delta_party_fp_pct_pprint'] + 
+            [c for c in elct_fcst_constit_party_stuff.columns if 'frac_seats' in c]].drop_duplicates()
+        elct_fcst_constit_party_stuff = elct_fcst_constit_party_stuff.sort_values('party_mean_fp_pct', ascending=False)
+        
+        elct_fcst_seat_histograms_list = elct_fcst_constit_party_stuff[sorted([c for c in elct_fcst_constit_party_stuff.columns if 'frac_seats' in c])]\
+                .fillna(0).apply(lambda row: row.tolist(), axis=1).tolist()
+        #Parties with no elected didn't get seat fracs written; keep these as all 0s so we can skip drawing the sparkline on the page
 
-    #Make it a list of lists to pass to page
-    elct_fcst_constit_party_stuff = [
-        elct_fcst_constit_party_stuff.party_short.tolist(),  #party
-        elct_fcst_constit_party_stuff.party_seats_string.tolist(),  #description
-        elct_fcst_seat_histograms_list,  #seat probs histogram
-        ['grey' if (re.match('Ind',p) or p not in party_colours.party_name.tolist()) else party_colours[party_colours.party_name==p].colour.iloc[0] for p in elct_fcst_constit_party_stuff.party_short],  #colour
-        elct_fcst_constit_party_stuff.party_mean_fp_pct.tolist(),  #party fp pct
-        elct_fcst_constit_party_stuff.delta_party_fp_pct_pprint.tolist(),  #party fp pct change from last time
-        ['lime' if d >= 3 else ('palegreen' if d >= 1 else ('red' if d <= -3 else ('darksalmon' if d <= -1 else 'black')))
-            for d in elct_fcst_constit_party_stuff.delta_party_fp_pct],  #display colour for delta fp pct
-        [round(1.0 + min(pct,60)*0.9/60, 2) for pct in elct_fcst_constit_party_stuff.party_mean_fp_pct]  #display size for fp pct
-    ]
+        #Make it a list of lists to pass to page
+        elct_fcst_constit_party_stuff = [
+            elct_fcst_constit_party_stuff.party_short.tolist(),  #party
+            elct_fcst_constit_party_stuff.party_seats_string.tolist(),  #description
+            elct_fcst_seat_histograms_list,  #seat probs histogram
+            ['grey' if (re.match('Ind',p) or p not in party_colours.party_name.tolist()) else party_colours[party_colours.party_name==p].colour.iloc[0] for p in elct_fcst_constit_party_stuff.party_short],  #colour
+            elct_fcst_constit_party_stuff.party_mean_fp_pct.tolist(),  #party fp pct
+            elct_fcst_constit_party_stuff.delta_party_fp_pct_pprint.tolist(),  #party fp pct change from last time
+            ['lime' if d >= 3 else ('palegreen' if d >= 1 else ('red' if d <= -3 else ('darksalmon' if d <= -1 else 'black')))
+                for d in elct_fcst_constit_party_stuff.delta_party_fp_pct],  #display colour for delta fp pct
+            [round(1.0 + min(pct,60)*0.9/60, 2) for pct in elct_fcst_constit_party_stuff.party_mean_fp_pct]  #display size for fp pct
+        ]
+        elct_n_ensemble = elct_fcst_ens_party_seats.it.max()
+    else:
+        elct_fcst_constit_party_stuff = None
+        cands_table = None
+        elct_n_ensemble = None
     
 
     return render_template('postcode.html',
@@ -1547,7 +1612,7 @@ def postcode():
         constit_alphabetical_rank_order = combined_demog_table['constit'].rank().astype(int).iloc[demogs_row_is_constit],
         elct_fcst_constit_party_stuff = elct_fcst_constit_party_stuff,
         cands_table_code = cands_table,
-        elct_n_ensemble = elct_fcst_ens_party_seats.it.max())
+        elct_n_ensemble = elct_n_ensemble)
 
 
 #Plots are not pages themselves
@@ -1597,7 +1662,7 @@ def plot_minister_answer_times_fn(session_to_plot):
     #Another workaround is to do second layer with independent axis, and hide labels and ticks,
     #  and this does work (https://github.com/altair-viz/altair/issues/820#issuecomment-386856394)
 
-    if session_to_plot in ['2020-2022']:
+    if session_to_plot == CURRENT_ASSEMBLY_SESSION:
         plot_df = minister_time_to_answer
     else:
         plot_df = hist_minister_time_to_answer[hist_minister_time_to_answer.session_name==session_to_plot]
@@ -1653,7 +1718,7 @@ def plot_questions_asked_fn_mobile(session_to_plot):
 
 def plot_questions_asked_fn(session_to_plot, mobile_mode = False):
 
-    if session_to_plot in ['2020-2022']:
+    if session_to_plot == CURRENT_ASSEMBLY_SESSION:
         plot_df = questioners.sort_values('Questions asked', ascending=False)\
             .groupby('Question type').head(8 if mobile_mode else 12)
     else:
@@ -2121,7 +2186,7 @@ def plot_vote_pca_all_mlas_fn_mobile(session_to_plot):
     return plot_vote_pca_all_mlas_fn(session_to_plot, mobile_mode=True)
 
 def plot_vote_pca_all_mlas_fn(session_to_plot, mobile_mode = False):
-    if session_to_plot in ['2020-2022']:
+    if session_to_plot == CURRENT_ASSEMBLY_SESSION:
         plot_df = mlas_2d_rep
         pct_explained = (100*my_pca.explained_variance_ratio_[0], 100*my_pca.explained_variance_ratio_[1])
     else:
@@ -2147,7 +2212,7 @@ def plot_vote_pca_all_mlas_fn(session_to_plot, mobile_mode = False):
         #.configure_axisX(tickCount = 0)\
         #.configure_axisY(tickCount = 0)
 
-    if session_to_plot in ['2020-2022']:
+    if session_to_plot == CURRENT_ASSEMBLY_SESSION:
         plot = plot.encode(href = 'indiv_page_url:N')
 
     plot = plot.configure_legend(
@@ -2179,7 +2244,7 @@ def plot_vote_pca_all_mlas_fn(session_to_plot, mobile_mode = False):
 # @app.route('/data/plot_party_unity_bars_<session_to_plot>')
 # def plot_party_unity_bars_fn(session_to_plot):
 
-#     if session_to_plot in ['2020-2022']:
+#     if session_to_plot == CURRENT_ASSEMBLY_SESSION:
 #         plot_df = votes_party_unity
 #     else:
 #         plot_df = hist_votes_party_unity[hist_votes_party_unity.session_name==session_to_plot]
@@ -2207,7 +2272,7 @@ def plot_vote_pca_all_mlas_fn(session_to_plot, mobile_mode = False):
 @app.route('/data/plot_plenary_topics_overall_<session_to_plot>')
 def plot_plenary_topics_overall_fn(session_to_plot):
 
-    if session_to_plot in ['2020-2022']:
+    if session_to_plot == CURRENT_ASSEMBLY_SESSION:
         plot_df = plenary_contribs_topic_counts
     else:
         plot_df = hist_plenary_contribs_topic_counts[hist_plenary_contribs_topic_counts.session_name==session_to_plot]
@@ -2252,7 +2317,7 @@ def plot_plenary_emotions_fn(session_to_plot, mobile_mode = False):
 
     #fear and disgust are strongly correlated with anger and sadness, so can omit
     #surprise values are very similar for the 5 parties
-    if session_to_plot in ['2020-2022']:
+    if session_to_plot == CURRENT_ASSEMBLY_SESSION:
         emotions_party_to_plot = emotions_party_agg[(emotions_party_agg.emotion_type.isin(
             ['anger','anticipation','joy','sadness','trust']
             )) & (emotions_party_agg.PartyName.isin(['Alliance','DUP','SDLP','Sinn Fein','UUP']))]
@@ -2564,9 +2629,15 @@ def elct_cw_most_seats_fn(mobile_mode = False):
 
     return plot.to_json()
 
+@app.route('/robots.txt', methods=['GET'])
+def static_from_root():
+    return send_from_directory(app.static_folder, request.path[1:])
+
 
 if __name__ == '__main__':
     if getpass.getuser() == 'david':
         app.run(debug=True)
     else:
         app.run(debug=False)  #don't need this for PythonAnywhere?
+
+

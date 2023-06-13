@@ -35,7 +35,8 @@ mla_ids['PartyGroup'] = mla_ids.PartyName.apply(lambda p: party_group_dict[p])
 mla_ids = mla_ids[mla_ids.role == 'MLA']
 
 
-#i) Score tweets sentiment
+#i) Score tweets sentiment  
+#TODO just do incrementally?
 print('Scoring tweets on sentiment')
 #tweets = feather.read_dataframe(data_dir + 'mlas_2019_tweets_apr2019min_to_present.feather')[['status_id','text']]
 tweets = pd.concat([
@@ -67,7 +68,7 @@ def assign_most_likely_topic(list_tuples, topic_nums_to_drop=[]):
 with open(data_dir + 'contribs_lda_model.pkl','rb') as f:
     lda_stuff = pickle.load(f)
 
-contribs = feather.read_dataframe(data_dir + 'plenary_hansard_contribs_201920sessions_topresent.feather')
+contribs = feather.read_dataframe(data_dir + 'plenary_hansard_contribs.feather')
 
 #First catch special uses of House and Chamber before casing
 contribs['text_proc'] = contribs.contrib

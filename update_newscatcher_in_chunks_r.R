@@ -11,10 +11,10 @@
 #Don't really get any false positives with name in quotes except for a few like Allen, Stewart, especially if use source selection.
 #So only apply the content filtering to those people.
 
-library(dplyr)
+suppressPackageStartupMessages(library(dplyr))
 library(httr)
 library(jsonlite)
-library(feather)
+suppressPackageStartupMessages(library(feather))
 
 if (Sys.info()['user']=='rstudio') setwd('/home/rstudio/nipol')
 

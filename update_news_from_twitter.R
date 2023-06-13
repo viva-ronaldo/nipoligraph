@@ -1,8 +1,8 @@
-library(dplyr)
+suppressPackageStartupMessages(library(dplyr))
 library(httr)
 library(jsonlite)
 library(feather)
-library(rtweet)
+suppressPackageStartupMessages(library(rtweet))
 
 if (Sys.info()['user']=='rstudio') setwd('/home/rstudio/nipol')
 
