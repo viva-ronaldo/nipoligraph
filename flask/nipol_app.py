@@ -32,6 +32,7 @@ app.url_map.strict_slashes = False
 #- election_results.csv
 #- poll_details.csv
 #- poll_results.csv
+#- hist* things
 #Regular update:
 #- mlas_2019_tweets_apr2019min_to_present.feather
 #- vader_scored_tweets_apr2019min_to_present.csv
@@ -39,6 +40,7 @@ app.url_map.strict_slashes = False
 #- niassembly_answers.feather
 #- division_votes.feather
 #- division_vote_results.feather
+#- division_votes_v_comms.csv
 #- lda_scored_plenary_contribs.csv
 #- plenary_hansard_contribs_emotions_averaged.feather
 #- diary_future_events.psv
@@ -68,6 +70,9 @@ hover_exclude_opacity_value = 0.4  #when hovered case goes to 1.0, what do rest 
 larger_tick_label_size = 14  #for web mode, on some/all plots
 #Election forecast is usually off
 show_election_forecast = False
+
+# From mid-2023, can't scrape tweets, so exclude from indiv page and note on twitter page
+include_twitter = False
 
 #use the colours we get from 'tableau20' but make repeatable and for reuse on indiv page
 plenary_contribs_colour_dict = {
@@ -415,7 +420,8 @@ mlas_2d_rep = pd.DataFrame({'x': [el[0] for el in my_pca.transform(votes_pca_df)
 # )
 
 #Vote commentary - pre-computed
-v_comms = feather.read_dataframe(data_dir + 'division_votes_v_comms.feather')
+#v_comms = feather.read_dataframe(data_dir + 'division_votes_v_comms.feather')
+v_comms = pd.read_csv(data_dir + 'division_votes_v_comms.csv')
 
 #Contributions - plenary sessions - don't need the text
 #plenary_contribs_df = feather.read_dataframe(data_dir + 'plenary_hansard_contribs_201920sessions_topresent.feather')
@@ -865,6 +871,7 @@ combined_demog_table = pd.read_csv(data_dir + 'combined_demographics_out.csv')
 #Election forecast
 #-----------------
 if show_election_forecast:
+    #2022 used 03may_ulivtmadjust
     elct_files_date_string = '03may_ulivtmadjust'
     print('Using election forecast from',elct_files_date_string)
     elct_fcst_cw_fps = pd.read_csv(f'{data_dir}/election_forecast_out_1_cw_first_prefs_{elct_files_date_string}_cw.csv')
@@ -1390,13 +1397,15 @@ def indiv():
             member_contribs_volumes = member_contribs_volumes,
             top_contrib_topic_list = top_contrib_topic_list,
             member_emotion_ranks_string = member_emotion_ranks_string,
-            person_constit = person_constit)
+            person_constit = person_constit,
+            include_twitter = include_twitter)
 
     else:
         return render_template('index.html',
             totals_dict = totals_dict,
             full_mla_list = sorted(mla_ids.normal_name.tolist()),
-            postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()))
+            postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
+            blog_pieces = blog_pieces[:3])
 
 
 @app.route('/postcode', methods=['GET'])

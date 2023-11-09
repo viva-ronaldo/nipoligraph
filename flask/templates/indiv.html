@@ -147,43 +147,48 @@
 
                   </table>
 
-                  <h4 class="mb-0 mt-4">Twitter</h4>
+                  {% if include_twitter %}
+                    <h4 class="mb-0 mt-4">Twitter</h4>
 
-                  <table style="width:100%; border-collapse: separate; border-spacing: 5px 10px; table-layout: fixed">
+                    <table style="width:100%; border-collapse: separate; border-spacing: 5px 10px; table-layout: fixed">
 
-                    <tr><td width='70%'></td><td width='30%'></td></tr>
+                      <tr><td width='70%'></td><td width='30%'></td></tr>
 
-                    {% if tweet_volume_rank_string|safe != "We don't know of a Twitter account for this member" %}
+                      {% if tweet_volume_rank_string|safe != "We don't know of a Twitter account for this member" %}
+                        <tr>
+                          <td> <b>{{tweets_by_week | sum}}</b> tweet{{'s' if (tweets_by_week | sum) != 1 else ''}} since July 2020</td>
+                          <td><span class="tweetssparkline"></span></td>
+                        </tr>
+                      {% endif %}
+
                       <tr>
-                        <td> <b>{{tweets_by_week | sum}}</b> tweet{{'s' if (tweets_by_week | sum) != 1 else ''}} since July 2020</td>
-                        <td><span class="tweetssparkline"></span></td>
+                        <td> {{tweet_volume_rank_string | safe}} </td>
+                        <td> <div style='width: 80%' class="tweets-volumes"></div> </td>
                       </tr>
-                    {% endif %}
 
-                    <tr>
-                      <td> {{tweet_volume_rank_string | safe}} </td>
-                      <td> <div style='width: 80%' class="tweets-volumes"></div> </td>
-                    </tr>
+                      {% if retweet_rate_rank_string != 'n/a' %}
+                        <tr>
+                          <td> {{retweet_rate_rank_string | safe}} </td>
+                          <td> <div style='width: 80%' class="tweets-retweets"></div></td>
+                        </tr>
+                      {% endif %}
+                      {% if tweet_positivity_rank_string != 'n/a' %}
+                        <tr>
+                          <td>{{tweet_positivity_rank_string | safe}} </td>
+                          <td> <div style='width: 80%' class="tweets-positivity"></div></td>
+                        </tr>
+                      {% endif %}
 
-                    {% if retweet_rate_rank_string != 'n/a' %}
-                      <tr>
-                        <td> {{retweet_rate_rank_string | safe}} </td>
-                        <td> <div style='width: 80%' class="tweets-retweets"></div></td>
-                      </tr>
-                    {% endif %}
-                    {% if tweet_positivity_rank_string != 'n/a' %}
-                      <tr>
-                        <td>{{tweet_positivity_rank_string | safe}} </td>
-                        <td> <div style='width: 80%' class="tweets-positivity"></div></td>
-                      </tr>
-                    {% endif %}
-
-                  </table>
+                    </table>
+                  {% else %}
+                    <h4 class="my-4">Twitter</h4>
+                    <p>Tracking of Twitter activity is currently inactive.</p>
+                  {% endif %}
                 </div>
               </div>
             </div>
 
-            {% if sample_recent_tweets.shape[0] > 0 %}
+            {% if include_twitter and sample_recent_tweets.shape[0] > 0 %}
               <div class="col-xl-5">
                 <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
                   <div class="col p-4 d-flex flex-column position-static data-panel-c">

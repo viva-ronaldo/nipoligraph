@@ -13,12 +13,64 @@
         <!-- <div style='position: absolute; top: 50%; left'> -->
         <div class="col-md-6 ml-5 my-3" style='color: white'>
           <h1 class='display-3'>What They <b>Say</b></h1>
-          <p>Most of the NI MLAs and MPs are active on Twitter, so tracking this activity can provide some insight into their political outlook, and their engagement with the public and their colleagues. Tweets are collected weekly, starting from July 2020.</p>
+          <p>Most of the NI MLAs and MPs are active on Twitter, so tracking this activity can provide some insight into their political outlook, and their engagement with the public and their colleagues. Tweets are collected weekly, starting from July 2020, but ending in mid-2023.</p>
         </div>
       </div>
     </div>
 
-    <div class='container-xl'>    
+    <div class='container-xl'>
+
+        <div class="row mb-2 justify-content-md-center">
+          <div class="col-lg-8">
+            <div class="p-4 mb-3 bg-light rounded">
+              <h2><span class="badge badge-info">ARCHIVED</span></h2>
+              <p class="mb-0"><i>Twitter no longer allows programmatic access to users' recent tweets at an affordable price, so it is not possible to maintain the data on this page. The plots still shown apply <b>as of mid-2023</b>. Tracking may be reactivated in future if a reliable Twitter scraping method becomes possible again. The Tweet Generator is still available.</i></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-2 justify-content-md-center">
+
+          <div class="col-lg-8">
+            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+              <div class="col py-4 px-4 d-flex flex-column position-static data-panel-b">
+
+                <h4 class="font-italic">Tweet Generator</h4>
+                <p class="card-text mb-2 data-panel-card-border">Generate original tweets in the style of each party, using the language model <a href='https://openai.com/blog/better-language-models/'>GPT-2</a>. These may refer to real usernames, and are designed to resemble the real tweets issued by party members in 2019-21, but these samples are completely synthetic, and the content may not always make sense. See <a href="{{url_for('blog_item', post_name='tweet-generator')}}">the blog post</a> for how this works. Please note that this is <i>just for fun</i>.</p>
+                
+                <form>
+                  <div class='form-group row mt-2'>
+                    <div class='col-sm-1'></div>
+                    <input type='button' onclick="randomTweet();" value='Generate a tweet in the style of...' class='col-sm-6' id='gen-tweet-button' style='background-color: maroon; color: white'>
+                    <div class='col-sm-3'>
+                      <select class='form-control' id='party-for-gen-tweet'>
+                        <option value='DUP'>DUP</option>
+                        <option value='UUP'>UUP</option>
+                        <option value='Alliance'>Alliance</option>
+                        <option value='SDLP'>SDLP</option>
+                        <option value='Sinn Fein'>Sinn Fein</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <p><i><span id='generated-tweet'></span></i></p>
+                </form>
+
+              </div>
+            </div>
+          </div>
+
+          <!--<div class="col-lg-8">
+            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+              <div class="col p-4 d-flex flex-column justify-content-center data-panel-b">
+                <h4>Tweet content</h4>
+                <p class="card-text mb-2 data-panel-card-border">This plot positions tweeters relative to one another based on the content of their tweets: those close together tend to tweet 'about the same things', in a simplified sense. Circles are sized proportional to number of tweets <span title='all tweets since July 2020, including retweets, but only showing politicians with at least 20 tweets' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>. On web, click a circle to go to the individual's page.</p>
+                <div id='vis5'></div>
+              </div>
+            </div>
+          </div>-->
+
+        </div>
 
         <div class="row mb-2">
 
@@ -27,7 +79,7 @@
               <div class="col p-4 d-flex flex-column position-static data-panel-a" >
                 <h4>Top tweeters</h4>
                 <div style='min-height: 150px'>
-                  <p class="card-text mb-2 data-panel-card-border">These are the most active politicians on Twitter, by <b>total tweets</b> in the past month.</p>
+                  <p class="card-text mb-2 data-panel-card-border">These <s>are</s> were the most active politicians on Twitter, by <b>total tweets</b> in <s>the past month</s> mid-2023.</p>
                 </div>
                 <div id='vis2'></div>
               </div>
@@ -39,7 +91,7 @@
               <div class="col p-4 d-flex flex-column position-static data-panel-c">
                 <h4>Most impactful tweeters</h4>
                 <div style='min-height: 150px'>
-                  <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians with the <b>biggest impact</b> on Twitter, as measured by the average number of retweets received by each of their <i>original tweets</i> in the past month <span class='help-tooltip' title='Retweet counts are measured a few days after the tweet is sent, so will be underestimates of the true retweet rate.' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>.</p>
+                  <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians with the <b>biggest impact</b> on Twitter, as measured by the average number of retweets received by each of their <i>original tweets</i> in <s>the past month</s> mid-2023 <span class='help-tooltip' title='Retweet counts are measured a few days after the tweet is sent, so will be underestimates of the true retweet rate.' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>.</p>
                 </div>
                 <div id='vis3'></div>
               </div>
@@ -53,7 +105,7 @@
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col py-4 px-4 d-flex flex-column position-static data-panel-b">
                 <h4>Retweet networks</h4>
-                <p class="card-text mb-2 data-panel-card-border">This network plot shows how 'connected' the politicians are to one another, measured through Twitter retweets from the past <i>three months</i>. Connections are drawn in both directions (giving and receiving retweets), but you can hover on a politician to show only the connections for retweets that they <i>received</i> from others. Thicker connecting lines mean more retweets.</p>
+                <p class="card-text mb-2 data-panel-card-border">This network plot shows how 'connected' the politicians <s>are</s> were to one another, measured through Twitter retweets from <s>the past three months</s> mid-2023. Connections are drawn in both directions (giving and receiving retweets), but you can hover on a politician to show only the connections for retweets that they <i>received</i> from others. Thicker connecting lines mean more retweets.</p>
                 <div id="tweet-network-plot" class="view pb-4" ></div>
                 <p>Top five members by:</p>
                 <ul>
@@ -84,7 +136,7 @@
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column position-static data-panel-c">
                 <h4>Most positive and negative tweeters</h4>
-                <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians whose tweets (including retweets) scored highest and lowest, on average, for <b>positive sentiment</b> <span class='help-tooltip' title="calculated as the VADER 'compound' score, relative to the mean for all tweets (see Technical stuff)" data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> in the past month.</p>
+                <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians whose tweets (including retweets) scored highest and lowest, on average, for <b>positive sentiment</b> <span class='help-tooltip' title="calculated as the VADER 'compound' score, relative to the mean for all tweets (see Technical stuff)" data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> in <s>the past month</s> mid-2023.</p>
                 <div id='vis4'></div>
               </div>
             </div>
@@ -142,49 +194,6 @@
 
         </div>
         -->
-
-        <div class="row mb-2 justify-content-md-center">
-
-          <div class="col-lg-8">
-            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col py-4 px-4 d-flex flex-column position-static data-panel-b">
-
-                <h4 class="font-italic">Tweet Generator</h4>
-                <p class="card-text mb-2 data-panel-card-border">Generate original tweets in the style of each party, using the language model <a href='https://openai.com/blog/better-language-models/'>GPT-2</a>. These may refer to real usernames, and are designed to resemble the real tweets issued by party members in 2019-21, but these samples are completely synthetic, and the content may not always make sense. See <a href="{{url_for('blog_item', post_name='tweet-generator')}}">the blog post</a> for how this works. Please note that this is <i>just for fun</i>.</p>
-                
-                <form>
-                  <div class='form-group row mt-2'>
-                    <div class='col-sm-1'></div>
-                    <input type='button' onclick="randomTweet();" value='Generate a tweet in the style of...' class='col-sm-6' id='gen-tweet-button' style='background-color: maroon; color: white'>
-                    <div class='col-sm-3'>
-                      <select class='form-control' id='party-for-gen-tweet'>
-                        <option value='DUP'>DUP</option>
-                        <option value='UUP'>UUP</option>
-                        <option value='Alliance'>Alliance</option>
-                        <option value='SDLP'>SDLP</option>
-                        <option value='Sinn Fein'>Sinn Fein</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <p><i><span id='generated-tweet'></span></i></p>
-                </form>
-
-              </div>
-            </div>
-          </div>
-
-          <!--<div class="col-lg-8">
-            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col p-4 d-flex flex-column justify-content-center data-panel-b">
-                <h4>Tweet content</h4>
-                <p class="card-text mb-2 data-panel-card-border">This plot positions tweeters relative to one another based on the content of their tweets: those close together tend to tweet 'about the same things', in a simplified sense. Circles are sized proportional to number of tweets <span title='all tweets since July 2020, including retweets, but only showing politicians with at least 20 tweets' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>. On web, click a circle to go to the individual's page.</p>
-                <div id='vis5'></div>
-              </div>
-            </div>
-          </div>-->
-
-        </div>
 
     </div>
 

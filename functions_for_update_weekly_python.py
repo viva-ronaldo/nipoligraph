@@ -1,0 +1,211 @@
+import feather, json, pickle, re
+import numpy as np
+import pandas as pd
+from nltk.tokenize import WordPunctTokenizer
+from nltk.corpus import stopwords
+from gensim.corpora import Dictionary
+from gensim.models import LdaModel
+
+#
+UNIONIST_PARTIES = ['Ulster Unionist Party', 'Traditional Unionist Voice', 'Democratic Unionist Party']
+NATIONALIST_PARTIES = ['Sinn Féin', 'Social Democratic and Labour Party']
+OTHER_PARTIES = ['Alliance Party', 'Green Party', 'People Before Profit Alliance', 'Independent']
+
+MOTION_CARRIED_PHRASES = ['The Amendment Was Therefore Agreed', 'The Motion Was Carried', 'The Motion Was Carried By Cross Community Consent']
+MOTION_FAILED_PHRASES = ['The Motion Was Negatived']
+#
+
+
+def assign_most_likely_topic(list_tuples, topic_nums_to_drop=[]):
+    if len(list_tuples) == 0:
+        return -999
+    else:
+        results = sorted(list_tuples, key=lambda t: t[1], reverse=True)
+        results = [el for el in results if el[0] not in topic_nums_to_drop]
+        if len(results) == 0:
+            return -999
+        else:
+            return results[0][0]
+
+def append_sentiment_scored_tweets(tweets, sentiment_scored_tweets_file):
+    #sentiment_scored_tweets_file = data_dir + 'vader_scored_tweets_apr2019min_to_present.csv'
+    existing_tweets = pd.read_csv(sentiment_scored_tweets_file)
+    assert existing_tweets.status_id.dtypes.type is np.int64 and \
+        tweets.status_id.dtypes.type is np.int64, 'tweets status_id type mismatch'
+    new_tweets = tweets[~tweets.status_id.isin(existing_tweets.status_id)].copy()
+    assert len(new_tweets) + len(existing_tweets) == len(tweets), 'Problem with subsetting to new tweets'
+    print(f"{new_tweets.shape[0]} tweets to score for sentiment")
+
+    analyzer = SentimentIntensityAnalyzer()
+    new_tweets['sentiment_vader_compound'] = new_tweets['text'].apply(
+        lambda t: analyzer.polarity_scores(t)['compound'])
+
+    comb_scored_tweets = pd.concat([new_tweets[['status_id', 'sentiment_vader_compound']].sort_values('status_id', ascending=False),
+                                    existing_tweets])
+    assert len(comb_scored_tweets) == len(tweets), 'Problem with concatenating existing and new scored tweets'
+    print(f"Done: total {comb_scored_tweets.shape[0]} tweets with sentiment")
+    comb_scored_tweets.to_csv(sentiment_scored_tweets_file, index=False)
+
+
+def score_contribs_with_lda(contribs_in_file, scored_contribs_out_file, lda_model):
+    print('Scoring plenary contribs with LDA topic model')
+
+    #Load model
+    with open(lda_model, 'rb') as f:
+        lda_stuff = pickle.load(f)
+    
+    contribs = feather.read_dataframe(contribs_in_file)
+    
+    #First catch special uses of House and Chamber before casing
+    contribs['text_proc'] = contribs.contrib
+    for fake_house_phrase in ['the House', 'the Chamber', 'this House', 'this Chamber']:
+        contribs['text_proc'] = contribs.text_proc.str.replace(fake_house_phrase, '_house_token_')  #to distinguish from housing
+    #Lower case and remove br tags
+    contribs['text_proc'] = contribs.text_proc.str.lower()
+    contribs['text_proc'] = contribs.text_proc.str.replace('\r<br />','')
+    #Remove short lines asking to give way
+    contribs = contribs[(~contribs.text_proc.str.contains('give way')) |
+                        (contribs.text_proc.str.len() > 30)]
+    #and simple 'i beg to move's; some > 2000 in length contain the argument as well
+    contribs = contribs[(~contribs.text_proc.str.contains('i beg to move')) |
+                        (contribs.text_proc.str.len() > 2000)]
+    #and anything else very short
+    contribs = contribs[contribs.text_proc.str.len() >= 10]
+    #Some manual substitutions before tokenizing
+    #contribs['text_proc'] = contribs.text_proc.str.replace('covid-19','covid_19')
+    #contribs['text_proc'] = contribs.text_proc.str.replace('power-sharing','power_sharing')
+    contribs['text_proc'] = contribs.text_proc.str.replace('go raibh', 'go_raibh')
+    contribs['text_proc'] = contribs.text_proc.str.replace('-', '_')
+    contribs['text_proc'] = contribs.text_proc.apply(lambda t: re.sub('£[\.\,\dm]*', '_price_token_', t))
+    contribs['text_proc'] = contribs.text_proc.apply(lambda t: re.sub('20[\d\-]{2,7}', '_year_token_', t))
+    #Remove 'leave out all after XXX and insert'
+    contribs['text_proc'] = contribs.text_proc.apply(lambda t: re.sub('leave out all after .* and insert:?\n\n\"', ' ', t))
+    
+    #Tokenize documents
+    stopWords = set(stopwords.words('english'))
+    #also remove common procedural words
+    stopWords.update(['thank','mr','mrs','speaker','assembly','welcome','today','motion','give','way','giving',
+                      'member','members','bill','amendment','debate','order','raised','committee',
+                      'party','sinn','féin','dup',
+                      'minister','ministers','deputy','first','chamber','department','departments','statement',
+                      'executive','office','question','tabled','table',
+                      'cheann','comhairle','raibh','maith','agat','agus','gabhaim','buíochas',
+                      'leis','aire','labhraím','fáilte','leascheann','míle','go_raibh',
+                      'us','would','time','one','think','said','want','say','know','get','see','need','sure','take','number'
+                     ])
+    tokenizer = WordPunctTokenizer()
+    contribs['tokenized_text'] = contribs.text_proc.apply(lambda t: [w for w in tokenizer.tokenize(t) if w.isalpha() and w not in stopWords])
+    
+    #encode using dictionary
+    corpus = [lda_stuff['dictionary'].doc2bow(doc) for doc in contribs.tokenized_text.tolist()]
+    
+    #assign topics
+    contribs['topic_num'] = [assign_most_likely_topic(l, topic_nums_to_drop=lda_stuff['topic_nums_to_drop']) \
+                             for l in lda_stuff['topic_model'].get_document_topics(corpus, minimum_probability=0.1)]
+    contribs['topic_name'] = contribs.topic_num.apply(lambda n: lda_stuff['topic_name_dict'][n])
+    
+    #save
+    contribs[['speaker', 'session_id', 'topic_name']].to_csv(scored_contribs_out_file, index=False)
+    print(f"Done: {contribs.shape[0]} contributions")
+
+
+# Assign bloc vote labels - all AYE, NO, ABSTAINED, or split
+def get_bloc_vote_value(bloc_df, unanimous_threshold=0.9):
+    bloc_vote_counts = bloc_df.Vote.value_counts()
+    if bloc_vote_counts.max() / bloc_vote_counts.sum() >= unanimous_threshold:
+        bloc_vote = bloc_vote_counts.sort_values().index[-1]
+    else:
+        bloc_vote = 'ABSTAINED' if bloc_vote_counts.shape[0] == 0 else 'split'
+    return bloc_vote
+
+# Get bloc vote values by votes_df.EventId (i.e. one row per vote)
+def analyse_votes_by_bloc(votes_filepath,
+                          vote_results_filepath,
+                          mla_ids_filepath,
+                          party_names_translation_filepath,
+                          v_comms_out_filepath):
+    '''
+    TODO
+    '''
+    mla_ids = pd.read_csv(mla_ids_filepath, dtype = {'PersonId': object})
+    party_group_dict = dict(
+        [(p, 'Unionist') for p in UNIONIST_PARTIES]
+        + [(p, 'Nationalist') for p in NATIONALIST_PARTIES]
+        + [(p, 'Other') for p in OTHER_PARTIES]
+    )
+    mla_ids['PartyGroup'] = mla_ids.PartyName.apply(lambda p: party_group_dict[p])
+    #Subset to MLAs for now
+    mla_ids = mla_ids[mla_ids.role == 'MLA']
+    
+    with open(party_names_translation_filepath, 'r') as f:
+        party_names_translation = json.load(f)
+
+    # Combine vote results and vote detail tables, in full
+    vote_results_df = feather.read_dataframe(vote_results_filepath)
+    vote_results_df = vote_results_df.merge(mla_ids[['PersonId', 'PartyName']], 
+        on='PersonId', how='left')
+    vote_results_df = vote_results_df[vote_results_df.PartyName.notnull()]  #drop a few with missing member and party names
+    vote_results_df['PartyName'] = vote_results_df.PartyName.apply(lambda p: party_names_translation[p])
+    
+    votes_df = feather.read_dataframe(votes_filepath)
+    votes_df = votes_df.merge(vote_results_df, on='EventId', how='inner')
+    # Check no voters unknown to mla_ids have appeared
+    assert set(votes_df.PersonId.unique()).issubset(mla_ids.PersonId), 'Unknown voter ID in votes_df'
+    votes_df = votes_df.merge(mla_ids[['PersonId', 'normal_name']], on='PersonId', how='inner')
+    #Check no new Outcome wordings have been added
+    assert set(votes_df.Outcome.unique()).issubset(
+        MOTION_CARRIED_PHRASES + MOTION_FAILED_PHRASES), \
+        'New/unexpected Outcome wording in vote_results_df'
+    
+    votes_df['DivisionDate'] = pd.to_datetime(votes_df['DivisionDate'], utc=True)
+    votes_df = votes_df.sort_values('DivisionDate')
+    #now simplify to print nicer
+    votes_df['DivisionDate'] = votes_df['DivisionDate'].dt.date
+    #To pass all votes list, create a column with motion title and url 
+    #  joined by | so that I can split on this inside the datatable
+    votes_df['motion_plus_url'] = votes_df.apply(
+        lambda row: f"{row['Title']}|http://aims.niassembly.gov.uk/plenary/details.aspx?&ses=0&doc={row['DocumentID']}&pn=0&sid=vd",
+        axis=1)
+
+    # Do the group vote calculations
+    v_comms = []
+    for v_id in votes_df.EventId.unique():
+        tmp = votes_df.loc[votes_df.EventId==v_id]
+        
+        #Tabler(s) are not known for EventId 1084 
+        if tmp.tabler_personIDs.iloc[0] == '':
+            continue
+        
+        vote_date = str(tmp.DivisionDate.iloc[0])
+        vote_subject = tmp.motion_plus_url.iloc[0]
+        vote_result = 'PASS' if tmp.Outcome.iloc[0] in MOTION_CARRIED_PHRASES else 'FAIL'
+        vote_tabler_group = tmp.tabler_personIDs.iloc[0].split(';')
+        vote_tabler_group = [mla_ids.loc[mla_ids.PersonId==x, 'PartyGroup'].iloc[0] for x in vote_tabler_group]
+        vote_tabler_group = vote_tabler_group[0] if len(set(vote_tabler_group)) == 1 else 'Mixed'
+            
+        uni_bloc_vote = get_bloc_vote_value(tmp[tmp.Designation == 'Unionist'])
+        nat_bloc_vote = get_bloc_vote_value(tmp[tmp.Designation == 'Nationalist'])
+        alli_vote = get_bloc_vote_value(tmp[tmp.PartyName == 'Alliance'])
+        green_vote = get_bloc_vote_value(tmp[tmp.PartyName == 'Green'])
+        
+        # Thought about doing DUP+SF group here too but not implemented yet
+        
+        v_comms.append((v_id, vote_date, vote_subject, vote_tabler_group, vote_result,
+                        uni_bloc_vote, nat_bloc_vote, alli_vote, green_vote))
+    
+    v_comms = pd.DataFrame(v_comms, columns=['EventId', 'vote_date', 'vote_subject',
+                                             'vote_tabler_group', 'vote_result',
+                                             'uni_bloc_vote', 'nat_bloc_vote',
+                                             'alli_vote', 'green_vote'])
+
+    # There was a unionist/nationalist split if each bloc voted as one but they went differently to one another
+    v_comms['uni_nat_split'] = (v_comms.uni_bloc_vote != 'split') & \
+        (v_comms.nat_bloc_vote != 'split') & (v_comms.nat_bloc_vote != v_comms.uni_bloc_vote)
+    v_comms['uni_nat_split'] = v_comms.uni_nat_split.apply(lambda b: 'Yes' if b else 'No')
+
+    v_comms = v_comms.sort_values('vote_date', ascending=False).reset_index(drop=True)
+
+    # Make the whole file (it's not many rows) new each time.
+    #feather.write_dataframe(v_comms, v_comms_out_filepath)
+    v_comms.to_csv(v_comms_out_filepath, index=False)
+

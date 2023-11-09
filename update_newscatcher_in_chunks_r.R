@@ -11,12 +11,20 @@
 #Don't really get any false positives with name in quotes except for a few like Allen, Stewart, especially if use source selection.
 #So only apply the content filtering to those people.
 
+# TODO update October 2023
+# I was on V1 via RapidAPI. Now there are V2 and V3 APIs.
+#https://docs.newscatcherapi.com/knowledge-base/migrate-from-v1-rapidapi
+# With managed sign-up and possible free hobby use access:
+#https://app.newscatcherapi.com/auth/register
+
 suppressPackageStartupMessages(library(dplyr))
 library(httr)
 library(jsonlite)
-suppressPackageStartupMessages(library(feather))
+suppressPackageStartupMessages(library(arrow))
 
 if (Sys.info()['user']=='rstudio') setwd('/home/rstudio/nipol')
+
+data_dir = './data'
 
 prepare_search_mla_name <- function(mla_name) {
     search_mla_name <- mla_name
@@ -57,20 +65,54 @@ do_21_news_gets <- function(politicians_normal_names, politician_start_index, ex
                             start_page_num=1) {
 
     cat('index at start of function =',politician_start_index,'\n')
-    sources_to_check <- c("belfasttelegraph.co.uk", "bbc.co.uk", "irishtimes.com", "thejournal.ie",
-                          "independent.ie", "agriland.ie", "rte.ie", "belfastlive.co.uk",
-                          "highlandradio.com", "thesun.ie", "metro.co.uk", "thetimes.co.uk",
-                          "telegraph.co.uk", "breakingnews.ie", "theguardian.com",
-                          "the42.ie", "qub.ac.uk", "express.co.uk", "yahoo.com",
-                          "thesun.co.uk", "mirror.co.uk", "limerickleader.ie", "irishcentral.com",
-                          "inews.co.uk", "huffingtonpost.co.uk", "google.com", 
-                          "dailystar.co.uk", "dailymail.co.uk", "reuters.com", "independent.co.uk",
-                          "thestandard.com.hk", "kfgo.com", "catholicworldreport.com",
-                          "thenational.scot", "thelondoneconomic.com", "walesonline.co.uk",
-                          "standard.co.uk", "irishmirror.ie", "pioneergroup.com", "metro.us",
-                          "birminghammail.co.uk","rt.com","forexlive.com",
-                          "donegaldaily.com", "dailyrecord.co.uk", "manchestereveningnews.co.uk",
-                          "newstatesman.com", "thedailybeast.com", "thescottishsun.co.uk")
+    sources_to_check <- c("agriland.ie",
+                          "bbc.co.uk",
+                          "belfastlive.co.uk",
+                          "belfasttelegraph.co.uk",
+                          "birminghammail.co.uk",
+                          "breakingnews.ie",
+                          "catholicworldreport.com",
+                          "dailymail.co.uk",
+                          "dailyrecord.co.uk",
+                          "dailystar.co.uk",
+                          "donegaldaily.com",
+                          "express.co.uk",
+                          "google.com",
+                          "highlandradio.com",
+                          "huffingtonpost.co.uk",
+                          "independent.co.uk",
+                          "independent.ie",
+                          "inews.co.uk",
+                          "irishcentral.com",
+                          "irishmirror.ie",
+                          "irishtimes.com",
+                          "limerickleader.ie",
+                          "kfgo.com",
+                          "manchestereveningnews.co.uk",
+                          "metro.co.uk",
+                          "metro.us",
+                          "mirror.co.uk",
+                          "newstatesman.com",
+                          "pioneergroup.com",
+                          "qub.ac.uk",
+                          "reuters.com",
+                          "rt.com",
+                          "rte.ie",
+                          "standard.co.uk",
+                          "telegraph.co.uk",
+                          "the42.ie",
+                          "thedailybeast.com",
+                          "theguardian.com",
+                          "thejournal.ie",
+                          "thelondoneconomic.com",
+                          "thenational.scot",
+                          "thescottishsun.co.uk",
+                          "thestandard.com.hk",
+                          "thesun.co.uk",
+                          "thesun.ie",
+                          "thetimes.co.uk",
+                          "walesonline.co.uk"
+                          )
     #New ones:
     #sluggerotoole.com? Not really news
     #politico.eu
@@ -103,7 +145,10 @@ do_21_news_gets <- function(politicians_normal_names, politician_start_index, ex
         while (page_num <= total_pages & page_num <= 20) {
             
             tmp <- GET(sprintf('https://newscatcher.p.rapidapi.com/v1/search?lang=en&page_size=5&page=%i&q="%s"&from=%s&to=%s&sources=%s',
-                               page_num, gsub(' ','%20',search_mla_name), from_date, to_date, paste(sources_to_check, collapse=',')),
+                               page_num, gsub(' ','%20',search_mla_name),
+                               from_date,
+                               to_date,
+                               paste(sources_to_check, collapse=',')),
                        add_headers('x-rapidapi-host' = 'newscatcher.p.rapidapi.com',
                                    'x-rapidapi-key' = newscatcher_api_key))
             cat(sprintf('%g %s: page %g of %g\n',p, mla_name, page_num, total_pages))
@@ -156,12 +201,12 @@ do_21_news_gets <- function(politicians_normal_names, politician_start_index, ex
 }
 
 #Run
-existing_news_articles_file_name <- 'data/newscatcher_articles_sep2020topresent.feather'
+existing_news_articles_filepath <- file.path(data_dir, 'newscatcher_articles_sep2020topresent.feather')
+existing_news_articles <- read_feather(existing_news_articles_filepath)
+
 news_update_place_file_name <- 'newscatcher_politician_index_to_start_at.txt'
 
-existing_news_articles <- read_feather(existing_news_articles_file_name)
-
-politicians <- read.csv('data/all_politicians_list.csv', stringsAsFactors=FALSE)
+politicians <- read.csv(file.path(data_dir, 'all_politicians_list.csv'), stringsAsFactors=FALSE)
 newscatcher_api_key <- readLines('newscatcher_api_token', n=1)
 
 search_type <- 'weekly'
@@ -206,7 +251,7 @@ for (i in seq(100)) {
     existing_news_articles$short_date <- NULL
     #
     cat(sprintf('Added %i rows to file\n', nrow(existing_news_articles)-prev_nrows))
-    write_feather(existing_news_articles, existing_news_articles_file_name)
+    write_feather(existing_news_articles, existing_news_articles_filepath)
     
     #Update place file for next time
     writeLines(as.character(next_time_start_index), news_update_place_file_name)

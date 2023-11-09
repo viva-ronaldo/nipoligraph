@@ -1,7 +1,7 @@
 #Check what records we now have in each source
 
 suppressPackageStartupMessages(library(dplyr))
-library(feather)
+suppressPackageStartupMessages(library(arrow))
 suppressPackageStartupMessages(library(lubridate))
 library(jsonlite)
 library(httr)
@@ -41,9 +41,14 @@ if (nrow(missing_party_colours) > 0) {
 }
 
 #Assembly basics
-tmp <- read.csv('data/diary_future_events.psv', sep='|')
-cat(sprintf('\n%i events in Assembly diary; earliest is %s, latest is %s\n',
-            nrow(tmp), ymd_hms(min(tmp$EventDate)), ymd_hms(max(tmp$EventDate))))
+tryCatch({
+    tmp <- read.csv('data/diary_future_events.psv', sep='|')
+    cat(sprintf('\n%i events in Assembly diary; earliest is %s, latest is %s\n',
+                nrow(tmp), ymd_hms(min(tmp$EventDate)), ymd_hms(max(tmp$EventDate))))
+},
+error = function(e) {
+    message("Diary file is currently empty")
+})
 tmp <- read.csv('data/current_ministers_and_speakers.csv')
 cat(sprintf('%i ministers + speakers\n', n_distinct(tmp$PersonId)))
 tmp <- read.csv('data/current_committee_memberships.csv')
@@ -79,7 +84,7 @@ any_new_mlas <- subset(tmp, !(speaker %in% politicians_list$normal_name))
 if (nrow(any_new_mlas) > 0) {
     cat(sprintf('\n**%i debate contributions from MLAs not in all_politicians list: %s**\n\n', nrow(any_new_mlas), paste(unique(any_new_mlas$speaker), collapse=', ')))
 }
-tmp <- read_feather('data/plenary_hansard_contribs_emotions_averaged_201920sessions_topresent.feather')
+tmp <- read_feather('data/plenary_hansard_contribs_emotions_averaged.feather')
 cat(sprintf('%i MLAs in debate emotions file; %i excluding unknown-*\n', n_distinct(tmp$speaker),
             n_distinct(subset(tmp, !grepl('unknown',speaker))$speaker)))
 tmp <- read.csv('data/lda_scored_plenary_contribs.csv')
@@ -107,8 +112,7 @@ cat(sprintf('\n%i rows in (slim) news file covering %i people; latest date is %s
 time_since_last_df <- rbind(time_since_last_df, data.frame(source='news', days_since_last=as.integer(now()-ymd_hms(max(tmp$published_date)))))
 
 #Tweets
-#mlas_2019_tweets_apr2019min_to_present.feather
-tmp <- read_feather('data/mlas_2019_tweets_apr2019min_to_present_slim.feather')
+tmp <- read_feather('data/tweets_slim_4jun2021_to_present.feather')
 tweets_last_month <- subset(tmp, as.integer(difftime(Sys.Date(), tmp$created_at)) <= 30)
 cat(sprintf('\n%i tweets from %i people (in slim file); %i people with tweets in last month\n',
             nrow(tmp), n_distinct(tmp$user_id),
@@ -119,7 +123,6 @@ inactive_twitter <- twitter_list$normal_name[(twitter_list$normal_name %in% subs
 if (length(inactive_twitter) > 0) {
     cat(sprintf('\n%i Twitter accounts (for active politicians) with no tweets in last month: %s\n\n', length(inactive_twitter), paste(sort(inactive_twitter), collapse=', ')))
 }
-#tmp <- read.csv('data/tweets_network_last3months_top5s.csv')
 tmp <- read.csv('data/vader_scored_tweets_apr2019min_to_present.csv')
 cat(sprintf('%i tweets in Vader scored file\n', nrow(tmp)))
 tmp <- read_json('flask/static/tweets_network_last3months_nodes.json')
