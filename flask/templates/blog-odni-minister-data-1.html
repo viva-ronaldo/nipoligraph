@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    {% include 'nav.html' %}
+
+    <article>
+      <div class='container-xl' style='min-height: 800px'>
+
+        <div class="row">
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <div class="post-heading">
+              <h1>Ministerial gifts and overseas trips (2020-2022)</h1>
+              <h2 class="subheading">The Assembly's perks are modest</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class='row mb-4'>
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <p>An increasing number of datasets relating to Assembly departmental operations are being published on <a href="opendatani.gov.uk/">OpenDataNI</a> (ODNI). In this and in the next post, I'm looking at four of these that detail the activities of ministers and their departments in 2020-2022.</p>
+
+            <p>This post will cover <a href="https://www.opendatani.gov.uk/@department-of-finance/ministers-gifts-and-hospitality-for-the-period-january-to-june-2020">gifts and hospitality</a> received by ministers, and <a href="https://www.opendatani.gov.uk/@department-of-finance/ministers-overseas-visits-from-january-to-june-2020">overseas trips</a> taken by ministers during the last Assembly session. The second post will cover ministers' declared interests and the meetings that they held while in post.</p>
+
+            <p>This work was funded by an <a href="https://www.finance-ni.gov.uk/publications/open-data-ni-innovation-and-outreach-fund">ODNI Innovation and Outreach Fund award</a>. In future, these datasets could be incorporated dynamically into NI PoliGraph, but the publishing format on ODNI does not yet facilitate this.</p>
+
+            <h2 class='section-heading'>Gifts and hospitality</h2>
+            
+            <p>
+              The gifts and hospitality dataset covers, like the others in this group, the period from January 2020 to October 2022, while the Assembly was in session. In this time there were 495 gifts or hospitality offerings made to the Assembly departments. 470 of these were accepted or 'retained in office', which presumably means they were accepted but not taken by the minister personally, to a total value of £16,500.
+            </p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/odni-minister-data-1_plot1.png')}}" style='width: 85%; display: block; margin: auto'/>
+
+            <p>
+              Comparing the gifts received by department, we see that the treasures are not shared equally. The Executive Office and departments for Economy, Agriculture, and Health receive the biggest share of the gifts, leaving little for Justice and Infrastructure. Putting this aside, the average department receives around 20 gifts per year, worth around £700.
+            </p>
+
+            <p>
+              The items can be classified, firstly, by the reason for or form of the gift. About 40% of gifts were given for no specified reason other than 'capacity as minister'. After this, the most common categories of gift are those that were invitations to events, rather than physical items: either an opening of or visit to a business or other organisation, attending a festival or similar event, or, most commonly, attending a dinner, reception, or awards ceremony. Often these categories require the minister to speak at the event, so it could be questioned if the value attributed to these gifts (say, the normal ticket price for the dinner) is fair considering the time and work that is required to avail of the gift.
+            </p>
+
+            <div class="row py-4 justify-content-center">
+              <div class="col">
+                <table id="blog-table-1" class="table table-striped table-bordered blog-table" width='100%'>
+                  <thead>
+                    <tr>
+                      <th>Gift type</th>
+                      <th>Total number</th>
+                      <th>Total value accepted/retained</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+            </div>
+
+            <p>
+              The gifts can also be classified by their type. As seen above, many of the gifts were in the form of attendance at a dinner or event, some of which are tickets for a sporting event like a football match or rugby final. The rest of the gifts were physical items, and the most common types of these were a food or drink item, a book, or the wide category of 'picture/ornament/keepsake': this also includes such things as plaques, paper weights, framed photos, illustrations, art pieces, pens, and vases.
+            </p>
+
+            <p>
+              The 'other item' category contains a wide variety of one-off gift items, as can be seen by exploring the full dataset in the table at the end of this section. Some of the more unusual items offered include a set of Christmas baubles, a model lorry, a boomerang and tapestry combo, and 200 personal protective equipment hospital masks.
+            </p>
+
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/odni-minister-data-1_plot2.png')}}" style='width: 95%; display: block; margin: auto'/>
+
+            <p>
+              Counting gifts offered by type and department, it can be seen that there are some departments - Economy, Finance and Agriculture - that are more likely to receive gifts in the form of an invitation to a dinner or event. The Education and Communities departments, by contrast, more often receive physical tokens such as books, pictures, or keepsakes, possibly accompanying a visit to a school or other organisation that is likely to take place during the day. The Executive Office receives both the most gifts and the biggest spread of gift types, the majority of which are in physical form rather than an event invitation.
+            </p>
+
+            <p>
+              The source of each gift is harder to usefully categorise, but of the 495 gifts offered, some of the most common donors were foreign consulates (at least 66 gifts), schools (at least 53), and sports clubs (at least 27). Special mention can be given to the Chinese consulate, which is credited with 50 gifts in the two and a half year period. These covered all 9 of the departments and were often a food or drink item or a gift hamper.
+            </p>
+
+            <p>
+              By average value per item, the most valuable gift types, excluding the 'Monetary' category are sporting tickets (£76), clothing (£48), and dinners (£41). The 'clothing' category includes jewellery, and the high average value of this category is largely due to two pairs of gifts given to the First and Deputy First Ministers, one including a pearl necklace, and the other a scarf and necklace. The 'monetary' category is dominated by a single gift, a 'Civility in Politics' award given to Robin Swann in June 2022; the £1500 prize fund was distributed between three chosen charities. 
+            </p>
+
+            <h3>Full gifts & hospitality dataset</h3>
+            
+            <p>
+              The complete set of 495 gifts received in the 2020-2022 is available for exploration below. This can be arranged by date, gift value, or gift type. Four items with no value provided are shown with a value of £0.
+            </p>
+
+            <div class="row py-4 justify-content-center">
+              <div class="col">
+                <table id="blog-table-2" class="table table-striped table-bordered blog-table" width='110%' style='font-size: 0.75em'>
+                  <thead>
+                    <tr>
+                      <th>Gift</th>
+                      <th>Type</th>
+                      <th>Value</th>
+                      <th>Date offered</th>
+                      <th>Offered by</th>
+                      <th>Received by</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+            </div>
+            
+            <h2 class='section-heading'>Overseas trips</h2>
+
+            <p>As the reporting period of 2020-2022 coincides largely with the COVID pandemic and its lockdown restrictions, the overseas travel dataset unfortunately contains very little of interest. Only 10 trips were recorded in this period, one of which was cancelled, though only partially refunded. The details of these trips are shown in full below.</p>
+
+            <div class="row py-4 justify-content-center">
+              <div class="col">
+                <table id="blog-table-3" class="table table-striped table-bordered blog-table" width='100%'>
+                  <thead>
+                    <tr>
+                      <th>Minister (department)</th>
+                      <th>Trip start date</th>
+                      <th>Duration (days)</th>
+                      <th>Destination</th>
+                      <th>Purpose</th>
+                      <th>Cost per day</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+            </div>
+
+            <p>
+              The most common destination was the United States of America, with three separate trips taken by four ministers in total.  Other destinations for the ministers in this short, limited-travel period were the Netherlands, France, and Dubai. Most of the trips were for the purpose of benefitting international trade or tourism, so usually involved the ministers for Finance or Economy. Besides the First Minister (one trip to France) the only other minister with a registered trip was Edwin Poots (Agriculture), who joined one of the Washington DC visits. None of the overseas trips were particularly extravagant, mostly costing between £1000 and £2000 per night per minister.
+            </p>
+
+          </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[0] is not none %}
+              <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+            {% endif %}
+          </div>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[1] is not none %}
+              <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}
+
+{% block other_js %}
+
+    <script src="https://cdn.datatables.net/responsive/2.2.5/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.5/js/responsive.bootstrap.min.js"></script>
+
+    <script type='text/javascript'>
+      var dataSet_1 = {{df_1_list | tojson }};
+      var dataSet_2 = {{df_2_list | tojson }};
+      var dataSet_3 = {{df_3_list | tojson }};
+      $(document).ready(function() {
+          $('#blog-table-1').DataTable( {
+              responsive: true,
+              info: false,
+              paging: false,
+              searching: false,
+              data: dataSet_1,
+              columns: [
+                  { title: "Gift type", responsivePriority: 1, orderable: false },
+                  { title: "Total number", responsivePriority: 3 },
+                  { title: "Total value accepted/retained", responsivePriority: 2,
+                    render: $.fn.dataTable.render.number( ',', '', 0, '£', '' )
+                  },
+              ],
+              order: [1, 'desc']
+          } );
+
+          $('#blog-table-2').DataTable( {
+              responsive: true,
+              info: false,
+              paging: true,
+              searching: true,
+              data: dataSet_2,
+              columns: [
+                  { title: "Gift", responsivePriority: 1, orderable: false },
+                  { title: "Type", responsivePriority: 6 },
+                  { title: "Value", responsivePriority: 2,
+                    render: $.fn.dataTable.render.number( ',', '', 0, '£', '' )
+                  },
+                  { title: "Date offered", responsivePriority: 5 },
+                  { title: "Offered by", responsivePriority: 4, orderable: false },
+                  { title: "Received by", responsivePriority: 3, orderable: false },
+                  { title: "Action", responsivePriority: 7, orderable: false },
+              ],
+              order: [3, 'asc']
+          } );
+
+          $('#blog-table-3').DataTable( {
+              responsive: true,
+              info: false,
+              paging: false,
+              searching: false,
+              data: dataSet_3,
+              columns: [
+                  { title: "Minister (department)", responsivePriority: 1 },
+                  { title: "Trip start date", responsivePriority: 2 },
+                  { title: "Duration (days)", responsivePriority: 5, orderable: false },
+                  { title: "Destination", responsivePriority: 3, orderable: false },
+                  { title: "Purpose", responsivePriority: 4, orderable: false },
+                  { title: "Cost per day", responsivePriority: 6 ,
+                    render: $.fn.dataTable.render.number( ',', '', 0, '£', '' )
+                  },
+              ],
+              order: [1, 'asc']
+          } );
+      } );
+    </script>
+
+{% endblock %}

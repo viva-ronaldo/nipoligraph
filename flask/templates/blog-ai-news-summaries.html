@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'nav.html' %}
+
+<article>
+    <div class='container-xl' style='min-height: 800px'>
+        
+        <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+                <div class="post-heading">
+                    <h1>Personalised news coverage summaries on NIPG</h1>
+                    <h2 class="subheading"></h2>
+                </div>
+            </div>
+        </div>
+                    
+        <div class='row mb-4'>
+            <div class="col-lg-8 col-md-10 mx-auto">
+
+                <p>
+                    Generative AI has come to NI PoliGraph in the form of personalised news coverage summaries for each active politician. See it now on the <a href="{{url_for('news')}}">news page</a>.
+                </p>
+
+                <h2 class='section-heading'>How it works</h2>
+
+                <p>
+                    The summary text is written by <a class='use-underline' target="_blank" href='https://openai.com/'>OpenAI</a>'s large language model (LLM) <a class='use-underline' target="_blank" href='https://platform.openai.com/docs/models/gpt-4o-mini'>GPT-4o mini</a>. To do this, for each politician, recent articles mentioning them are collected, and their text passed to the LLM. Articles from the past month are used, unless there are fewer than 5 mentioning the politician in this period, in which 2 or 3 months' history are used. Where there is too much text from a month of articles, only the most recent 50,000 tokens (which are similar to words) are used. The LLM is then simply asked to summarise, in 1-4 paragraphs, the activity of the member during this recent period. When describing specific activities, the model is asked to quote the source of the story where possible, which it generally does.
+                </p>
+
+                <p>As an example, the recent summary for Mike Nesbitt was generated from 66 articles mentioning him in the period from 25 August to 9 September 2024 (taken from a possible 104 articles in the most recent month). The activity being summarised is very recent, because the amount of coverage was high, reaching the 50,000 token limit from this two-week period alone. The form of the most recent few articles is shown below.</p>
+
+                <div class="col-12">
+                  <div class="table-responsive text-center">
+                    <table class="table table-striped table-hover table-sm blog-news-summ-table">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Source</th>
+                          <th>Title</th>
+                          <th>Text</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                            <td>2024-09-09</td>
+                            <td>Irish News</td>
+                            <td style='padding: 0.6rem'><i>Urgent reform needed to overhaul children's care services in Northern Ireland, warns charity</i></td>
+                            <td style='font-size: 0.8em'>Urgent reform is needed to overhaul children's care services in Northern Ireland, a charity has warned. Action for Children says a record number of children - almost 4,000 - are currently in care...</td>
+                        </tr>
+                        <tr>
+                            <td>2024-09-09</td>
+                            <td>BBC</td>
+                            <td><i>Programme for government details to be unveiled</i></td>
+                            <td style='font-size: 0.8em'>Much has also been made of the fact there is four-party agreement. The Ulster Unionist Party (UUP) withheld support for the recent budget because of the allocation of cash to the health ministry...</td>
+                        </tr>
+                        <tr>
+                            <td>2024-09-08</td>
+                            <td>Irish News</td>
+                            <td><i>Palliative Care Week: Family of Lisburn boy (10) with life-limiting condition praise hospice staff for a decade of support</i></td>
+                            <td style='font-size: 0.8em'>The family of a young Lisburn boy with a life-limiting condition have talked about their positive experience of palliative care. Eoin O'Neill (10) was born with a rare genetic condition...</td>
+                        </tr>
+                        <tr>
+                            <td>2024-09-05</td>
+                            <td>Irish Times</td>
+                            <td><i>Northern Ireland Executive agrees government programme but withholds details</i></td>
+                            <td style='font-size: 0.8em'>The Northern Executive has finally agreed a draft programme for government seven months after Stormont's restoration. First Minister Michelle O'Neill described the moment as a 'milestone' that marked...</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <p>
+                    With this, the LLM produces a summary that correctly focuses on Mr Nesbitt's return to the UUP leadership, and mentions his remarks on the future of the party, but also covers his actions as Health Minister. The LLM's output begins:
+                </p>
+
+                <div class='row' style='background-color: var(--data-panel-b-colour); padding: 10px; margin-bottom: 20px'>
+                    <div class="col-12">
+                        <blockquote><i>
+                            Mike Nesbitt has been prominently in the news as he prepares to reclaim his position as the leader of the Ulster Unionist Party (UUP) for a second time, following the resignation of Doug Beattie. Nesbitt, who has served as Northern Ireland's Health Minister, was the only candidate to declare for the leadership role when nominations closed, and he is expected to be ratified at an extraordinary general meeting on September 14, 2024 (Sources: BBC, The Irish News, Belfast Telegraph). His return comes at a time when both the UUP and the Social Democratic and Labour Party (SDLP) are facing significant challenges, including declining electoral support and internal divisions.
+                        </i></blockquote>
+
+                        <blockquote><i>
+                            In his position as Health Minister, Nesbitt has been actively involved in addressing the health service's challenges...
+                        </i></blockquote>
+                    </div>
+                </div>
+
+                <p>
+                    See the full news summary, or a more recent one, on <a href="{{url_for('indiv', mla_name='Mike Nesbitt')}}">Mr Nesbitt's member page</a>.
+                </p>
+
+                <p>
+                    The performance of GPT-4o mini at this task was found to be excellent, without much prompt engineering required. LLMs are extremely good at understanding and summarising longer texts, which is all that is required here, since the full news article texts are provided. The model may have some knowledge, from its training, of at least some of the names mentioned, but no additional background information on each member, except for their party membership, is passed to the model. It's possible that passing some key historical information on the person, older than 3 months, could help the LLM to write an even better summary, due to having additional context with which to understand the recent articles that it encounters. Such a retrieval augmented generation (RAG) approach is not attempted here, but is part of planned additions to NI PoliGraph using generative AI for other purposes: coming soon.
+                </p>
+
+            </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[0] is not none %}
+                    <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+                {% endif %}
+            </div>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[1] is not none %}
+                    <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+                {% endif %}
+            </div>
+        </div>
+                    
+    </div>
+</article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}

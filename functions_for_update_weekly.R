@@ -4,6 +4,7 @@ library(httr)
 library(jsonlite)
 #library(feather)
 library(arrow)  # for read_feather to work on file written from python
+library(xml2)
 
 # Check for new MLAs on AIMs
 update_and_get_politicians_list <- function(politicians_list_filepath) {
@@ -46,7 +47,8 @@ update_and_get_politicians_list <- function(politicians_list_filepath) {
 # Get the latest Assembly event diary, committee and minister lists
 update_assembly_lists <- function(diary_filepath,
                                   committees_list_filepath,
-                                  minister_list_filepath) {
+                                  minister_list_filepath,
+                                  mla_interests_list_filepath) {
     tryCatch({
         #Diary of business
         tmp <- GET(sprintf('http://data.niassembly.gov.uk/plenary.asmx/GetBusinessDiary_JSON?startDate=%s&endDate=%s',
@@ -73,6 +75,15 @@ update_assembly_lists <- function(diary_filepath,
             minister_list$AffiliationTitle == 'junior Minister'] <- 'Junior Minister in Executive Office'
         write.csv(minister_list[, c('PersonId', 'Organisation', 'AffiliationTitle')],
                   minister_list_filepath, quote=TRUE, row.names=FALSE)
+        
+        #Register of interests (JSON API currently broken)
+        tmp <- GET(sprintf('http://data.niassembly.gov.uk/register.asmx/GetAllRegisteredInterests'))
+        mla_interests_xml <- read_xml(content(tmp, as='text'))
+        mla_interests_df <- sapply(1:length(xml_children(mla_interests_xml)),
+                                   function(i) unlist(as_list(xml_children(mla_interests_xml)[i]))) %>%
+            t() %>% as.data.frame() %>%
+            filter(!(RegisterEntry %in% c('None', 'None.', 'none', ' ', '')))
+        write.csv(mla_interests_df, mla_interests_list_filepath, quote=TRUE, row.names=FALSE)
     }, 
     error=function(e) { message('Failed to complete update_assembly_lists; continuing') }
     )
@@ -123,10 +134,10 @@ update_questions_file <- function(questions_oral, questions_written, questions_f
     if (nrow(new_questions) > 0) {
         existing_questions <- rbind(existing_questions, new_questions) %>%
             filter(!duplicated(.[, c('DocumentId', 'MinisterPersonId')]))
-        message('Writing Assembly questions')
+        message('- Writing Assembly questions')
         write_feather(existing_questions, questions_filepath)
     } else {
-        message('No new Assembly questions found')
+        message('- No new Assembly questions found')
     }
 }
 
@@ -142,10 +153,10 @@ update_answers_file <- function(questions_filepath, answers_filepath) {
     }
     if (nrow(new_answers) > 0) {
         existing_answers <- rbind(existing_answers, new_answers)
-        message('Writing Assembly answers')
+        message('- Writing Assembly answers')
         write_feather(existing_answers, answers_filepath)
     } else {
-        message('No new Assembly answers found')
+        message('- No new Assembly answers found')
     }
 }
 
@@ -192,7 +203,7 @@ get_answers_to_questions <- function(documentId_list) {
 update_vote_list <- function(vote_details_filepath, vote_results_filepath) {
     existing_votes <- read_feather(vote_details_filepath)
     existing_vote_results <- read_feather(vote_results_filepath)
-    message(sprintf('Latest existing vote date = %s', max(existing_votes$DivisionDate)))
+    message(sprintf('- Latest existing vote date = %s', max(existing_votes$DivisionDate)))
     
     tmp <- GET(sprintf('http://data.niassembly.gov.uk/plenary.asmx/GetVotesOnDivision_JSON?startDate=%s&endDate=%s',
                        substr(max(existing_votes$DivisionDate), 1, 10), Sys.Date()))
@@ -287,7 +298,7 @@ update_plenary_contribs <- function(contribs_filepath,
             }
             new_contribs <- rbind(new_contribs, session_hansard_contribs)
         }
-        message('Writing assembly contribs')
+        message('- Writing assembly contribs')
         write_feather(rbind(existing_contribs, new_contribs), contribs_filepath)
         
         # Manually try to avoid unmatched speakers
@@ -378,7 +389,6 @@ get_tidy_hansardcomponents_object <- function(plenary_doc_id,
                         if (speaker_split == "Ms Mallon") speaker_convert <- 'Nichola Mallon'
                         if (speaker_split == "Ms Armstrong") speaker_convert <- 'Kellie Armstrong'
                         if (speaker_split == "Mrs O'Neill") speaker_convert <- "Michelle O'Neill"
-                        if (speaker_split == "Ms Gildernew") speaker_convert <- 'Michelle Gildernew'
                         if (speaker_split == "Ms Anderson") speaker_convert <- 'Martina Anderson'
                         if (speaker_split == "Mr Anderson") speaker_convert <- 'Sydney Anderson'
                         if (speaker_split == "Mr Mullan") speaker_convert <- 'Gerry Mullan'
@@ -393,7 +403,9 @@ get_tidy_hansardcomponents_object <- function(plenary_doc_id,
                         if (speaker_split == 'Ms Ennis') speaker_convert <- 'Sinéad Ennis'
                         if (speaker_split == 'Mr Ennis') speaker_convert <- 'George Ennis'
                         if (speaker_split == 'Ms McCann') speaker_convert <- 'Jennifer McCann'
-                        #Can't be sure of Robinson sometimes
+                        if (speaker_split == 'Ms McLaughlin') speaker_convert <- 'Sinéad McLaughlin'
+                        if (speaker_split == 'Mr Dunne') speaker_convert <- 'Stephen Dunne'
+                        if (speaker_split == 'Mr Bradley') speaker_convert <- 'Maurice Bradley'
                     }
                 }
                 
@@ -542,7 +554,7 @@ update_news_article_sentiment <- function(news_articles_filepath, news_articles_
     news_articles_with_sentiment <- read_feather(news_articles_w_sentiment_filepath)
     new_news_articles <- anti_join(news_articles, news_articles_with_sentiment, 
                                    by=c('normal_name', 'published_date', 'title'))
-    message(sprintf('%i new articles to score for sentiment', nrow(new_news_articles)))
+    message(sprintf('- %i new articles to score for sentiment', nrow(new_news_articles)))
     
     if (nrow(new_news_articles) > 0) {
         new_news_articles$article_id <- seq_along(new_news_articles$normal_name)
@@ -559,7 +571,7 @@ update_news_article_sentiment <- function(news_articles_filepath, news_articles_
         news_articles_with_sentiment <- rbind(news_articles_with_sentiment, 
                                               new_news_articles[, c('normal_name', 'published_date', 'source',
                                                                     'link', 'title', 'sr_sentiment_score')])
-        message('Writing news slim sentiment')
+        message('- Writing news slim sentiment')
         write_feather(news_articles_with_sentiment,
                       news_articles_w_sentiment_filepath)
     }

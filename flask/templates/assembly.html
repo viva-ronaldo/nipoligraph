@@ -39,19 +39,17 @@
       </div>
 
       {% if session_to_plot == current_session %}
-        <div class="row mb-2 justify-content-md-center">
-
-          <div class="my-header px-5 py-3 pt-md-5 pb-md-2 mx-auto text-center">
+        <div class="row mb-2 justify-content-left">
+          <div class="my-header px-5 py-3 pt-md-5 pb-md-2 mx-auto">
             {% if diary.size > 0 %}
-              <p>Upcoming Assembly business (see <a class='use-underline' href='http://aims.niassembly.gov.uk/assemblybusiness/businessdiary.aspx'>the official Assembly site</a> for full information):</p>
+              <p class='text-center'>Upcoming Assembly business (see <a class='use-underline' href='http://aims.niassembly.gov.uk/assemblybusiness/businessdiary.aspx' target='_blank'>the official Assembly site</a> for full information):</p>
               <ul>
               {% for item in diary.itertuples() %}
-                  <li><span style="color: {{ item.EventHTMLColour }}"><b>{{ item.EventName}}</b></span> on {{ item.EventPrettyDate }} at {{ item.StartTime[11:16] }}</li>
+                <li><span style="color: {{ item.EventHTMLColour }}"><b>{{ item.EventName}}</b></span> on {{ item.EventPrettyDate }} at {{ item.StartTime[11:16] }}</li>
               {% endfor %}
               </ul>
             {% endif %}
           </div>
-
         </div>
       {% else %}
         <div class='col my-4 text-center'>
@@ -62,7 +60,7 @@
       <div class="row mb-2 justify-content-md-center">
         <div class="col-lg-8">
           <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-            <div class="col p-4 d-flex flex-column justify-content-center data-panel-a">
+            <div class="col p-4 d-flex flex-column justify-content-center data-panel-b">
               <h4>Voting records</h4>
               <p class="card-text mb-2 data-panel-card-border">The <b>voting patterns</b> of {{n_mlas}} MLAs over {{n_votes}} votes <span class='help-tooltip' title='those voting in at least {{pca_votes_threshold_pct}}% of the votes' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> are visualised using dimensionality reduction <span class='help-tooltip' title="converting each member's sequence of votes into two coordinates, for the purpose of visualisation" data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>. There is no explicit meaning to the two graph axes, but circles that are close together represent MLAs that vote in similar ways. Parties cluster strongly together because they often each vote as a bloc.</p>
               <div id='vis3'></div>
@@ -73,9 +71,73 @@
       </div>
 
       <div class="row mb-2 justify-content-md-center">
-        <div class="col-xl-6">
+        <div class="col-md-12">
           <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
             <div class="col p-4 d-flex flex-column position-static data-panel-b">
+              <h4>Votes in this session</h4>
+
+              <table style="max-width:700px; border-collapse: separate; border-spacing: 15px 15px; table-layout: fixed; margin-bottom: 20px; margin-top: -20px">
+
+                <tr><td width='80%'></td><td width='20%'></td></tr>
+                <tr>
+                  <td><b>{{votes_passed_details[2]}}</b> ({{votes_passed_details[0]}}/{{votes_passed_details[1]}}) motions have passed</td>
+                  <td><span id='votes_passed_sparkline'></span></td>
+                </tr>
+                <tr>
+                  <td><b>{{uni_tabled_passed_details[2]}}</b> ({{uni_tabled_passed_details[0]}}/{{uni_tabled_passed_details[1]}}) motions tabled by <b>unionists</b> have passed</td>
+                  <td><span id='uni_votes_passed_sparkline'></span></td>
+                </tr>
+                <tr>
+                  <td><b>{{nat_tabled_passed_details[2]}}</b> ({{nat_tabled_passed_details[0]}}/{{nat_tabled_passed_details[1]}}) motions tabled by <b>nationalists</b> have passed</td>
+                  <td><span id='nat_votes_passed_sparkline'></span></td>
+                </tr>
+                {% if mix_tabled_passed_details[1] > 0 %}
+                  <tr>
+                    <td colspan='2'><b>{{mix_tabled_passed_details[2]}}</b> ({{mix_tabled_passed_details[0]}}/{{mix_tabled_passed_details[1]}}) motions tabled by more than one group have passed</td>
+                  </tr>
+                {% endif %}
+                <tr>
+                  <td colspan='2'><b>{{uni_nat_split_details[0]}}</b> ({{(100*uni_nat_split_details[0]/votes_passed_details[1]) |round|int}}%) votes were split unionist/nationalist (<b>{{num_uni_nat_split_passes}}</b> passed)</td>
+                </tr>
+                {% if alli_like_uni_details[0] > 0 %}
+                  <tr>
+                    <td>In <b>{{alli_like_uni_details[1]}}</b> split votes, Alliance have voted with unionists in <b>{{alli_like_uni_details[0]}}</b> vote{{'' if alli_like_uni_details[0] == 1 else 's'}} and with nationalists in <b>{{alli_like_nat_details[0]}}</b> vote{{'s' if alli_like_nat_details[0] == 1 else ''}}</td>
+                    <td><span id='alli_split_sparkline'></span></td>
+                  </tr>
+                {% endif %}
+                {% if green_like_uni_details[0] > 0 %}
+                <tr>
+                  <td>In <b>{{green_like_uni_details[1]}}</b> split votes, Green have voted with unionists in <b>{{green_like_uni_details[0]}}</b> vote{{'' if green_like_uni_details[0] == 1 else 's'}} and with nationalists in <b>{{green_like_nat_details[0]}}</b> vote{{'s' if green_like_nat_details[0] == 1 else ''}}</td>
+                  <td><span id='green_split_sparkline'></span></td>
+                </tr>
+                {% endif %}
+
+              </table>
+
+              <table id="votes_table" class="table table-striped table-bordered" style='font-size: 0.9em'>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Motion</th>
+                    <th>Tabled by</th>
+                    <th>Result</th>
+                    <th>Unionist bloc vote</th>
+                    <th>Nationalist bloc vote</th>
+                    <th>Alliance vote</th>
+                    <th>Green vote</th>
+                    <th>Sectarian split?</th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mb-2 justify-content-md-center">
+        <div class="col-xl-6 col-md-10">
+          <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+            <div class="col p-4 d-flex flex-column position-static data-panel-c">
               <h4>Member questions asked</h4>
               <div>
                 <p class="card-text mb-2 data-panel-card-border">Shows the most prolific <b>question askers</b> among MLAs in the selected Assembly session.</p>
@@ -84,7 +146,7 @@
             </div>
           </div>
         </div>
-        <div class="col-xl-6 col-lg-6">
+        <div class="col-xl-6 col-lg-6 col-md-8">
           <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
             <div class="col p-4 d-flex flex-column position-static data-panel-c">
               <!--<strong class="d-inline-block mb-2 text-primary">Optional category</strong>-->
@@ -155,7 +217,7 @@
         <div class="row mb-2 justify-content-md-center">
           <div class="col-md-8">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col p-4 d-flex flex-column position-static data-panel-b">
+              <div class="col p-4 d-flex flex-column position-static data-panel-a">
                 <h4>Plenary discussion emotions</h4>
                 <p class="card-text mb-2 data-panel-card-border">Plenary contributions from the selected session are scored for the extent to which they express one of five different emotions, and scores are averaged by party.</p>
                 <div id='vis7'></div>
@@ -165,69 +227,29 @@
         </div>
       {% endif %}
 
-      <div class="row mb-2 justify-content-md-center">
-        <div class="col-md-12">
-          <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-            <div class="col py-4 pl-2 pr-4 d-flex flex-column position-static">
-              <h4>Votes in this session</h4>
+      {% if session_to_plot == current_session %}
+        <div class="row mb-2 justify-content-md-center">
+          <div class="col-md-12">
+            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+              <div class="col p-4 d-flex flex-column position-static data-panel-b">
+                <h4>Recent committee meetings</h4>
 
-              <table style="max-width:700px; border-collapse: separate; border-spacing: 15px 15px; table-layout: fixed; margin-bottom: 20px; margin-top: -20px">
+                <table id="committee_meetings_table" class="table table-striped table-bordered" style='font-size: 0.9em'>
+                  <thead>
+                    <tr>
+                      <th>Meeting date</th>
+                      <th>Committee</th>
+                      <th>Agenda</th>
+                      <th>Attendees</th>
+                    </tr>
+                  </thead>
+                </table>
 
-                <tr><td width='80%'></td><td width='20%'></td></tr>
-                <tr>
-                  <td><b>{{votes_passed_details[2]}}</b> ({{votes_passed_details[0]}}/{{votes_passed_details[1]}}) motions have passed</td>
-                  <td><span id='votes_passed_sparkline'></span></td>
-                </tr>
-                <tr>
-                  <td><b>{{uni_tabled_passed_details[2]}}</b> ({{uni_tabled_passed_details[0]}}/{{uni_tabled_passed_details[1]}}) motions tabled by <b>unionists</b> have passed</td>
-                  <td><span id='uni_votes_passed_sparkline'></span></td>
-                </tr>
-                <tr>
-                  <td><b>{{nat_tabled_passed_details[2]}}</b> ({{nat_tabled_passed_details[0]}}/{{nat_tabled_passed_details[1]}}) motions tabled by <b>nationalists</b> have passed</td>
-                  <td><span id='nat_votes_passed_sparkline'></span></td>
-                </tr>
-                {% if mix_tabled_passed_details[1] > 0 %}
-                  <tr>
-                    <td colspan='2'><b>{{mix_tabled_passed_details[2]}}</b> ({{mix_tabled_passed_details[0]}}/{{mix_tabled_passed_details[1]}}) motions tabled by more than one group have passed</td>
-                  </tr>
-                {% endif %}
-                <tr>
-                  <td colspan='2'><b>{{uni_nat_split_details[0]}}</b> ({{(100*uni_nat_split_details[0]/votes_passed_details[1]) |round|int}}%) votes were split unionist/nationalist (<b>{{num_uni_nat_split_passes}}</b> passed)</td>
-                </tr>
-                {% if alli_like_uni_details[0] > 0 %}
-                  <tr>
-                    <td>In <b>{{alli_like_uni_details[1]}}</b> split votes, Alliance have voted with unionists in <b>{{alli_like_uni_details[0]}}</b> vote{{'s' if alli_like_uni_details[0] == 1 else ''}} and with nationalists in <b>{{alli_like_nat_details[0]}}</b> vote{{'s' if alli_like_nat_details[0] == 1 else ''}}</td>
-                    <td><span id='alli_split_sparkline'></span></td>
-                  </tr>
-                {% endif %}
-                {% if green_like_uni_details[0] > 0 %}
-                <tr>
-                  <td>In <b>{{green_like_uni_details[1]}}</b> split votes, Green have voted with unionists in <b>{{green_like_uni_details[0]}}</b> vote{{'s' if green_like_uni_details[0] == 1 else ''}} and with nationalists in <b>{{green_like_nat_details[0]}}</b> vote{{'s' if green_like_nat_details[0] == 1 else ''}}</td>
-                  <td><span id='green_split_sparkline'></span></td>
-                </tr>
-                {% endif %}
-
-              </table>
-
-              <table id="example" class="table table-striped table-bordered" style='font-size: 0.9em'>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Motion</th>
-                    <th>Tabled by</th>
-                    <th>Result</th>
-                    <th>Unionist bloc vote</th>
-                    <th>Nationalist bloc vote</th>
-                    <th>Alliance vote</th>
-                    <th>Green vote</th>
-                    <th>Sectarian split?</th>
-                  </tr>
-                </thead>
-              </table>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      {% endif %}
 
     </div>
 
@@ -265,15 +287,15 @@
         }
         parse("/data/plot_minister_answer_times_"+session_to_plot, "vis2");
         parse("/data/plot_plenary_topics_overall_"+session_to_plot, "vis5");
-        parse("/data/plot_party_unity_bars_"+session_to_plot, "vis6");
-        
+        // parse("/data/plot_party_unity_bars_"+session_to_plot, "vis6");
 
-        var dataSet = {{votes_list | tojson }};
+        var votes_df = {{votes_list | tojson }};
+        var committee_meetings_df = {{committee_meetings_list | tojson }};
 
         $(document).ready(function() {
-            $('#example').DataTable( {
+            $('#votes_table').DataTable( {
                 responsive: true,
-                data: dataSet,
+                data: votes_df,
                 columns: [
                     { title: "Date", 
                       render: function(data, type, row){
@@ -299,6 +321,23 @@
                     { title: "Alliance vote", responsivePriority: 7 },
                     { title: "Green vote", responsivePriority: 8 },
                     { title: "Sectarian split?", responsivePriority: 9 }
+                ],
+                ordering: false
+            } );
+
+            $('#committee_meetings_table').DataTable( {
+                responsive: true,
+                data: committee_meetings_df,
+                columns: [
+                    { title: "Meeting date", 
+                      render: function(data, type, row) {
+                        return '<a href="' + data.split('|')[1] + '" target="_blank">' + data.split('|')[0] + '</a>';
+                      }, 
+                      responsivePriority: 1
+                    },
+                    { title: "Committee", responsivePriority: 2 },
+                    { title: "Agenda", responsivePriority: 3 },
+                    { title: "Attendees", responsivePriority: 4 },
                 ],
                 ordering: false
             } );

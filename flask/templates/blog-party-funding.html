@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    {% include 'nav.html' %}
+
+    <article>
+      <div class='container-xl' style='min-height: 800px'>
+
+        <div class="row">
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <div class="post-heading">
+              <h1>Northern Ireland party funding (2017-2024)</h1>
+              <h2 class="subheading">Registered public funding and private donations since the rule change</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class='row mb-4'>
+          <div class="col-lg-8 col-md-10 mx-auto">
+
+            <p>
+              Information on any donations above a threshold value received by the Northern Ireland parties must be declared to the <a href="https://www.electoralcommission.org.uk/">Electoral Commission</a>, who publish continually updated lists of <a href="https://www.electoralcommission.org.uk/political-party-donations-and-loans-northern-ireland">these donations</a>. Inspired by a similar <a href="https://autonomy.work/wp-content/uploads/2024/05/PoliticalDonations-3.pdf">UK-wide study</a> recently published by <a href="https://autonomy.work">Autonomy</a>, here I analyse the Northern Ireland donations data in full, to find out the identity and the level of funding from the largest private donors to the NI parties.
+            </p>
+
+            <h2 class='section-heading'>What funding is covered by the Electoral Commission register?</h2>
+            <p>
+              For Northern Ireland, donations are published from January 2017 to present (March 2024). The <a href="https://www.electoralcommission.org.uk/political-party-donations-and-loans-northern-ireland/which-donations-and-loans-do-you-need-report">Electoral Commission rules</a> are that donations or loans to a party from a single source that exceed a threshold of £11,180, whether as a single item or as an annual total, must be reported. Further, if donations are made to a sub-unit of the party organisation, such as a constituency office, rather than the central administrative body, a lower threshold of £2,230 applies. Individual donations need only be recorded by a party if they exceed £500, and the annual totals are assessed only considering contributions greater than £500 (although it is noted that purposefully splitting donations up into multiple smaller items to avoid recording and declaring them is not allowed). Therefore, the donations register for NI includes individual items as small as £500, but only when these add up to at least around £2000 from one source for the party in a year (when the funding is directed to a non-central party unit; otherwise the higher threshold applies). Donations made before 2017 are <a href="https://www.bbc.com/news/uk-northern-ireland-45352786">not covered by the rules</a>.
+            </p>
+            
+            <p>
+              In total, 1678 donations amounting to £13.8m are recorded for the 2017-2024 period, and all of the main NI parties are present in the dataset. Note that this does not represent all of the funding received by the parties, but rather only the 'large' donations. Parties may receive more funding from membership fees and other smaller individual contributions.
+            </p>
+            
+            <p>
+              The Electoral Commission dataset contained some errors in labelling of items, confusing Assembly and House of Commons sources, for example; these appear to be simple data entry errors on behalf of the parties, and have been corrected for this analysis. Two duplicate entries have been removed.
+            </p>
+
+            <h2 class='section-heading'>Public and private funding sources</h2>
+            
+            <p>
+              The most striking point from the NI donations data is the large proportion of the money that comes from 'public funds', namely from either the NI Assembly or the House of Commons. Overall, two thirds of the funding comes from these two sources, as seen below, by party. The large Sinn Féin private component is an anomaly that will be explained in the next section.
+            </p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/party-funding_plot1.png')}}" style='width: 85%; display: block; margin: auto'/>
+            
+            <p>
+              One source of public funding for the parties is named 'Financial Assistance for Parties in the NI Assembly'. This is present for each of the main parties and is paid monthly, with a size that is related to the number of MLAs that the party has. The rate of this funding is around £20,000 per year per MLA for a small party, but a lower rate of around £6,000 per year per MLA is seen for the largest parties, DUP and Sinn Féin, so the rate seems not to rise in simple proportion to the number of MLAs.
+            </p>
+            
+            <p>
+              The second major source of public funds is from the House of Commons, the so-called 'Short Money' that is paid to opposite parties in the UK Parliament, proportional to their number of seats. In the period reported, only DUP, Sinn Féin, and SDLP received this funding (Alliance also had one MP for part of this period but did not declare any House of Commons funding). This source is also paid monthly, and the rate is around £25,000 per MP per year for DUP and Sinn Féin (who had 7-10 MPs each), but with a higher rate received by SDLP (with only two MPs), suggesting that as in the Assembly, funding is not linearly proportional to party size, and somewhat favours the smaller parties.
+            </p>
+            
+            <p>
+              The third public funding type is 'Policy Development Grants' paid by the Electoral Commission. Only DUP and SDLP reported this funding type. These are paid roughly annually and have amounted to about £150,000 per year for DUP and almost £100,000 per year for SDLP. This seems to be related to having MPs, although SDLP also reported a small amount of this funding in 2018, when they had no MPs.
+            </p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/party-funding_plot2.png')}}" style='width: 95%; display: block; margin: auto'/>
+            
+            <p>
+              The relative size of the Assembly and Westminster funding sources can be seen in the annual totals by party plotted above. DUP and Sinn Féin received much more public money than the other parties in each year, as did SDLP from 2020 onwards, when their number of MPs jumped from zero to two. The other parties reported public funding at levels matching their size in the NI Assembly. As noted earlier, the level of private funding for most parties is similar to or lower than the public sources.
+            </p>
+            
+            <p>
+              The total monthly amount reported by all of the NI parties in 2017-2024 was around £150,000. Comparing to the UK-wide value of around £4m per month found by the Autonomy report (their Figure 4), this figure is remarkably closely in line with the expected level, given the approximately 30:1 ratio of population that exists for UK relative to Northern Ireland. However, the major difference between the two regions is that the public sources make up two thirds of the total for NI, but only around 15% for the whole UK, per Autonomy (their Figure 3).
+            </p>
+            
+            <h2 class='section-heading'>Private funders</h2>
+            
+            <p>
+              The top ten individual donors, aggregated over the 2017-2024 period, are shown in the table below.
+            </p>
+            
+            <div class="row py-4 justify-content-center">
+              <div class="col">
+                <table id="blog-table-1" class="table table-striped table-bordered blog-table" width='100%'>
+                  <thead>
+                    <tr>
+                      <th>Donor</th>
+                      <th>Party</th>
+                      <th>Number of donations</th>
+                      <th>Total amount (£)</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+            </div>
+            
+            <p>
+              The donations to Sinn Féin from William E. Hampton dwarf all others, and this donor alone makes up a quarter of the total funding, public and private, received by all NI parties during 2017-2024. <a href="https://www.bbc.com/news/uk-northern-ireland-57342924">Hampton was an English market trader</a> who inherited money from his father, and bequeathed at least £3.5m to Sinn Féin in his will when he died in 2018. This case seems to be quite anomalous, and the strength of Hampton's connection to the party <a href="https://www.bbc.com/news/uk-northern-ireland-49655683">is not clearly known</a>. He is reported to have <a href="https://www.irishtimes.com/news/politics/the-life-and-extraordinary-times-of-sinn-fein-s-million-euro-donor-1.4017546">spent some time living in Cavan</a> and also travelled a lot in the later part of his life.
+            </p>
+            
+            <p>
+              After Mr Hampton, the individual donors list shows no values above £70,000 and is dominated by Sinn Féin MLAs or other members making donations to their own party. A pattern of Sinn Féin MLAs donating £500-1000 per month for 1-2 years was common in 2017-2018. Most of these cases totalled only £8000-10,000 in a calendar year, so it seems may not have been strictly necessary to declare. This behaviour is not much seen in the dataset after 2019, but it could be the case that individuals still donate thousands of pounds per year to the central party, as this does not need to be reported following the Electoral Commission rules. Two members of People Before Profit (PBP) also made a series of donations of similar sizes over multiple years. Other parties do not show the same behaviour. Two of the large Alliance donors in the list are a <a href="https://en.wikipedia.org/wiki/Matthew_Oakeshott,_Baron_Oakeshott_of_Seagrove_Bay">Liberal Democrat member of the House of Lords</a> who has also given money to the Liberal Democrats and Labour Party, and <a href="https://www.belfasttelegraph.co.uk/news/northern-ireland/family-history-behind-lawyers-45000-donation-to-alliance-party/41809965.html">a son of one of the Alliance Party's founders</a>.
+            </p>
+            
+            <div class="row py-4 justify-content-center">
+              <div class="col">
+                <table id="blog-table-2" class="table table-striped table-bordered blog-table" width='100%'>
+                  <thead>
+                    <tr>
+                      <th>Donor</th>
+                      <th>Party</th>
+                      <th>Number of donations</th>
+                      <th>Total amount (£)</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+            </div>
+            
+            <p>
+              All of the company donations (only 12 companies have any donations reported) are shown in the table above. Note again that the value threshold for donations to central parties to be declared is £11,180, so there could be many other companies making one-off or annual donations smaller than this level. The entries in the bottom half of the list above, of value around £2000, were declared because they were made to a constituency body rather than the central party, so were subject to the lower reporting value threshold.
+            </p>
+            
+            <p>
+              <a href="https://www.jrrt.org.uk/what-we-do/our-priorities/">Joseph Rowntree Reform Trust</a> is a charitable organisation that provides funding to organisations furthering democratic and liberal causes. It has donated to Alliance quarterly over the whole reporting period. <a href="https://www.sinnfeinbookshop.com/about-us/">Republican Merchandising</a> is an online shop, and formerly also a physical bookshop in Dublin, owned by Sinn Féin. All of its donations were made in the second half of 2023. The <a href="https://li.com/about/">Legatum Institute</a> is a London-based <a href="https://www.opendemocracy.net/en/dark-money-investigations/legatum-who-are-brexiteers-favourite-think-tank-and-who-is-behind-them/">pro-Brexit think tank</a>.
+            </p>
+            
+            <h2 class='section-heading'>Full dataset</h2>
+            
+            <p>The full Electoral Commission dataset for Northern Ireland parties, after some cleaning and corrections, is shown below.</p>
+            
+            <div class="row py-4 justify-content-center">
+              <div class="col">
+                <table id="blog-table-3" class="table table-striped table-bordered blog-table" width='110%' style='font-size: 0.75em'>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Donor</th>
+                      <th>Donor type</th>
+                      <th>Donation purpose</th>
+                      <th>Party</th>
+                      <th>Value</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[0] is not none %}
+              <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+            {% endif %}
+          </div>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[1] is not none %}
+              <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}
+
+{% block other_js %}
+
+    <script src="https://cdn.datatables.net/responsive/2.2.5/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.5/js/responsive.bootstrap.min.js"></script>
+
+    <script type='text/javascript'>
+      var individual_donors = [
+        ["William E Hampton", "Sinn Féin", 13, 3462866],
+        ["Martina Anderson", "Sinn Féin", 6, 62255],
+        ["Edward Mervyn Dobson", "Alliance", 1, 60000],
+        ["Gilbert Nesbitt", "Alliance", 4, 55000],
+        ["Gerry Carroll", "PBP", 50, 51000],
+        ["Michelle O'Neill", "Sinn Féin", 27, 45344],
+        ["Michael Dollard", "Sinn Féin", 1, 37048],
+        ["Conor Murphy", "Sinn Féin", 34, 28200],
+        ["Alex Maskey", "Sinn Féin", 28, 28013],
+        ["Matthew Oakeshott", "Alliance", 2, 25000],
+      ];
+      
+      var company_donors = [
+        ["Joseph Rowntree Reform Trust Ltd", "Alliance", 27, 350100],
+        ["Republican Merchandising", "Sinn Féin", 6, 129089],
+        ["Legatum Ltd", "DUP", 2, 60000],
+        ["Legatum Ltd", "TUV", 2, 60000],
+        ["Parnell Publications", "Sinn Féin", 1, 24090],
+        ["Ferring (Ireland) Limited", "Alliance", 1, 21561],
+        ["Belfast International Airport Ltd", "DUP", 2, 14000],
+        ["Belfast International Airport Ltd", "NI Conservatives", 2, 14000],
+        ["Gross Hill Properties", "DUP", 1, 4999],
+        ["Mulrines Beverages Ltd Co", "SDLP", 1, 4000],
+        ["Manor Architects Ltd", "DUP", 1, 3250],
+        ["Heron Brothers", "SDLP", 1, 2500],
+        ["Creagh Concrete", "SDLP", 1, 2000],
+        ["Heathrow Airport Ltd", "NI Conservatives", 1, 1680]
+      ];
+      var all_donations = {{df_1_list | tojson }};
+
+      $(document).ready(function() {
+          $('#blog-table-1').DataTable( {
+              responsive: true,
+              info: false,
+              paging: false,
+              searching: false,
+              data: individual_donors,
+              columns: [
+                  { title: "Donor", responsivePriority: 1, orderable: false },
+                  { title: "Party", responsivePriority: 3 },
+                  { title: "Number of donations", responsivePriority: 4},
+                  { title: "Total amount", responsivePriority: 2,
+                    render: $.fn.dataTable.render.number( ',', '', 0, '£', '' )
+                  },
+              ],
+              order: [3, 'desc']
+          } );
+          
+          $('#blog-table-2').DataTable( {
+              responsive: true,
+              info: false,
+              paging: false,
+              searching: false,
+              data: company_donors,
+              columns: [
+                  { title: "Donor", responsivePriority: 1, orderable: false },
+                  { title: "Party", responsivePriority: 3 },
+                  { title: "Number of donations", responsivePriority: 4},
+                  { title: "Total amount", responsivePriority: 2,
+                    render: $.fn.dataTable.render.number( ',', '', 0, '£', '' )
+                  },
+              ],
+              order: [3, 'desc']
+          } );
+          
+          $('#blog-table-3').DataTable( {
+              responsive: true,
+              info: false,
+              paging: true,
+              searching: true,
+              data: all_donations,
+              columns: [
+                  { title: "Date", responsivePriority: 1 },
+                  { title: "Donor", responsivePriority: 2 },
+                  { title: "Donor type", responsivePriority: 5, orderable: false },
+                  { title: "Donation purpose", responsivePriority: 6, orderable: false },
+                  { title: "Party", responsivePriority: 4 },
+                  { title: "Value", responsivePriority: 3,
+                    render: $.fn.dataTable.render.number( ',', '', 0, '£', '' )
+                  },
+              ],
+              order: [1, 'asc']
+          } );
+          
+      } );
+    </script>
+
+{% endblock %}

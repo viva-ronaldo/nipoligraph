@@ -11,8 +11,11 @@ UNIONIST_PARTIES = ['Ulster Unionist Party', 'Traditional Unionist Voice', 'Demo
 NATIONALIST_PARTIES = ['Sinn Féin', 'Social Democratic and Labour Party']
 OTHER_PARTIES = ['Alliance Party', 'Green Party', 'People Before Profit Alliance', 'Independent']
 
-MOTION_CARRIED_PHRASES = ['The Amendment Was Therefore Agreed', 'The Motion Was Carried', 'The Motion Was Carried By Cross Community Consent']
-MOTION_FAILED_PHRASES = ['The Motion Was Negatived']
+MOTION_CARRIED_PHRASES = ['The Amendment Was Therefore Agreed',
+                          'The Motion Was Carried',
+                          'The Motion Was Carried By Cross Community Consent']
+MOTION_FAILED_PHRASES = ['The Motion Was Negatived',
+                         'The Amendment Therefore Fell']
 #
 
 
@@ -34,7 +37,7 @@ def append_sentiment_scored_tweets(tweets, sentiment_scored_tweets_file):
         tweets.status_id.dtypes.type is np.int64, 'tweets status_id type mismatch'
     new_tweets = tweets[~tweets.status_id.isin(existing_tweets.status_id)].copy()
     assert len(new_tweets) + len(existing_tweets) == len(tweets), 'Problem with subsetting to new tweets'
-    print(f"{new_tweets.shape[0]} tweets to score for sentiment")
+    print(f"- {new_tweets.shape[0]} tweets to score for sentiment")
 
     analyzer = SentimentIntensityAnalyzer()
     new_tweets['sentiment_vader_compound'] = new_tweets['text'].apply(
@@ -43,12 +46,12 @@ def append_sentiment_scored_tweets(tweets, sentiment_scored_tweets_file):
     comb_scored_tweets = pd.concat([new_tweets[['status_id', 'sentiment_vader_compound']].sort_values('status_id', ascending=False),
                                     existing_tweets])
     assert len(comb_scored_tweets) == len(tweets), 'Problem with concatenating existing and new scored tweets'
-    print(f"Done: total {comb_scored_tweets.shape[0]} tweets with sentiment")
+    print(f"- Done: total {comb_scored_tweets.shape[0]} tweets with sentiment")
     comb_scored_tweets.to_csv(sentiment_scored_tweets_file, index=False)
 
 
 def score_contribs_with_lda(contribs_in_file, scored_contribs_out_file, lda_model):
-    print('Scoring plenary contribs with LDA topic model')
+    print('\nScoring plenary contribs with LDA topic model')
 
     #Load model
     with open(lda_model, 'rb') as f:
@@ -106,7 +109,7 @@ def score_contribs_with_lda(contribs_in_file, scored_contribs_out_file, lda_mode
     
     #save
     contribs[['speaker', 'session_id', 'topic_name']].to_csv(scored_contribs_out_file, index=False)
-    print(f"Done: {contribs.shape[0]} contributions")
+    print(f"- Done: {contribs.shape[0]} contributions")
 
 
 # Assign bloc vote labels - all AYE, NO, ABSTAINED, or split
@@ -153,9 +156,10 @@ def analyse_votes_by_bloc(votes_filepath,
     assert set(votes_df.PersonId.unique()).issubset(mla_ids.PersonId), 'Unknown voter ID in votes_df'
     votes_df = votes_df.merge(mla_ids[['PersonId', 'normal_name']], on='PersonId', how='inner')
     #Check no new Outcome wordings have been added
-    assert set(votes_df.Outcome.unique()).issubset(
-        MOTION_CARRIED_PHRASES + MOTION_FAILED_PHRASES), \
-        'New/unexpected Outcome wording in vote_results_df'
+    unexpected_outcome_phrases = set(votes_df.Outcome.unique()).difference(
+        MOTION_CARRIED_PHRASES + MOTION_FAILED_PHRASES)
+    assert unexpected_outcome_phrases == set(), \
+        f"New/unexpected Outcome wording in vote_results_df: {', '.join(unexpected_outcome_phrases)}"
     
     votes_df['DivisionDate'] = pd.to_datetime(votes_df['DivisionDate'], utc=True)
     votes_df = votes_df.sort_values('DivisionDate')
@@ -164,7 +168,7 @@ def analyse_votes_by_bloc(votes_filepath,
     #To pass all votes list, create a column with motion title and url 
     #  joined by | so that I can split on this inside the datatable
     votes_df['motion_plus_url'] = votes_df.apply(
-        lambda row: f"{row['Title']}|http://aims.niassembly.gov.uk/plenary/details.aspx?&ses=0&doc={row['DocumentID']}&pn=0&sid=vd",
+        lambda row: f"{row['Title']}|https://aims.niassembly.gov.uk/plenary/details.aspx?&ses=0&doc={row['DocumentID']}&pn=0&sid=vd",
         axis=1)
 
     # Do the group vote calculations

@@ -13,13 +13,15 @@
             <div class="col-lg-6 px-5 py-2 text-center">
               <div class='col pt-3 pb-3' style='background: #e6e6e6'>
                 <h1>{{person_name_string|safe}}</h1>
-                <h2>{{person_party}} &middot; {{person_constit}}</h3>
+                <h2>{{person_party}} &middot; <a href="{{url_for('postcode', postcode_choice=person_constit) }}" style='color: inherit' class='use-underline'>{{person_constit}}</a></h2>
                 {% if person_is_mla %}
-                    <a href="http://aims.niassembly.gov.uk/mlas/details.aspx?&per={{mla_personid}}&sel=1&ind=0&prv=0" target="_blank">
-                        <img src="{{image_url}}" alt="Portrait of MLA or MP" style="margin: 10px; width: 112px; height: 149px;" title="Click to open MLA profile on niassembly.gov.uk">
-                    </a>
+                  <a href="http://aims.niassembly.gov.uk/mlas/details.aspx?&per={{mla_or_mp_id}}&sel=1&ind=0&prv=0" target="_blank">
+                    <img src="{{image_url}}" alt="Portrait of MLA" style="margin: 10px; width: 112px; height: 149px;" title="Click to open MLA profile on niassembly.gov.uk">
+                  </a>
                 {% else %}
-                    <img src="{{image_url}}" alt="Portrait of MLA or MP" style="margin: 10px; width: 112px; height: 149px;">
+                  <a href="https://members.parliament.uk/member/{{mla_or_mp_id}}/contact" target="_blank">
+                    <img src="{{image_url}}" alt="Portrait of MP" style="margin: 10px; width: 112px; height: 149px;" title="Click to open MP profile on parliament.uk">
+                  </a>
                 {% endif %}
                 
                 {% if twitter_handle is not none %}
@@ -47,24 +49,15 @@
                   <div class="col p-4 d-flex flex-column position-static data-panel-a">
                     <h4 class="mb-0">Assembly activity</h4>
 
-                     <table style="width:100%; border-collapse: separate; border-spacing: 5px 12px; table-layout: fixed">
+                    <table style="width:100%; border-collapse: separate; border-spacing: 5px 12px; table-layout: fixed">
 
                       <tr><td width='70%'></td><td width='30%'></td></tr>
-                      {% if person_committee_roles != [] %}
-                        <tr>
-                          <td colspan='2'>Sits on the following committees:
-                            <ul>
-                              {% for c in person_committee_roles %}
-                                <li>{{c}}</li>
-                              {% endfor %}
-                            </ul>
-                          </td>
-                        </tr>
-                      {% endif %}
-
+                      
                       <tr>
                         <td colspan='2'>Has taken part in <span class='ring-percent-dyn-colour-outof27' data-val='{{votes_present_numbers[0]}}'></span> {{votes_present_string | safe}} </td>
                       </tr>
+
+                      <tr></tr>
 
                       {% if 'Minister' not in person_name_string %}
                         <tr>
@@ -95,7 +88,8 @@
                         {% endif %}
                       {% endif %}
                       
-                      <tr></tr><tr></tr>
+                      <tr></tr>
+
                       <tr>
                         <td colspan='2'>Search for contributions on specific issues from this member on <b>They Work For You</b>:</td>
                       </tr>
@@ -119,8 +113,63 @@
                           </div>
                         </td>
                       </tr>
+                    </table>
 
-                    </table> 
+                    <div class='row'>
+                      
+                      <div class="col-6">
+                        {% if person_committee_work != [] %}
+                          <p class='m-0'>
+                            Sits on the following <a target='_blank' class='use-underline' href="https://aims.niassembly.gov.uk/committees/search.aspx">committees</a>:
+                          </p>
+                          <ul>
+                            {% for c in person_committee_work %}
+                              <li>{{c[0]}}</li>
+                              <ul>
+                                <li style='font-size: 0.85em'>{{c[1]}}</li>
+                              </ul>
+                            {% endfor %}
+                          </ul>
+                        {% else %}
+                          <p>
+                            Doesn't currently sit on any Assembly <a target='_blank' class='use-underline' href="https://aims.niassembly.gov.uk/committees/search.aspx">committees</a>
+                          </p>
+                        {% endif %}
+                      </div>
+
+                      <div class="col-6">
+                        {% if person_apgs != [] %}
+                          <p class='m-0'>
+                            A member of the following <a target='_blank' class='use-underline' href="https://aims.niassembly.gov.uk/mlas/allpartygroups.aspx">all-party groups</a>:
+                          </p>
+                          <ul>
+                            {% for apg in person_apgs %}
+                              <li style='font-size: 0.85em'>{{apg}}</li>
+                            {% endfor %}
+                          </ul>
+                        {% else %}
+                          <p>
+                            Not currently a member of any Assembly <a target='_blank' class='use-underline' href="https://aims.niassembly.gov.uk/mlas/allpartygroups.aspx">all-party groups</a>
+                          </p>
+                        {% endif %}
+                      </div>
+
+                    </div>
+
+                    <div class='row'>
+                      <div class='col'>
+                        {% if person_interests != [] %}
+                          <p class='m-0'>
+                            Declares the following <a target='_blank' class='use-underline' href="https://www.niassembly.gov.uk/your-mlas/register-of-interests/">interests</a>:
+                          </p>
+                          <ul>
+                            {% for c in person_interests %}
+                              <li style='font-size: 0.85em'>{{c}}</li>
+                            {% endfor %}
+                          </ul>
+                        {% endif %}
+                      </div>
+                    </div>
 
                   </div>
                 </div>
@@ -132,6 +181,7 @@
             <div class="col-xl-7">
               <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
                 <div class="col p-4 d-flex flex-column position-static data-panel-b">
+                  
                   <h4 class="mb-0">News</h4>
                   <table style="width:100%; border-collapse: separate; border-spacing: 5px 10px; table-layout: fixed">
 
@@ -145,6 +195,16 @@
                       <td colspan='2'>{{news_articles_last_month}} news article mention{{'s' if news_articles_last_month != 1 else ''}} in the last month</td>
                     </tr>
 
+                    {% if news_summary_desc_string != '' %}
+                      <tr></tr>
+                      <tr></tr>
+                      <tr>
+                        <td colspan='2'>{{ news_summary_summary | safe }}</td>
+                      </tr>
+                      <tr>
+                        <td colspan='2'><i>{{ news_summary_desc_string }}</i></td>
+                      </tr>
+                    {% endif %}
                   </table>
 
                   {% if include_twitter %}
@@ -302,6 +362,16 @@
             } );
         });
 
+        var votes_present_numbers = {{votes_present_numbers | tojson}};
+
+        // $(function() {
+        //   $("#votes_attended_sparkline").sparkline([votes_present_numbers[1], votes_present_numbers[0], votes_present_numbers[1],0,0], {
+        //       type: 'bullet', height: '30px', targetWidth: 7, 
+        //       targetColor: 'black', performanceColor: 'sienna',
+        //       rangeColors: ['antiquewhite','white','black'],
+        //       disableTooltips: true});
+        // });
+
         $(function() {
             $(".progress.percent").progressPie();
             $(".ring-percent-dyn-colour").progressPie({
@@ -332,41 +402,39 @@
             });
         });
 
-
-        var member_tweet_volumes = {{member_tweet_volumes | tojson}};
-        
-        var spec = {
-          "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
-          "width": "container", "height": 20,
-          "autosize": "fit-x",
-          "data": {"name": "hello", "values": member_tweet_volumes},
-          "mark": {"type": "tick", "thickness": 3},
-          "background": "transparent",
-          "config": {
-            "view": {
-              "stroke": "grey"
-            }
-          },
-          "encoding": {
-            "x": {
-              "field": "data", 
-              "type": "quantitative", 
-              "title": false,
-              "axis": {"grid": false, "labelFontSize": 8, "tickSize": 3, "tickCount": 6},
-              "scale": {"type": "log"}
-            },
-            "color": {
-              "condition": {
-                "test": "datum['data'] == {{tweets_by_week | sum}}", "value": "red"
-              }, "value": "grey"
-            },
-            "size": {
-              "condition": {
-                "test": "datum['data'] == {{tweets_by_week | sum}}", "value": 15
-              }, "value": 6
-            }
-          }
-        };
+        // var member_tweet_volumes = {{member_tweet_volumes | tojson}};        
+        // var spec = {
+        //   "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+        //   "width": "container", "height": 20,
+        //   "autosize": "fit-x",
+        //   "data": {"name": "hello", "values": member_tweet_volumes},
+        //   "mark": {"type": "tick", "thickness": 3},
+        //   "background": "transparent",
+        //   "config": {
+        //     "view": {
+        //       "stroke": "grey"
+        //     }
+        //   },
+        //   "encoding": {
+        //     "x": {
+        //       "field": "data", 
+        //       "type": "quantitative", 
+        //       "title": false,
+        //       "axis": {"grid": false, "labelFontSize": 8, "tickSize": 3, "tickCount": 6},
+        //       "scale": {"type": "log"}
+        //     },
+        //     "color": {
+        //       "condition": {
+        //         "test": "datum['data'] == {{tweets_by_week | sum}}", "value": "red"
+        //       }, "value": "grey"
+        //     },
+        //     "size": {
+        //       "condition": {
+        //         "test": "datum['data'] == {{tweets_by_week | sum}}", "value": 15
+        //       }, "value": 6
+        //     }
+        //   }
+        // };
 
         var member_question_volumes = {{member_question_volumes | tojson}};
         var spec2 = {
@@ -436,98 +504,89 @@
           }
         };
         
-        var member_retweet_rates = {{member_retweet_rates | tojson}};
-        var spec4 = {
-          "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
-          "width": "container", "height": 20,
-          "autosize": "fit-x",
-          "data": {"name": "hello", "values": member_retweet_rates},
-          "mark": {"type": "tick", "thickness": 2},
-          "background": "transparent",
-          "config": {
-            "view": {
-              "stroke": "grey"
-            }
-          },
-          "encoding": {
-            "x": {
-              "field": "data", 
-              "type": "quantitative", 
-              "title": false,
-              "axis": {"grid": false, "labelFontSize": 8, "tickSize": 3, "tickCount": 3},
-              "scale": {"type": "linear", "zero": false}
-            },
-            "color": {
-              "condition": {
-                "test": "datum['data'] == {{retweet_rate}}", "value": "red"
-              }, "value": "grey"
-            },
-            "size": {
-              "condition": {
-                "test": "datum['data'] == {{retweet_rate}}", "value": 15
-              }, "value": 6
-            }
-          }
-        };
+        // var member_retweet_rates = {{member_retweet_rates | tojson}};
+        // var spec4 = {
+        //   "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+        //   "width": "container", "height": 20,
+        //   "autosize": "fit-x",
+        //   "data": {"name": "hello", "values": member_retweet_rates},
+        //   "mark": {"type": "tick", "thickness": 2},
+        //   "background": "transparent",
+        //   "config": {
+        //     "view": {
+        //       "stroke": "grey"
+        //     }
+        //   },
+        //   "encoding": {
+        //     "x": {
+        //       "field": "data", 
+        //       "type": "quantitative", 
+        //       "title": false,
+        //       "axis": {"grid": false, "labelFontSize": 8, "tickSize": 3, "tickCount": 3},
+        //       "scale": {"type": "linear", "zero": false}
+        //     },
+        //     "color": {
+        //       "condition": {
+        //         "test": "datum['data'] == {{retweet_rate}}", "value": "red"
+        //       }, "value": "grey"
+        //     },
+        //     "size": {
+        //       "condition": {
+        //         "test": "datum['data'] == {{retweet_rate}}", "value": 15
+        //       }, "value": 6
+        //     }
+        //   }
+        // };
 
-        var member_tweet_positivities = {{member_tweet_positivities | tojson}};
-        var spec5 = {
-          "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
-          "width": "container", "height": 20,
-          "autosize": "fit-x",
-          "data": {"name": "hello", "values": member_tweet_positivities},
-          "mark": {"type": "tick", "thickness": 2},
-          "background": "transparent",
-          "config": {
-            "view": {
-              "stroke": "grey"
-            }
-          },
-          "encoding": {
-            "x": {
-              "field": "data", 
-              "type": "quantitative", 
-              "title": false,
-              "axis": {"grid": false, "labelFontSize": 8, "tickSize": 3, "tickCount": 3},
-              "scale": {"type": "linear", "zero": false}
-            },
-            "color": {
-              "condition": {
-                "test": "datum['data'] == {{tweet_positivity}}", "value": "red"
-              }, "value": "grey"
-            },
-            "size": {
-              "condition": {
-                "test": "datum['data'] == {{tweet_positivity}}", "value": 15
-              }, "value": 6
-            }
-          }
-        };
+        // var member_tweet_positivities = {{member_tweet_positivities | tojson}};
+        // var spec5 = {
+        //   "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
+        //   "width": "container", "height": 20,
+        //   "autosize": "fit-x",
+        //   "data": {"name": "hello", "values": member_tweet_positivities},
+        //   "mark": {"type": "tick", "thickness": 2},
+        //   "background": "transparent",
+        //   "config": {
+        //     "view": {
+        //       "stroke": "grey"
+        //     }
+        //   },
+        //   "encoding": {
+        //     "x": {
+        //       "field": "data", 
+        //       "type": "quantitative", 
+        //       "title": false,
+        //       "axis": {"grid": false, "labelFontSize": 8, "tickSize": 3, "tickCount": 3},
+        //       "scale": {"type": "linear", "zero": false}
+        //     },
+        //     "color": {
+        //       "condition": {
+        //         "test": "datum['data'] == {{tweet_positivity}}", "value": "red"
+        //       }, "value": "grey"
+        //     },
+        //     "size": {
+        //       "condition": {
+        //         "test": "datum['data'] == {{tweet_positivity}}", "value": 15
+        //       }, "value": 6
+        //     }
+        //   }
+        // };
 
-        if ({{tweets_by_week | sum}} > 0) {
-          vegaEmbed('.tweets-volumes', spec, opt = {"actions": false});
-        }
+        // if ({{tweets_by_week | sum}} > 0) {
+        //   vegaEmbed('.tweets-volumes', spec, opt = {"actions": false});
+        // }
         if ({{num_questions}} > 0) {
           vegaEmbed('.member-questions', spec2, opt = {"actions": false});  
         }
         if ({{num_plenary_contribs}} > 0) {
           vegaEmbed('.contribs-volumes', spec3, opt = {"actions": false});
         }
-        if ({{retweet_rate | tojson}} != null) {
-          vegaEmbed('.tweets-retweets', spec4, opt = {"actions": false});
-        }
-        if ({{tweet_positivity | tojson}} != null) {
-          vegaEmbed('.tweets-positivity', spec5, opt = {"actions": false});
-        }
-
-        var votes_present_numbers = {{votes_present_numbers | tojson}};
-        $(function() {
-          $("#votes_attended_sparkline").sparkline([votes_present_numbers[1],votes_present_numbers[0],votes_present_numbers[1],0,0], {
-              type: 'bullet', height: '30px', targetWidth: 7, 
-              targetColor: 'black', performanceColor: 'sienna',
-              rangeColors: ['antiquewhite','white','black'],
-              disableTooltips: true});
-        });
+        // if ({{retweet_rate | tojson}} != null) {
+        //   vegaEmbed('.tweets-retweets', spec4, opt = {"actions": false});
+        // }
+        // if ({{tweet_positivity | tojson}} != null) {
+        //   vegaEmbed('.tweets-positivity', spec5, opt = {"actions": false});
+        // }
     </script>
 
 {% endblock %}

@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    {% include 'nav.html' %}
+
+    <article>
+      <div class='container-xl' style='min-height: 800px'>
+
+        <div class="row">
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <div class="post-heading">
+              <h1>Ministerial meetings and interests (2020-2022)</h1>
+              <h2 class="subheading">Lots of meetings, some interest</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class='row mb-4'>
+          <div class="col-lg-8 col-md-10 mx-auto">
+            <p>Following on from <a href="{{url_for('blog_item', post_name='odni-minister-data-1')}}">the previous article</a>, here I present two more OpenDataNI datasets on ministerial business: the first on <a href="https://www.opendatani.gov.uk/@department-of-finance/ministers-meetings-with-external-organisations-and-individuals-january-to-june-2020">meetings held</a> with external organisations, and the second on the <a href="https://www.opendatani.gov.uk/@department-of-finance/2020-21">interests declared by ministers</a>.</p>
+
+            <h2 class='section-heading'>Ministerial meetings</h2>
+            
+            <p>The ministerial meetings dataset contains 6201 entries (with some duplication where the First and Deputy First Ministers were both present) documenting meetings held between a minister and an external organisation or individual(s). The purpose of the meeting is described in one sentence only.</p>
+
+            <p>
+              The count of meetings over the 33-month period in 2020-2022 shows an average of about 20 per department per month, or about one per working day. The monthly rate ranges from 31 for the most active department, the Executive Office, to 10 for Justice, the least active in external meetings. The Department for Economy holds more than twice as many meetngs as the Departments for Finance or Infrastructure, reflecting the focus on private business of Economy compared to the concerns of internal or government programmes of the other two.
+            <p>
+            
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/odni-minister-data-2_plot1.png')}}" style='width: 100%; display: block; margin: auto'/>
+
+            <p>
+              The monthly rate of meetings is shown above. Surprisingly, there is little noticeable effect of the COVID pandemic that began in March 2020 and required severe lockdown restrictions for most of 2020, at least. The ministerial meetings evidently continued remotely. A short dip in meeting frequency can be seen in the Communities, Education, and Infrastructure plots, perhaps reflecting a greater reliance on in-person meetings for these departments. Conversely, the first half of 2020 was an above-average period for meetings in the Health department, not surprisingly.
+            </p>
+
+            <p>
+              Meetings in the Executive Office stopped abruptly in February 2022 after the resignation of the First Minister on 3 February 2022 (though a small number of meetings involving the Junior Executive Ministers did occur after this date, in late February), but ministers in the other departments continued to hold meetings throughout 2022, up to October, when this dataset ends.
+            </p>
+
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/odni-minister-data-2_plot2.png')}}" style='width: 85%; display: block; margin: auto'/>
+
+            <p>
+              Another explanation for the lack of lockdown signal in the total meeting counts is that a new set of meetings arose to handle the pandemic, specifically. The plot above shows the fraction of meetings each month that mention COVID or related terms in their description (this is a rough count only, because almost all of the Health department meetings in mid-2020 are described as only 'Current issues', but are assumed to be about the pandemic). This topic spiked in April 2020 and remained significant for all departments for at least a year after. The meetings record shows COVID was discussed as early as January 2020, with meetings for Robin Swann on the 14th (with trade unions), 23rd (with Matt Hancock), 24th (a COBRA meeting), 29th (another COBRA meeting), and 30th (with the Royal College of Nursing).
+            </p>
+
+            <p>
+              Who the meetings involved is difficult to summarise due to the range of different persons and organisations (the whole list can be searched below). Using pattern matching, we can estimate that:
+            </p>
+            
+            <ul>
+              <li>About 500 of the roughly 6000 meetings involved another MLA</li>
+              <li>About 400 were with an MP, most commonly George Eustice, Michael Gove, and Brandon Lewis from the Conservative government, and DUP and Sinn Fein MPs</li>
+              <li>About 40 involved an Irish TD</li>
+              <li>71 were with the Secretary of State for Northern Ireland (three different people were in this role during 2020-2022) and 14 were with the Labour Shadow Secretary of State</li>
+              <li>Almost 600 were with a school or college</li>
+              <li>Over 100 were with a foreign ambassador or consulate official</li>
+              <li>There were 27 COBRA (the UK Government Civil Contingencies Committee) meetings</li>
+            </ul>
+
+            <img class='blog-plot' src="{{url_for('static', filename='blog_plots/odni-minister-data-2_plot3.png')}}" style='width: 100%; display: block; margin: auto'/>
+
+            <p>
+              The content of the meetings is summarised above by counting the most common words used in the meeting purpose description for each department (excluding some very common words). There are few surprises: meetings with the Agriculture minister often discuss farms and food; the Economy department deals with tourism, business, and energy; and the Education minister does a lot of visits to schools. The Executive Office and Health department had a lot of meetings about COVID, as noted earlier.
+            </p>
+
+            <h3>Full meetings dataset</h3>
+            
+            <p>
+              The complete meetings record for 2020-2022 is available for exploration below. It can be arranged by date or minister, and searched for specific text.
+            </p>
+
+            <div class="row py-4 justify-content-center">
+              <div class="col">
+                <table id="blog-table-1" class="table table-striped table-bordered blog-table" width='100%' style='font-size: 0.85em'>
+                  <thead>
+                    <tr>
+                      <th>Minister</th>
+                      <th>Date</th>
+                      <th>Meeting with</th>
+                      <th>Purpose</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+            </div>
+            
+            <h2 class='section-heading'>Registered interests</h2>
+
+            <p>
+              The Assembly maintains a register of declared interests for all its members. It defines an 'interest' here as any involvement 'which might reasonably be thought by others to influence a Member's actions, speeches or votes in the Assembly, or actions taken in his or her capacity as a Member of the Northern Ireland Assembly'.
+            </p>
+
+            <p>
+              The list of registered interests for ministers during 2020-2022 is short, and shown in full below. Three ministers in this period declared no relevant interests.
+            </p>
+
+            <p>
+              The most common type of declared interest is that of a family member or close friend. Examples of this are three siblings of Deirdre Hargey employed by public bodies or under public programmes, and the wife and son of Edwin Poots (as Minister in the Agriculture department) working as farmers and in receipt of farm payments. In total, 6 of the 14 ministers covered in this dataset have a family member employed in some kind of public capacity.
+            </p>
+
+            <p>
+              Four ministers declared a membership of a charity or trust. Besides this, most of the remaining investments are in the form of property ownership (presumably in addition to the minister's own property of residence); five ministers declared such an interest.
+            </p>
+
+            <div class="row py-4 justify-content-center">
+              <div class="col">
+                <table id="blog-table-2" class="table table-striped table-bordered blog-table" width='100%'>
+                  <thead>
+                    <tr>
+                      <th>Minister</th>
+                      <th>Category</th>
+                      <th>Registered interest</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+            </div>
+
+            <h3>Registered interests for other MLAs</h3>
+
+            <p>The register of interests for all members is held and <a href="https://www.niassembly.gov.uk/your-mlas/register-of-interests/">published by the Assembly</a> for the current session (2022-2027). This information is now shown on the Individual pages for MLAs; see this from the links <a href="{{ url_for('postcode', postcode_choice='' )}}">here</a>, for example.</p>
+
+          </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[0] is not none %}
+              <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+            {% endif %}
+          </div>
+          <div class='col-4'>
+            {% if prev_and_next_article_title[1] is not none %}
+              <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}
+
+{% block other_js %}
+
+    <script src="https://cdn.datatables.net/responsive/2.2.5/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.5/js/responsive.bootstrap.min.js"></script>
+
+    <script type='text/javascript'>
+      var dataSet_1 = {{df_1_list | tojson }};
+      var dataSet_2 = {{df_2_list | tojson }};
+      $(document).ready(function() {
+          $('#blog-table-1').DataTable( {
+              responsive: true,
+              info: false,
+              paging: true,
+              searching: true,
+              data: dataSet_1,
+              columns: [
+                  { title: "Minister", responsivePriority: 1 },
+                  { title: "Date", responsivePriority: 3 },
+                  { title: "Meeting with", responsivePriority: 2, orderable: false },
+                  { title: "Purpose", responsivePriority: 4, orderable: false },
+              ],
+              order: [1, 'asc']
+          } );
+          $('#blog-table-2').DataTable( {
+              responsive: true,
+              info: false,
+              paging: true,
+              searching: false,
+              data: dataSet_2,
+              columns: [
+                  { title: "Minister", responsivePriority: 1 },
+                  { title: "Category", responsivePriority: 3 },
+                  { title: "Registered interest", responsivePriority: 2, orderable: false },
+              ],
+              order: [0, 'asc']
+          } );
+          
+      } );
+    </script>
+
+{% endblock %}

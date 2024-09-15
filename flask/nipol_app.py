@@ -1,5 +1,10 @@
+# TODO update news page and indiv news tracker to start from 2024
+#   and remove under development banner
+# Then do the news summaries
+
 from flask import Flask, render_template, url_for, \
     request, flash, jsonify, redirect, send_from_directory
+import requests
 import datetime, re, getpass, os, time
 import pickle, json, feather
 import pandas as pd
@@ -68,9 +73,9 @@ CURRENT_ASSEMBLY_SESSION = valid_session_names[0]
 #Some plot settings 
 hover_exclude_opacity_value = 0.4  #when hovered case goes to 1.0, what do rest go to
 larger_tick_label_size = 14  #for web mode, on some/all plots
+
 #Election forecast is usually off
 show_election_forecast = False
-
 # From mid-2023, can't scrape tweets, so exclude from indiv page and note on twitter page
 include_twitter = False
 
@@ -105,55 +110,10 @@ diary_colour_dict.update(
     'Sitting of the Assembly': 'Black'}
 )
 
-#TODO put into file. Only need any that will appear in the top sources plot.
-news_source_pprint_dict = {
-    'agriland.ie': 'AgriLand',
-    'bbc.co.uk': 'BBC',
-    'belfastlive.co.uk': 'Belfast Live',
-    'belfasttelegraph.co.uk': 'Belfast Telegraph',
-    'breakingnews.ie': 'Breaking News.ie',
-    'dailymail.co.uk': 'The Daily Mail',
-    'dailystar.co.uk': 'The Daily Star',
-    'express.co.uk': 'Daily Express',
-    'forexlive.com': 'Forex Live',
-    'google.com': 'Google',
-    'highlandradio.com': 'Highland Radio',
-    'hortweek.com': 'Horticulture Week',
-    'huffingtonpost.co.uk': 'Huffington Post',
-    'independent.co.uk': 'The Independent',
-    'independent.ie': 'Irish Independent',
-    'inews.co.uk': 'i News',
-    'irishcentral.com': 'Irish Central',
-    'irishmirror.ie': 'The Irish Mirror',
-    'irishtimes.com': 'The Irish Times',
-    'limerickleader.ie': 'Limerick Leader',
-    'kfgo.com': 'KFGO',
-    'macaubusiness.com': 'Macau Business',
-    'metro.co.uk': 'Metro',
-    'mirror.co.uk': 'Daily Mirror',
-    'qub.ac.uk': 'Queen\'s University Belfast',
-    'reuters.com': 'Reuters',
-    'rte.ie': 'RTÉ',
-    'sportsmole.co.uk': 'Sports Mole',
-    'standard.co.uk': 'London Evening Standard',
-    'talkingretail.com': 'Talking Retail',
-    'telegraph.co.uk': 'The Telegraph',
-    'the42.ie': 'The42',
-    'theguardian.com': 'The Guardian',
-    'thejournal.ie': 'The Journal.ie',
-    'thestandard.com.hk': 'Hong Kong Standard',
-    'thesun.co.uk': 'The Sun',
-    'thesun.ie': 'The Irish Sun',
-    'thetimes.co.uk': 'The Times',
-    'wkzo.com': 'WKZO',
-    'yahoo.com': 'Yahoo',
-    'newsletter.co.uk': 'News Letter',
-    'irishnews.com': 'The Irish News'
-}
-
 mla_ids = pd.read_csv(data_dir + 'all_politicians_list.csv', dtype = {'PersonId': object})
 #If have too many non-MLA/MPs, could become unreliable over time, so limit to active here
 mla_ids = mla_ids[mla_ids.active==1]
+mla_ids['fullname'] = mla_ids['MemberFirstName'] + ' ' + mla_ids['MemberLastName']  # slightly different from normal_name
 
 #Add email address
 mla_ids = mla_ids.merge(
@@ -170,13 +130,6 @@ with open(data_dir + 'party_group_dict.json', 'r') as f:
     party_group_dict = json.load(f)
 #Do this before turning PartyName to short form
 mla_ids['PartyGroup'] = mla_ids.PartyName.apply(lambda p: party_group_dict[p])
-
-mla_minister_roles = pd.read_csv(data_dir + 'current_ministers_and_speakers.csv', dtype={'PersonId': object})
-mla_minister_roles = mla_minister_roles.merge(mla_ids[['PersonId','normal_name']], on='PersonId', how='inner')
-mla_minister_roles = {i[1]['normal_name']: i[1]['AffiliationTitle'] for i in mla_minister_roles.iterrows()}
-
-committee_roles = pd.read_csv(data_dir + 'current_committee_memberships.csv', dtype={'PersonId': object})
-committee_roles = committee_roles.merge(mla_ids[['PersonId','normal_name']], on='PersonId', how='inner')
 
 #Handle the two forms of some party names
 #with open(data_dir + 'party_names_translation.json', 'r') as f:
@@ -198,6 +151,11 @@ col_corrects = {'yellow3':'#e6c300', 'green2':'chartreuse'}
 party_colours['colour'] = party_colours['colour'].apply(
     lambda c: c if c not in col_corrects.keys() else col_corrects[c]
 )
+
+mla_minister_roles = pd.read_csv(data_dir + 'current_ministers_and_speakers.csv', dtype={'PersonId': object})
+mla_minister_roles = mla_minister_roles.merge(mla_ids[['PersonId','normal_name']], on='PersonId', how='inner')
+mla_minister_roles = {i[1]['normal_name']: i[1]['AffiliationTitle'] for i in mla_minister_roles.iterrows()}
+
 print('Done ids')
 
 #Twitter
@@ -217,8 +175,8 @@ tweets_df['mla_party'] = tweets_df.mla_party.apply(lambda p: party_names_transla
 tweets_df = tweets_df[tweets_df.created_ym >= '202007']
 tweets_df = tweets_df[tweets_df['normal_name'].isin(mla_ids['normal_name'])]
 tweets_df['tweet_type'] = tweets_df.is_retweet.apply(lambda b: 'retweet' if b else 'original')
-#tweets_df['created_at_week'] = tweets_df['created_at'].dt.isocalendar().week
-tweets_df['created_at_week'] = tweets_df['created_at'].dt.week
+tweets_df['created_at_week'] = tweets_df['created_at'].dt.isocalendar().week
+#tweets_df['created_at_week'] = tweets_df['created_at'].dt.week
 #early Jan can be counted as week 52 or 53 by pd.week - messes things up
 tweets_df.loc[(tweets_df.created_at_week >= 52) & (tweets_df.created_at.dt.day <= 7), 'created_at_week'] = 1
 tweets_df['created_at_yweek'] = tweets_df.apply(
@@ -387,7 +345,7 @@ votes_df['DivisionDate'] = votes_df['DivisionDate'].dt.date
 #  joined by | so that I can split on this inside the datatable
 if len(votes_df) > 0:
     votes_df['motion_plus_url'] = votes_df.apply(
-        lambda row: f"{row['Title']}|http://aims.niassembly.gov.uk/plenary/details.aspx?&ses=0&doc={row['DocumentID']}&pn=0&sid=vd", axis=1)
+        lambda row: f"{row['Title']}|https://aims.niassembly.gov.uk/plenary/details.aspx?&ses=0&doc={row['DocumentID']}&pn=0&sid=vd", axis=1)
 else:
     votes_df['motion_plus_url'] = []
 
@@ -479,6 +437,51 @@ diary_df['EventHTMLColour'] = diary_df.EventName.apply(lambda e: diary_colour_di
 #Exclude events that have now happened (will run filter again in assembly.html function)
 #diary_df = diary_df[diary_df['EventDate'] >= datetime.date.today().strftime('%Y-%m-%d')]
 #diary_df = diary_df[diary_df['EndTime'] >= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')]
+
+committee_roles = pd.read_csv(data_dir + 'current_committee_memberships.csv', dtype={'PersonId': object})
+committee_roles = committee_roles.merge(mla_ids[['PersonId','normal_name']], on='PersonId', how='inner')
+
+committee_meeting_attendance = pd.read_csv(data_dir + 'committee_meetings_attendances_feb2024topresent.csv')
+committee_meeting_attendance['member'] = committee_meeting_attendance.member.str.replace('Mr |Mrs |Ms |Miss |Dr |Sir | OBE| MBE| CBE| MC', '', regex=True)
+committee_meeting_attendance = (committee_meeting_attendance
+    .rename(columns={'member': 'fullname'})
+    .merge(mla_ids[['fullname', 'normal_name', 'MemberLastName']], on='fullname', how='inner')
+    .drop(columns='fullname')
+    .assign(meeting_date = lambda df: pd.to_datetime(df.meeting_date, format='%d/%m/%Y'))
+    )
+committee_attendees_agg = (committee_meeting_attendance
+    .query('attended')
+    .groupby('meeting_id')
+    .agg(attendees = ('MemberLastName', lambda m: ', '.join(m)))
+    .assign(attendees = lambda df: df.attendees.fillna('-'))
+    )
+
+committee_meeting_agendas = pd.read_csv(data_dir + 'committee_meetings_agendas_feb2024topresent.csv')
+def truncate_agenda_list(agenda_items):
+    agenda_items = agenda_items.tolist()
+    if len(agenda_items) > 5:
+        agenda_items = agenda_items[:4] + [f'<i>and {len(agenda_items)-4} more items</i>']
+    return '<ul><li>' + '</li><li>'.join(agenda_items) + '</li></ul>'
+committee_agendas_agg = (committee_meeting_agendas
+    .assign(meeting_date = lambda df: pd.to_datetime(df.meeting_date, format='%d/%m/%Y'))
+    .groupby(['meeting_id', 'committee_name', 'meeting_date'], as_index=False)
+    .agg(agenda_list = ('agenda_item', truncate_agenda_list))
+    .merge(committee_attendees_agg, on='meeting_id', how='left')
+    .sort_values(['meeting_date', 'meeting_id'], ascending=False)
+    .assign(meeting_date_and_url = lambda df: df.apply(lambda row: f"{row.meeting_date.strftime('%d %B %Y')}|https://aims.niassembly.gov.uk/committees/meetings.aspx?cid=0&mid={row.meeting_id}", axis=1))
+    .filter(['meeting_date_and_url', 'committee_name', 'agenda_list', 'attendees'])
+    )
+
+mla_interests = pd.read_csv(data_dir + 'current_mla_registered_interests.csv', dtype={'PersonId': object})
+mla_interests = mla_interests.merge(mla_ids[['PersonId','normal_name']], on='PersonId', how='inner')
+
+allpartygroup_memberships = (
+    pd.read_csv(data_dir + 'current_apg_group_memberships.csv')
+    .rename(columns={'member': 'fullname'})
+    .merge(mla_ids[['fullname', 'normal_name']], on='fullname', how='inner')
+    .drop(columns='fullname')
+    .assign(apg_name = lambda df: df.apg_name.str.replace('All-Party [gG]roup on ', '', regex=True))
+    )
 
 #Assembly historical
 #-------------------
@@ -606,7 +609,7 @@ hist_votes_df['DivisionDate'] = hist_votes_df['DivisionDate'].dt.date
 #To pass all votes list, create a column with motion title and url 
 #  joined by | so that I can split ont this inside the datatable
 hist_votes_df['motion_plus_url'] = hist_votes_df.apply(
-    lambda row: f"{row['Title']}|http://aims.niassembly.gov.uk/plenary/details.aspx?&ses=0&doc={row['DocumentID']}&pn=0&sid=vd", axis=1)
+    lambda row: f"{row['Title']}|https://aims.niassembly.gov.uk/plenary/details.aspx?&ses=0&doc={row['DocumentID']}&pn=0&sid=vd", axis=1)
 
 #Hist votes PCA
 hist_votes_df['vote_num'] = hist_votes_df.Vote.apply(lambda v: {'NO':-1, 'AYE':1, 'ABSTAINED':0}[v]) 
@@ -691,18 +694,17 @@ news_df = pd.concat([
     #feather.read_dataframe(data_dir + 'newscatcher_articles_slim_w_sentiment_julaugsep2020.feather'),
     feather.read_dataframe(data_dir + 'newscatcher_articles_slim_w_sentiment_sep2020topresent.feather')
 ]).drop_duplicates()
-#Don't trust the consistency of results before 2020w34
-news_df = news_df[news_df.published_date >= '2021-01-01'].copy()
+news_df = news_df[news_df.published_date >= '2023-12-01'].copy()
 
-for source in news_df.source.unique():
-    if source not in news_source_pprint_dict.keys():
-        news_source_pprint_dict[source] = source
-news_df['source'] = news_df.source.map(news_source_pprint_dict)
+# Only really need any that will appear in the top sources plot.
+with open(data_dir + 'news_source_pprint_dict.json', 'r') as f:
+    news_source_pprint_dict = json.load(f)
+news_df['source'] = news_df.source.apply(lambda s: news_source_pprint_dict.get(s, s))
 
 #
 news_df['published_date'] = pd.to_datetime(news_df['published_date'])
-#news_df['published_date_week'] = news_df.published_date.dt.isocalendar().week
-news_df['published_date_week'] = news_df.published_date.dt.week
+news_df['published_date_week'] = news_df.published_date.dt.isocalendar().week
+#news_df['published_date_week'] = news_df.published_date.dt.week
 #early Jan can be counted as week 53 by pd.week - messes things up
 news_df.loc[(news_df.published_date_week==53) & (news_df.published_date.dt.day <= 7), 'published_date_week'] = 1
 news_df['published_date_year'] = news_df.published_date.dt.year
@@ -725,7 +727,7 @@ else:
     news_df['title_plus_url'] = []
 
 #Filter to most recent month
-news_sources = news_df[news_df.published_date.dt.date > datetime.date.today()-datetime.timedelta(days=30)][['link','source','PartyGroup']]\
+news_sources = news_df[news_df.published_date.dt.date > news_df.published_date.dt.date.max()-datetime.timedelta(days=30)][['link','source','PartyGroup']]\
     .drop_duplicates()\
     .groupby(['source','PartyGroup']).link.count().reset_index()\
     .rename(index=str, columns={'link':'News articles'})\
@@ -771,6 +773,17 @@ news_sentiment_by_party_week = news_sentiment_by_party_week.merge(
 #news_sentiment_by_party_week['tooltip_text'] = news_sentiment_by_party_week.apply(
 #    lambda row: f"{row['PartyName']}: {row['link']:g} articles in week (avg = {row['vol_smooth']:.1f})", axis=1
 #)
+
+# News summaries
+# Read from file, remove rows with missing news_coverage_summary, take the latest create_date per normal_name
+news_summaries = (feather.read_dataframe(data_dir + 'news_summaries.feather')
+                  #.dropna(subset=['news_coverage_summary'])
+                  .sort_values('create_date')
+                  .drop_duplicates(subset='normal_name', keep='last')
+                  .sort_values('normal_name'))
+# Keep active politicians only - left join news_summaries to mla_ids
+news_summaries = pd.merge(news_summaries, mla_ids[['normal_name']], on='normal_name', how='left')
+news_summaries['news_coverage_summary'] = news_summaries.news_coverage_summary.fillna('NONE')
 print('Done news')
 
 #Polls 
@@ -859,7 +872,6 @@ print('Done polls')
 #Blog articles list
 blog_pieces = pd.read_csv(data_dir + 'blog_pieces_list.psv', sep='|').iloc[-1::-1]
 blog_pieces = blog_pieces[blog_pieces.date_added <= datetime.date.today().strftime('%Y-%m-%d')]
-#print(blog_pieces.title)
 print('Done blog')
 
 #Postcode stuff
@@ -984,6 +996,43 @@ totals_dict = {
 del answers_df, hist_answers_df, hist_questions_df, vote_results_df, hist_vote_results_df, hist_emotions_df
 
 #----
+# Helper functions
+
+def find_profile_photo(person_is_mla, person_id, normal_name, member_other_photo_links, mp_api_number=None):
+    if person_is_mla:
+        image_url = f"https://aims.niassembly.gov.uk/images/mla/{person_id}_s.jpg"
+    elif mp_api_number is not None:
+        # Check if Parliament has a portrait for the MP; if not use the thumbnail, which is sometimes present but blank
+        parliament_portrait_url = f"https://members-api.parliament.uk/api/Members/{mp_api_number:s}/Portrait?cropType=ThreeFour"
+        parliament_thumbnail_url = f"https://members-api.parliament.uk/api/Members/{mp_api_number:s}/Thumbnail"
+        if requests.get(parliament_portrait_url).status_code == 200:
+            image_url = parliament_portrait_url
+        elif requests.get(parliament_thumbnail_url).status_code == 200:
+            image_url = parliament_thumbnail_url
+        elif normal_name in member_other_photo_links.keys():
+            image_url = member_other_photo_links[normal_name]
+        else:
+            image_url = '#'
+    else:
+        image_url = '#'
+    return image_url
+
+#Plots are not pages themselves
+def add_grey_legend(plot, orient='top-right', columns=1, mobile_mode=False):
+    return plot.configure_legend(
+        strokeColor='gray',
+        fillColor='#EEEEEE',
+        padding = 7 if mobile_mode else 10,
+        cornerRadius=10,
+        orient = orient,
+        columns = columns,
+        labelFontSize = 8 if mobile_mode else 11,
+        symbolSize = 40 if mobile_mode else 70,
+        titleFontSize = 9 if mobile_mode else 12
+    )
+
+# ----
+# App routes
 
 @app.before_request
 def clear_trailing():
@@ -993,6 +1042,7 @@ def clear_trailing():
 
 @app.route('/', methods=['GET'])
 def index():
+    blog_pieces['background_image_path'] = blog_pieces.background_image_file.apply(lambda f: url_for('static', filename=f))
     return render_template('index.html',
         totals_dict = totals_dict,
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
@@ -1031,10 +1081,12 @@ def assembly():
         n_mlas = mlas_2d_rep.shape[0]
         n_votes = votes_df.EventId.nunique()
         v_comms_tmp = v_comms.copy()
+        committee_meetings_list = [e[1].values.tolist() for e in committee_agendas_agg.head(100).iterrows()]
     else:
         n_mlas = hist_votes_pca_res[session_to_plot][0].shape[0]
         n_votes = hist_votes_df[hist_votes_df.session_name==session_to_plot].EventId.nunique()
         v_comms_tmp = hist_v_comms[hist_v_comms.session_name==session_to_plot].copy()
+        committee_meetings_list = []
 
     votes_list = [e[1].values.tolist() for e in v_comms_tmp[['vote_date','vote_subject','vote_tabler_group','vote_result',
         'uni_bloc_vote','nat_bloc_vote','alli_vote','green_vote','uni_nat_split']].iterrows()]
@@ -1079,21 +1131,35 @@ def assembly():
         alli_like_uni_details = [alli_num_votes_with_uni, chances_to_take_a_side],
         alli_like_nat_details = [alli_num_votes_with_nat, chances_to_take_a_side],
         green_like_uni_details = [green_num_votes_with_uni, chances_to_take_a_side],
-        green_like_nat_details = [green_num_votes_with_nat, chances_to_take_a_side])
+        green_like_nat_details = [green_num_votes_with_nat, chances_to_take_a_side],
+        committee_meetings_list = committee_meetings_list)
 
 
 @app.route('/what-we-report', methods=['GET'])
 def news():
-    if test_mode:
-        articles_list = [e[1].values.tolist() for e in news_df.head(50)[['date_pretty','title_plus_url','source','normal_name']].iterrows()]
-    else:
-        articles_list = [e[1].values.tolist() for e in news_df.head(1000)[['date_pretty','title_plus_url','source','normal_name']].iterrows()]
+    # Collapse to one row per article
+    news_df_dedup = (news_df
+                     .assign(surname = lambda df: df.apply(lambda row: row['normal_name'].split(' ')[-1], axis=1))
+                     .sort_values('surname', ascending=True)
+                     .groupby(['date_pretty', 'title_plus_url', 'source'], as_index=False)
+                     .agg(normal_names = ('normal_name', lambda l: ', '.join(l)))
+                     .sort_values('date_pretty', ascending=False)
+                    )
 
-    return render_template('news.html',         
+    if test_mode:
+        articles_list = [e[1].values.tolist() for e in news_df_dedup.head(50)[['date_pretty', 'title_plus_url', 'source', 'normal_names']].iterrows()]
+    else:
+        articles_list = [e[1].values.tolist() for e in news_df_dedup.head(1000)[['date_pretty', 'title_plus_url', 'source', 'normal_names']].iterrows()]
+
+    return render_template('news.html',
         articles_list = articles_list,
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
         postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
-        news_volume_average_window_weeks = news_volume_average_window_weeks)
+        news_volume_average_window_weeks = news_volume_average_window_weeks,
+        news_summary_politicians = ['-- Please select --'] + news_summaries.normal_name.tolist(),
+        news_summary_n_articles = [0] + news_summaries.n_articles.tolist(),
+        news_summary_time_period = [''] + news_summaries.time_period.tolist(),
+        news_summary_summaries = [''] + news_summaries.news_coverage_summary.tolist())
 
 @app.route('/how-we-vote', methods=['GET'])
 def polls():
@@ -1128,6 +1194,7 @@ def about():
 
 @app.route('/blog', methods=['GET'])
 def blog():
+    blog_pieces['background_image_path'] = blog_pieces.background_image_file.apply(lambda f: url_for('static', filename=f))
     return render_template('blog.html', 
         full_mla_list = sorted(mla_ids.normal_name.tolist()),
         postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
@@ -1137,9 +1204,25 @@ def blog():
 def blog_item(post_name):
     blog_links = blog_pieces['link'].tolist()
     blog_titles = blog_pieces['title'].tolist()
-    print(post_name)
+
     if post_name in blog_links:
         place_in_blog_list = blog_links.index(post_name)
+
+        # Pass up to 3 dfs to use as tables in the blog post;
+        #   only some post_names use any tables.
+        df_1_list, df_2_list, df_3_list = None, None, None
+        if post_name in ['odni-minister-data-1',
+                         'odni-minister-data-2',
+                         'party-funding']:
+            df_1 = pd.read_csv(data_dir + f'blog-data_{post_name}_table-1.csv')
+            df_1_list = [e[1].values.tolist() for e in df_1.iterrows()]
+        if post_name in ['odni-minister-data-1',
+                         'odni-minister-data-2']:
+            df_2 = pd.read_csv(data_dir + f'blog-data_{post_name}_table-2.csv')
+            df_2_list = [e[1].values.tolist() for e in df_2.iterrows()]
+        if post_name in ['odni-minister-data-1']:
+            df_3 = pd.read_csv(data_dir + f'blog-data_{post_name}_table-3.csv')
+            df_3_list = [e[1].values.tolist() for e in df_3.iterrows()]
 
         return render_template('blog-'+post_name+'.html',
             full_mla_list = sorted(mla_ids.normal_name.tolist()),
@@ -1149,14 +1232,16 @@ def blog_item(post_name):
                 None if place_in_blog_list==0 else blog_titles[place_in_blog_list-1]),
             prev_and_next_article_link = (
                 None if place_in_blog_list==blog_pieces.shape[0]-1 else blog_links[place_in_blog_list+1],
-                None if place_in_blog_list==0 else blog_links[place_in_blog_list-1])
+                None if place_in_blog_list==0 else blog_links[place_in_blog_list-1]),
+            df_1_list = df_1_list,
+            df_2_list = df_2_list,
+            df_3_list = df_3_list,
             )
     else:
         return blog()        
 
 @app.route('/individual', methods=['GET'])
 def indiv():
-
     args = request.args
     if 'mla_name' in args and args.get('mla_name') != 'Choose MLA...' \
         and args.get('mla_name') in mla_ids.normal_name.unique():
@@ -1166,7 +1251,6 @@ def indiv():
         person_name_string = f"{person_choice}"
         person_name_lc = person_choice.lower()
 
-        #row = mla_ids[mla_ids.normal_name == 'Órlaithí Flynn'].iloc[0]
         row = mla_ids[mla_ids.normal_name == person_choice].iloc[0]
 
         date_added = row['added']
@@ -1177,20 +1261,12 @@ def indiv():
         person_constit = row['ConstituencyName']
 
         person_is_mla = row['role'] == 'MLA'
-        mla_personid = None
-        email_address = None
+        image_url = find_profile_photo(person_is_mla, row.PersonId, row.normal_name, member_other_photo_links,
+            mp_api_number=mp_api_numbers.get(person_choice, None))
         if person_is_mla:
-            image_url = f"http://aims.niassembly.gov.uk/images/mla/{row['PersonId']}_s.jpg"
-            mla_personid = row['PersonId']
-            email_address = mla_ids[mla_ids.PersonId==mla_personid].AssemblyEmail.iloc[0]
-        elif person_choice in mp_api_numbers.keys() and person_choice not in member_other_photo_links.keys():
-            image_url = f"https://members-api.parliament.uk/api/Members/{mp_api_numbers[person_choice]:s}/Portrait?cropType=ThreeFour"
-            email_address = mla_ids[mla_ids.normal_name==person_choice].WestminsterEmail.iloc[0]
-        elif person_choice in member_other_photo_links.keys():
-            image_url = member_other_photo_links[person_choice]
-            email_address = mla_ids[mla_ids.normal_name==person_choice].WestminsterEmail.iloc[0]
+            email_address = mla_ids[mla_ids.PersonId==row.PersonId].AssemblyEmail.iloc[0]
         else:
-            image_url = '#'
+            email_address = mla_ids[mla_ids.normal_name==person_choice].WestminsterEmail.iloc[0]
         if email_address == 'none':
             email_address = None
 
@@ -1198,11 +1274,45 @@ def indiv():
             person_name_string += f"</br>({mla_minister_roles[person_choice]})"
 
         if person_is_mla and row['normal_name'] in committee_roles.normal_name.tolist():
-            person_committee_roles = committee_roles[committee_roles.normal_name==row['normal_name']].apply(
+            person_committee_roles_raw = committee_roles[committee_roles.normal_name == row['normal_name']].Organisation.tolist()
+            person_committee_roles = committee_roles[committee_roles.normal_name == row['normal_name']].apply(
                 lambda row: f"{row['Organisation']}{ ' ('+row['Role']+')' if 'Chair' in row['Role'] else ''}", axis=1
             ).tolist()
+
+            # NEW
+            person_committee_attendances = (
+                committee_meeting_attendance[committee_meeting_attendance.normal_name == row['normal_name']]
+                .groupby('committee_name', as_index=False)
+                .agg(n_meetings = ('meeting_date', len),
+                     n_attended = ('attended', 'sum'),
+                     first_date = ('meeting_date', 'min'))
+                .assign(first_date = lambda df: df.first_date.dt.strftime('%Y-%m-%d'),
+                    summ_string = lambda df: df.apply(lambda row: f'Attended {row.n_attended} of {row.n_meetings} meetings since {row.first_date}', axis=1))
+                )
+            person_committee_work = []
+            for cr, cr_raw in zip(person_committee_roles, person_committee_roles_raw):
+                if cr_raw in person_committee_attendances.committee_name.tolist():
+                    person_committee_work.append(
+                        (cr, person_committee_attendances.query(f"committee_name == '{cr_raw}'").summ_string.item())
+                        )
+                else:
+                    person_committee_work.append((cr, 'No recent meetings found for this committee'))
         else:
-            person_committee_roles = []
+            person_committee_work = []
+
+        if person_is_mla and row['normal_name'] in mla_interests.normal_name.tolist():
+            person_interests = mla_interests[mla_interests.normal_name==row['normal_name']].apply(
+                lambda row: f"{row.RegisterCategory}: {row.RegisterEntry}", axis=1
+            ).tolist()
+        else:
+            person_interests = ["No interests declared."]
+
+        if person_is_mla and row['normal_name'] in allpartygroup_memberships.normal_name.tolist():
+            person_apgs = (allpartygroup_memberships[allpartygroup_memberships.normal_name==row['normal_name']]
+                .apg_name.tolist()
+                )
+        else:
+            person_apgs = []
 
         #Better to do last month as I will only be updating weekly
         tweets_last_month = tweets_df[(tweets_df.normal_name==row['normal_name']) &
@@ -1293,83 +1403,117 @@ def indiv():
             .merge(tmp, on='published_date_yweek', how='left')\
             .fillna(0).sort_values('published_date_yweek')['n_mentions'].astype(int).to_list()
 
-        mla_votes_list = []
-        tmp = votes_df.loc[votes_df['normal_name'] == row['normal_name'], ['DivisionDate','motion_plus_url','Vote']].sort_values('DivisionDate', ascending=False)
-        if tmp.shape[0] > 0:
-            mla_votes_list = [e[1].values.tolist() for e in tmp.iterrows()]
-
-        #Account for people joining midway through a session
-        vote_date_added = '2020-01-11' if date_added == '2020-08-01' else date_added #I tracked most people from 1 Aug 2020 but have their vote info from Jan 2020
-        votes_they_joined_before = votes_df[(votes_df.DivisionDate.astype(str) >= vote_date_added) | (votes_df.normal_name==row['normal_name'])]
-        votes_present_numbers = (sum(votes_df['normal_name'] == row['normal_name']), votes_they_joined_before.EventId.nunique())
-        votes_present_string = f"<b>{votes_present_numbers[0]}" + \
-            f" / {votes_present_numbers[1]} votes</b> since {votes_they_joined_before.DivisionDate.min().strftime('%d %B %Y')}"
-
-        num_questions = (questions_df['normal_name'] == row['normal_name']).sum()
-        member_question_volumes = questions_df['normal_name'].value_counts().values.tolist()
-        if num_questions > 0:
-            questions_rank = questions_df['normal_name'].value_counts().index.get_loc(row['normal_name']) + 1
-            questions_rank_string = f"<b>#{questions_rank} / {n_active_mlas}</b>"
+        if person_choice in news_summaries.normal_name.tolist():
+            member_news_summaries = news_summaries[news_summaries.normal_name==person_choice].iloc[0]
+            if member_news_summaries.n_articles > 0:
+                news_summary_desc_string = (
+                    f"(Summary of {member_news_summaries.n_articles} articles "
+                    f"in the period from {member_news_summaries.time_period.split('_')[0]} to now)"
+                    )
+            else:
+                news_summary_desc_string = ""
+            news_summary_summary = member_news_summaries.news_coverage_summary.replace('\n', '<br/>')
         else:
-            questions_rank_string = f"<b>#{questions_df.normal_name.nunique()+1}-{n_active_mlas} / {n_active_mlas}</b>"
-        #can't consistently work out the denominator excluding ministers so just use the 90
+            # members that have never had a news article will not be in the summaries table at all
+            news_summary_desc_string, news_summary_summary = "", ""
 
-        num_plenary_contribs = (scored_plenary_contribs_df['speaker'] == row['normal_name']).sum()
-        if num_plenary_contribs > 0:
-            plenary_contribs_rank = scored_plenary_contribs_df['speaker'].value_counts().index.get_loc(row['normal_name']) + 1
-            plenary_contribs_rank_string = f"<b>#{plenary_contribs_rank} / {max(n_active_mlas, scored_plenary_contribs_df.speaker.nunique())}</b>"
-        else:
-            plenary_contribs_rank_string = f"<b>#{scored_plenary_contribs_df.speaker.nunique()+1}-{n_active_mlas} / {n_active_mlas}</b>"
-        member_contribs_volumes = scored_plenary_contribs_df['speaker'].value_counts().values.tolist()
+        # Assembly votes, questions, plenary
+        if person_is_mla:
+            mla_votes_list = []
+            tmp = votes_df.loc[votes_df['normal_name'] == row['normal_name'], ['DivisionDate','motion_plus_url','Vote']].sort_values('DivisionDate', ascending=False)
+            if tmp.shape[0] > 0:
+                mla_votes_list = [e[1].values.tolist() for e in tmp.iterrows()]
 
-        top_contrib_topics = scored_plenary_contribs_df[scored_plenary_contribs_df['speaker'] == row['normal_name']]\
-            .topic_name.value_counts(normalize=True, dropna=False)
-        top_contrib_topics = top_contrib_topics[top_contrib_topics.index != 'misc./none']
-        #send topic|pct for font size|color for font
-        if len(top_contrib_topics) >= 3:
-            top_contrib_topic_list = [f"{top_contrib_topics.index[0]} ({top_contrib_topics.values[0]*100:.0f}%)|{36*max(min(top_contrib_topics.values[0]/0.4,1), 16/36):.0f}|{plenary_contribs_colour_dict[top_contrib_topics.index[0]]}",
-                f"{top_contrib_topics.index[1]} ({top_contrib_topics.values[1]*100:.0f}%)|{36*max(min(top_contrib_topics.values[1]/0.4,1), 16/36):.0f}|{plenary_contribs_colour_dict[top_contrib_topics.index[1]]}",
-                f"{top_contrib_topics.index[2]} ({top_contrib_topics.values[2]*100:.0f}%)|{36*max(min(top_contrib_topics.values[2]/0.4,1), 16/36):.0f}|{plenary_contribs_colour_dict[top_contrib_topics.index[2]]}"
-            ]
+            #Account for people joining midway through a session
+            vote_date_added = '2020-01-11' if date_added == '2020-08-01' else date_added #I tracked most people from 1 Aug 2020 but have their vote info from Jan 2020
+            votes_they_joined_before = votes_df[(votes_df.DivisionDate.astype(str) >= vote_date_added) | (votes_df.normal_name==row['normal_name'])]
+            votes_present_numbers = (sum(votes_df['normal_name'] == row['normal_name']), votes_they_joined_before.EventId.nunique())
+            if len(votes_they_joined_before) > 0:
+                votes_present_first_date = votes_they_joined_before.DivisionDate.min().strftime('%d %B %Y')
+            else:
+                votes_present_first_date = 'joining the Assembly'
+            votes_present_string = f"<b>{votes_present_numbers[0]}" + \
+                f" / {votes_present_numbers[1]} votes</b> since {votes_present_first_date}"
+
+            num_questions = (questions_df['normal_name'] == row['normal_name']).sum()
+            member_question_volumes = questions_df['normal_name'].value_counts().values.tolist()
+            if num_questions > 0:
+                questions_rank = questions_df['normal_name'].value_counts().index.get_loc(row['normal_name']) + 1
+                questions_rank_string = f"<b>#{questions_rank} / {n_active_mlas}</b>"
+            else:
+                questions_rank_string = f"<b>#{questions_df.normal_name.nunique()+1}-{n_active_mlas} / {n_active_mlas}</b>"
+            #can't consistently work out the denominator excluding ministers so just use the 90
+
+            num_plenary_contribs = (scored_plenary_contribs_df['speaker'] == row['normal_name']).sum()
+            if num_plenary_contribs > 0:
+                plenary_contribs_rank = scored_plenary_contribs_df['speaker'].value_counts().index.get_loc(row['normal_name']) + 1
+                plenary_contribs_rank_string = f"<b>#{plenary_contribs_rank} / {max(n_active_mlas, scored_plenary_contribs_df.speaker.nunique())}</b>"
+            else:
+                plenary_contribs_rank_string = f"<b>#{scored_plenary_contribs_df.speaker.nunique()+1}-{n_active_mlas} / {n_active_mlas}</b>"
+            member_contribs_volumes = scored_plenary_contribs_df['speaker'].value_counts().values.tolist()
+
+            top_contrib_topics = scored_plenary_contribs_df[scored_plenary_contribs_df['speaker'] == row['normal_name']]\
+                .topic_name.value_counts(normalize=True, dropna=False)
+            top_contrib_topics = top_contrib_topics[top_contrib_topics.index != 'misc./none']
+            #send topic|pct for font size|color for font
+            if len(top_contrib_topics) >= 3:
+                top_contrib_topic_list = [f"{top_contrib_topics.index[0]} ({top_contrib_topics.values[0]*100:.0f}%)|{36*max(min(top_contrib_topics.values[0]/0.4,1), 16/36):.0f}|{plenary_contribs_colour_dict[top_contrib_topics.index[0]]}",
+                    f"{top_contrib_topics.index[1]} ({top_contrib_topics.values[1]*100:.0f}%)|{36*max(min(top_contrib_topics.values[1]/0.4,1), 16/36):.0f}|{plenary_contribs_colour_dict[top_contrib_topics.index[1]]}",
+                    f"{top_contrib_topics.index[2]} ({top_contrib_topics.values[2]*100:.0f}%)|{36*max(min(top_contrib_topics.values[2]/0.4,1), 16/36):.0f}|{plenary_contribs_colour_dict[top_contrib_topics.index[2]]}"
+                ]
+            else:
+                top_contrib_topic_list = []
+            #emotions
+            member_emotion_ranks_string = "Plenary contributions language scores relatively <b>high</b> on "
+            member_any_top_emotion = False
+            for emotion_type in ['anger','anticipation','joy','sadness','trust']:
+                tmp = emotions_df[(emotions_df.emotion_type==emotion_type) & (emotions_df.word_count >= 100)].sort_values('ave_emotion', ascending=False)
+                if row['normal_name'] in tmp.speaker.tolist():
+                    member_rank = (tmp.speaker==row['normal_name']).idxmax()+1
+                    if member_rank <= 15:
+                        member_any_top_emotion = True
+                        member_emotion_ranks_string += f"<b>{emotion_type}</b> (#{member_rank}/{tmp.shape[0]}), "
+            if member_any_top_emotion:
+                member_emotion_ranks_string = member_emotion_ranks_string[:-2]
+            else:
+                member_emotion_ranks_string = None
+                #bit of a simplification because words can score for two emotions, but roughly
+                #  estimate total emotion by adding 5 core emotion fractions
+                tmp = emotions_df[(emotions_df.emotion_type.isin(['anger','anticipation','joy','sadness','trust','disgust','fear','surprise'])) &
+                    (emotions_df.word_count >= 100)]\
+                    .groupby('speaker').agg({'ave_emotion': sum}).reset_index().sort_values('ave_emotion', ascending=True) 
+                if row['normal_name'] in tmp.speaker.tolist():
+                    member_rank = (tmp.speaker==row['normal_name']).idxmax()+1
+                    if member_rank <= 20:
+                        member_emotion_ranks_string = f"Plenary contributions language scores relatively <b>low on emotion</b> overall (<b>#{tmp.shape[0]-member_rank+1} / {tmp.shape[0]}</b>)"
         else:
-            top_contrib_topic_list = []
-        #emotions
-        member_emotion_ranks_string = "Plenary contributions language scores relatively <b>high</b> on "
-        member_any_top_emotion = False
-        for emotion_type in ['anger','anticipation','joy','sadness','trust']:
-            tmp = emotions_df[(emotions_df.emotion_type==emotion_type) & (emotions_df.word_count >= 100)].sort_values('ave_emotion', ascending=False)
-            if row['normal_name'] in tmp.speaker.tolist():
-                member_rank = (tmp.speaker==row['normal_name']).idxmax()+1
-                if member_rank <= 15:
-                    member_any_top_emotion = True
-                    member_emotion_ranks_string += f"<b>{emotion_type}</b> (#{member_rank}/{tmp.shape[0]}), "
-        if member_any_top_emotion:
-            member_emotion_ranks_string = member_emotion_ranks_string[:-2]
-        else:
+            mla_votes_list = None
+            votes_present_string = None
+            votes_present_numbers = [0, 0]
+            num_questions = None
+            questions_rank_string = None
+            member_question_volumes = None
+            num_plenary_contribs = None
+            plenary_contribs_rank_string = None
+            member_contribs_volumes = None
+            top_contrib_topic_list = None
             member_emotion_ranks_string = None
-            #bit of a simplification because words can score for two emotions, but roughly
-            #  estimate total emotion by adding 5 core emotion fractions
-            tmp = emotions_df[(emotions_df.emotion_type.isin(['anger','anticipation','joy','sadness','trust','disgust','fear','surprise'])) &
-                (emotions_df.word_count >= 100)]\
-                .groupby('speaker').agg({'ave_emotion': sum}).reset_index().sort_values('ave_emotion', ascending=True) 
-            if row['normal_name'] in tmp.speaker.tolist():
-                member_rank = (tmp.speaker==row['normal_name']).idxmax()+1
-                if member_rank <= 20:
-                    member_emotion_ranks_string = f"Plenary contributions language scores relatively <b>low on emotion</b> overall (#{tmp.shape[0]-member_rank+1}/{tmp.shape[0]})"
-
+            votes_present_string = None
 
         return render_template('indiv.html', 
             person_selected = person_selected,
             person_is_mla = person_is_mla,
-            mla_personid = mla_personid,
+            mla_or_mp_id = row.PersonId if person_is_mla else mp_api_numbers.get(person_choice, None),
             full_mla_list = sorted(mla_ids.normal_name.tolist()),
             postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
             person_name_string = person_name_string,
             person_name_lc = person_name_lc,
             person_date_added = date_added,
-            news_tracked_since_date = 'January 2021' if date_added < '2021-01-01' else date_added,
+            news_tracked_since_date = 'December 2023', # if date_added < '2023-12-01' else date_added,  # confusing for MLA->MPs
             person_party = person_choice_party,
-            person_committee_roles = person_committee_roles,
+            person_committee_work = person_committee_work,
+            person_interests = person_interests,
+            person_apgs = person_apgs,
             image_url = image_url,
             twitter_handle = twitter_handle,
             email_address = email_address,
@@ -1386,6 +1530,8 @@ def indiv():
             sample_recent_tweets = sample_recent_tweets,
             news_articles_last_month = news_articles_last_month,
             news_articles_by_week = news_articles_by_week,
+            news_summary_desc_string = news_summary_desc_string,
+            news_summary_summary = news_summary_summary,
             mla_votes_list = mla_votes_list,
             votes_present_string = votes_present_string,
             votes_present_numbers = votes_present_numbers,
@@ -1401,12 +1547,12 @@ def indiv():
             include_twitter = include_twitter)
 
     else:
+        blog_pieces['background_image_path'] = blog_pieces.background_image_file.apply(lambda f: url_for('static', filename=f))
         return render_template('index.html',
             totals_dict = totals_dict,
             full_mla_list = sorted(mla_ids.normal_name.tolist()),
             postcodes_list = sorted(postcodes_to_constits.Postcode.tolist() + mla_ids.ConstituencyName.unique().tolist()),
             blog_pieces = blog_pieces[:3])
-
 
 @app.route('/postcode', methods=['GET'])
 def postcode():
@@ -1423,38 +1569,37 @@ def postcode():
         #Get any postcode from this constit to use for the Write To Them link
         #  (a few of them are no longer found on Write To Them, but unlikely to pick those)
         postcode_choice = postcodes_to_constits[postcodes_to_constits.Constituency.str.upper()==constit_choice].Postcode.sample(1).iloc[0]
-    else:
+    elif postcode_choice in postcodes_to_constits.Postcode.tolist():
         constit_choice = postcodes_to_constits[postcodes_to_constits.Postcode==postcode_choice].Constituency.iloc[0].upper()
         heading_message = f"{postcode_choice} is part of the <b>{constit_choice}</b> constituency."
+    elif postcode_choice == '':
+        constit_choice = mla_ids.ConstituencyName.str.upper().sample(1).item()
+        heading_message = f"No postcode selected. Showing randomly selected constituency <b>{constit_choice}</b>."
+    else:
+        constit_choice = mla_ids.ConstituencyName.str.upper().sample(1).item()
+        heading_message = f"{postcode_choice} not found. Showing randomly selected constituency <b>{constit_choice}</b>."
 
-    #print(mla_ids.columns)
     mla_choices = mla_ids[(mla_ids.active == 1) & (mla_ids.ConstituencyName.str.upper() == constit_choice)]
     mla_choices = mla_choices.sort_values(['role','MemberLastName'])
 
     normal_names_list = mla_choices.normal_name.tolist()
+    mla_or_mp_ids_list = mla_choices.apply(lambda row: 
+        row.PersonId if row.role == 'MLA' else mp_api_numbers.get(row.normal_name, None),
+        axis=1).tolist()
 
     rep_image_urls_list = []
     votes_present_string_list = []
     top_contrib_topic_list_list = []
 
     for row in mla_choices.itertuples():
-        if row.role == 'MLA':
-            #Use the downloaded photo if it exists, otherwise (new MLA) go to AIMS, but it will break on Chrome https
-            if test_mode:
-                photo_location = url_for('static', filename=f'politician_photos/{row.PersonId}_s.jpg')[1:]
-            else:
-                #on pythonanywhere, cwd is at level of /nipol
-                photo_location = f'nipol/flask/static/politician_photos/{row.PersonId}_s.jpg'
-            if os.path.exists(photo_location):
-                rep_image_urls_list.append(url_for('static', filename=f'politician_photos/{row.PersonId}_s.jpg'))
-            else:
-                rep_image_urls_list.append(f"http://aims.niassembly.gov.uk/images/mla/{row.PersonId}_s.jpg")
-        elif row.normal_name in mp_api_numbers.keys() and row.normal_name not in member_other_photo_links.keys():
-            rep_image_urls_list.append(f"https://members-api.parliament.uk/api/Members/{mp_api_numbers[row.normal_name]:s}/Portrait?cropType=ThreeFour")
-        elif row.normal_name in member_other_photo_links.keys():
-            rep_image_urls_list.append(member_other_photo_links[row.normal_name])
-        else:
-            rep_image_urls_list.append('#')
+        image_url = find_profile_photo(
+            row.role == 'MLA',
+            row.PersonId,
+            row.normal_name,
+            member_other_photo_links,
+            mp_api_number=mp_api_numbers.get(row.normal_name, None)
+            )
+        rep_image_urls_list.append(image_url)
 
         date_added = row.added
 
@@ -1602,7 +1747,7 @@ def postcode():
         rep_roles_list = mla_choices.role.tolist(),
         rep_email_addrs_list = rep_email_addrs_list,
         rep_twitter_handles_list = rep_twitter_handles_list,
-        rep_personIds_list = mla_choices.PersonId.tolist(),
+        rep_mla_or_mps_ids_list = mla_or_mp_ids_list,
         rep_image_urls_list = rep_image_urls_list,
         rep_added_dates_list = mla_choices.added.tolist(),
         tweet_volume_rank_string_list = tweet_volume_rank_string_list,
@@ -1622,21 +1767,6 @@ def postcode():
         elct_fcst_constit_party_stuff = elct_fcst_constit_party_stuff,
         cands_table_code = cands_table,
         elct_n_ensemble = elct_n_ensemble)
-
-
-#Plots are not pages themselves
-def add_grey_legend(plot, orient='top-right', columns=1, mobile_mode=False):
-    return plot.configure_legend(
-        strokeColor='gray',
-        fillColor='#EEEEEE',
-        padding = 7 if mobile_mode else 10,
-        cornerRadius=10,
-        orient = orient,
-        columns = columns,
-        labelFontSize = 8 if mobile_mode else 11,
-        symbolSize = 40 if mobile_mode else 70,
-        titleFontSize = 9 if mobile_mode else 12
-    )
 
 #Most minister answers bars
 # @app.route('/data/plot_minister_answers_bars')
@@ -2002,7 +2132,7 @@ def plot_news_sources_fn(mobile_mode = False):
     selection = alt.selection_single(on='mouseover', empty='all')
     plot = alt.Chart(news_sources_plot_df).mark_bar()\
         .add_selection(selection)\
-        .encode(#x='Minister_normal_name', 
+        .encode(
             y=alt.Y('News articles'),
             x=alt.X('source', sort='-y', title=None),
             color = alt.Color('PartyGroup', 
@@ -2012,6 +2142,7 @@ def plot_news_sources_fn(mobile_mode = False):
                 ), legend = alt.Legend(title = 'Mentioning')),
             opacity = alt.condition(selection, alt.value(1), alt.value(hover_exclude_opacity_value)),
             tooltip='tooltip_text:N')\
+        .configure_axis(labelAngle=-45)\
         .properties(title = '', 
             width = 'container', 
             height = 200 if mobile_mode else 300,
@@ -2046,6 +2177,7 @@ def shared_plot_news_fn(news_sentiment_by_party_week, y_variable, y_title, title
                     range=party_colours[party_colours.party_name.isin(news_sentiment_by_party_week.PartyName)]['colour'].tolist()
                     ),
                 legend=alt.Legend(title='')))\
+        .configure_axis(labelAngle=-30)\
         .properties(title = title,
             width = 'container', 
             height = 200 if mobile_mode else 300,

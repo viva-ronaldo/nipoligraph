@@ -55,7 +55,7 @@ v_comms_out_filepath = Path(data_dir).joinpath('division_votes_v_comms.csv')
 
 #i) Score tweets sentiment: read slim tweets files, apply Vader, save as vader_scored file
 if do_twitter:
-    print('Scoring tweets on sentiment')
+    print('\nScoring tweets on sentiment')
     tweets = pd.concat([
         feather.read_dataframe(hist_tweets_slim_filepath)[['status_id', 'text']],
         feather.read_dataframe(current_tweets_slim_filepath)[['status_id', 'text']]

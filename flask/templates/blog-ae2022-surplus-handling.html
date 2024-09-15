@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% include 'nav.html' %}
+
+<article>
+    <div class='container-xl' style='min-height: 800px'>
+        
+        <div class="row">
+            <div class="col-lg-8 col-md-10 mx-auto">
+                <div class="post-heading">
+                    <h1>Understanding surplus transfers in Assembly elections</h1>
+                    <h2 class="subheading">TODO</h2>
+                </div>
+            </div>
+        </div>
+                        
+        <div class='row mb-4'>
+            <div class="col-lg-8 col-md-10 mx-auto">
+                <p>In the course of <a href="{{url_for('blog_item', post_name='election-postmortem-4')}}">analysing</a> the NIPG <a href="{{url_for('blog_item', post_name='election-postmortem-5')}}">forecast</a> of transfers in the 2022 Assembly election (AE), I noticed some odd transfer fractions, which led me to find out more about how the counts were conducted, and the <a href='https://www.eoni.org.uk/Elections/Election-results-and-statistics/Election-results-and-statistics-2003-onwards/Elections-2022/NI-Assembly-Election-2022-Result-Sheets'>output data</a> produced. I found that there are several strange things being done in <i>transferring surpluses</i>, and that the count sheet data are a little misleading unless this is understood. There are three separate effects to be aware of; the first of these I consider to be questionable, and the other two undoubtedly introduce error into the results. This post will explain my understanding of how EONI has run the AE counts (since at least 2011), and what the impact of these methods has been.</p> 
+                
+                <p>The three issues are:
+                    <ol>
+                        <li>When transferring surpluses, in some cases (about half of the time), the number of transferred votes is scaled up to make up for any exhausted ballots in the amount being transferred. This means that no votes are lost from the total (but see next point), but also means that voters that did express another preference on their ballot can have an exaggerated influence on the count - a single vote can be worth more than one unit.</li>
+                        <li>When calculating the number of votes transferred to each candidate from a surplus, the scaling factor, needed to record the fact that each piece of paper that moves between piles is now worth less than a full vote (because most of that vote remains in the elected candidate's column), <i>is rounded down to the nearest 0.01</i> before multiplying by the total number of votes to be transferred in the surplus. This rounding down has the effect of throwing away (randomly) anywhere from 0 to about 100 votes in each surplus transfer where this rounding occurs. The 'exhausted' row in the count sheets, in these cases, actually represents the number of votes that were lost due to the rounding inaccuracy, <i>not</i> the number of votes that were dropped due to ballots being exhausted (because the scaling method aims to avoid any ballots being dropped for this reason).</li>
+                        <li>When a candidate clears the quota from first preference votes alone, the surplus is distributed by considering all of the (typically 5000 to 10,000) ballots in their pile, but if a candidate clears the quota on a later round, by receiving a transfer from another candidate, the surplus is distributed by considering <i>only the last bundle of votes transferred into that candidate</i>, presumably to save time for the counters. This has the effect that if Candidate A transfers to Candidate B to push B over the quota, the surplus transferred from B is the next preferences of the Candidate A ballots, and all of the Candidate B first preference votes, which make up the majority of their total, are ignored. In these situations, the 'exhausted' row <i>does</i> represent exhausted ballots, and there is no rounding problem.</li>
+                    </ol>
+                    All three points are connected, in a complicated way, but I will consider the first two together and then the third separately.
+                </p>
+                
+                <h2 class='section-heading'>Scaling up and rounding down surplus transfers</h2>
+                
+                <h4 class='section-heading'>Dropped votes due to rounding error</h4>
+                
+                <p>The most extreme consequence of this rounding practice, and the reason I stumbled upon it, is that when the transfer ratio is less than 0.01, it is rounded down to zero, and <i>the transfer is skipped entirely</i>. This happened once in 2022, when 44 votes from Bunting in Belfast East were simply not transferred, even though there were less than 44 votes between the bottom two candidates at this point in the count, and so the surplus transfer could have affected the next elimination. The more likely impact of such a practice is that the dropped votes could be relevant at a later point in the count, since seats can, and have been, decided on margins of a few tens of votes. In this case, Brooks would have been the main beneficiary of this transfer, and would have received about 35 of the 44 votes. Thankfully, he was elected comfortably without these missing votes, but in another scenario, this may not have been the case.</p>
+                
+                <p>The <i>transfer ratio</i> that is referred to here is the ratio of surplus votes to 'transferrable ballots' - literally, the number of pieces of paper in the elected candidate's pile that have another preference (for a still active candidate) on them. In most cases, the elected candidate has at least ~7000 ballots in their pile, but this number can be larger, if they have received fractions of votes from a previous surplus transfer. At the same time, the number of transferrable ballots (those with another preference) is somewhat smaller than the number of ballots, but not much smaller, especially if the surplus transfer is occurring quite early in the count, and/or if another candidate from the same party is still available to receive a transfer. In summary, the denominator, the number of transferrable ballots, is typically ~5000-10,000, and the numerator, the surplus amount, can be anywhere from a few votes to a few thousand votes.</p>
+                
+                <p>This means that the transfer ratio is usually around 0.1 or less, and in some cases can be smaller, between 0 and ~0.05. This ratio is multiplied by the number of ballots that are to transfer to each candidate, to get the transferred vote number. If Candidate A has 5000 transferrable ballots and a surplus of 200, the transfer ratio is 200/5000=0.04; if Candidate B is named as the next preference on 1000 of those 5000 ballots, then they will receive 1000*0.04=40 votes. This is the correct amount, ignoring the issue of exhausted (non-transferrable) ballots, because Candidate has received a fifth of the surplus. However, the EONI method <i>rounds down to the nearest 0.01</i>, so if the surplus had been 240, the transfer ratio would still have been taken as 0.04, rather than its true value of 240/5000=0.048. In this case, Candidate B <i>should</i> receive a fifth of 240, or 48 votes, but in practice they are given only 1000*0.04=40 votes. The other 8 are placed into the 'exhausted' row on the count sheet.</p>
+                
+                <p>Clearly, the transfer ratio can randomly fall anywhere between intervals of 0.01, so a random number of votes will be lost each time, from 0 in the best case (when the transfer ratio happens to be an exact multiple of 0.01), to the entirity of the surplus in the worst case, when the ratio is less than 0.01. Typically, a few to a few tens of votes are lost on each occasion. I cannot think of any reason for this practice, as it does not save any time (except in the very rare case when a transfer 'can' (it can't really) be skipped), and saves only entering a few more decimal places in a spreadsheet. To avoid dropping tens of votes, that could potentially change the outcome of the constituency election, transfer ratios need to be calculated to at least four decimal places.</p>
+                
+                <h4 class='section-heading'>Preserving votes where ballots are exhausted</h4>
+                
+                <p>Confusingly, this is happening at the same time as votes that should actually have been dropped due to ballots being exhausted. The method used calculates the transfer ratio by dividing by the number of <i>transferrable</i> rather than <i>total</i> ballots in the elected candidate's pile. This causes the preferences of those ballots with a transferrable preference on them to be scaled up to 'fill in' for those that did not express a preference. In the very extreme case, if Candidate A has 7000 votes and a surplus of 500, but only one of the 7000 ballots is not exhausted, and it shows a next preference for Candidate B, all 500 votes will be transferred to Candidate B (except a few that may be dropped due to rounding), despite 6999 of A's voters expressing no preference for B.</p>
+                
+                <p>That is an extremely unrealistic example scenario, and I consider this method to be an arguably valid application of the STV method. However, it can lead to some strange results. The way that the count data are recorded allows us to reconstruct the number of votes that should have been dropped, because they were exhausted, and calculate the number of votes that should have been transferred to each candidate, had rounding not been applied. This is done by looking at the transferred totals given to each candidate and deducing what the transfer ratio must have been, by finding which multiple of 0.01 is common to all totals. Since the surplus is known, the number of transferrable ballots can then be calculated. I applied this method to all surplus transfers from 2011 to 2022. (This method is not foolproof, but seems to give the correct result for all cases in these elections, as best I can tell.</p>
+            
+                <p>A noticeable case of scaling up to remove exhausted ballots occurred in Foyle in 2011. Here, William Hay of DUP exceeded the quota on the first count, but was the only unionist candidate running, so many of his votes had only one preference on them, and should have been exhausted after the first round. We can calculate from the transferred numbers that only 50.3% of the ballots were transferrable, but in practice, 1585 of the 1603 (99%) of the votes were transferred, with the 1% dropped only because of the random rounding error. This meant that the three SDLP candidates, despite being given a preference on only 36% of the Hay ballots, received transfers amounting to 71% of his surplus. The other parties also received inflated transfers, but because the SDLP transfer was the largest to begin with, the scaling led to them receiving a net additional transfer of <b>+548</b> over Sinn Fein and <b>+508</b> over People Before Profit. In the end, the gaps between the last elected SDLP candidate and the excluded PBP and Sinn Fein candidates were about 900 and 1000 votes, respectively, so this error, though large, would not have changed the final result on this occasion.</p>
+                
+                <p>However, this illustrates the flaw in the 'no exhausted ballots' approach, because the weak preference among DUP voters for transfers to SDLP was exaggerated to give them an additional advantage of more than 500 votes over other parties. At the least, the scaling method seems inconsistent, since exhausted ballots <i>are</i> allowed to occur in elimination rounds, and in some surplus transfer situations (see below).</p>
+                
+                <h2 class='section-heading'>Preserving votes where ballots are exhausted</h4>
+                
+                <h2 class='section-heading'>Impact of these effects in 2022</h4>
+                
+                <p></p>
+                
+            </div>
+        </div>
+
+        <div class='row justify-content-between mb-4'>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[0] is not none %}
+                    <p>Previous article: <a href='{{prev_and_next_article_link[0]}}'>{{prev_and_next_article_title[0]}}</a></p>
+                {% endif %}
+            </div>
+            <div class='col-4'>
+                {% if prev_and_next_article_title[1] is not none %}
+                    <p>Next article: <a href='{{prev_and_next_article_link[1]}}'>{{prev_and_next_article_title[1]}}</a></p>
+                {% endif %}
+            </div>
+        </div>
+                    
+    </div>
+</article>
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <div class="col-3 text-md-right"></div>
+{% endblock %}
+

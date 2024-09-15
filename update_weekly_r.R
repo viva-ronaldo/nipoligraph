@@ -40,12 +40,19 @@ politicians_list_filepath <- file.path(data_dir, 'all_politicians_list.csv')
 politicians <- update_and_get_politicians_list(politicians_list_filepath)
 
 #ii) Latest diary events - take anything from current date to a year ahead
-message('Doing Assembly diary, committees, minister lists')
+message('\nDoing Assembly diary, committees, minister lists, register of interests')
 diary_filepath <- file.path(data_dir, 'diary_future_events.psv')
 committees_list_filepath <- file.path(data_dir, 'current_committee_memberships.csv')
 minister_list_filepath <- file.path(data_dir, 'current_ministers_and_speakers.csv')
-update_assembly_lists(diary_filepath, committees_list_filepath, minister_list_filepath)
+mla_interests_list_filepath <- file.path(data_dir, 'current_mla_registered_interests.csv')
+update_assembly_lists(
+    diary_filepath,
+    committees_list_filepath,
+    minister_list_filepath,
+    mla_interests_list_filepath
+)
 # TODO check for change in minister AffiliationTitle strings?
+
 
 # Questions and answers ----
 
@@ -55,14 +62,14 @@ update_questions_and_answers(questions_filepath, answers_filepath)
 
 # Votes ----
 
-message('Doing votes')
+message('\nDoing votes')
 vote_details_filepath <- file.path(data_dir, 'division_votes.feather')
 vote_results_filepath <- file.path(data_dir, 'division_vote_results.feather')
 update_vote_list(vote_details_filepath, vote_results_filepath)
 
 # Contributions ----
 
-message('Doing plenary contributions')
+message('\nDoing plenary contributions')
 # plenary_hansard_contribs.feather started in 2022-05 - we want to use the current Assembly session
 #   so this is OK; TODO get method for archiving older contribs, or use one file and filter in time in update_average_contrib_emotions
 contribs_filepath <- file.path(data_dir, 'plenary_hansard_contribs.feather')
@@ -90,7 +97,7 @@ if (do_twitter) {
 }
 
 #Add sentiment on the summaries (newscatcher_articles file) which is updated elsewhere before this script runs
-message('Doing news article sentiment')
+message('\nDoing news article sentiment')
 update_news_article_sentiment(news_articles_filepath,
                               file.path(data_dir, 'newscatcher_articles_slim_w_sentiment_sep2020topresent.feather'))
 

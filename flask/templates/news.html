@@ -12,7 +12,7 @@
       <div class="row d-flex ml-2 justify-content-start" style='max-width: 420px'>
         <div class="col py-3" style='color: white'>
           <h1 class='display-3'>What We <b>Report</b></h1>
-          <p>This page scans a range of online news outlets for articles mentioning any of the politicians that are tracked on this site. The insight that can be gained from this is currently limited, as a lot of news mentions involve only short quotes from party leaders or Executive Ministers, but we can at least see the visibility that each party and politician has in the media.</p>
+          <p>This page scans a range of online news outlets for articles mentioning any of the politicians that are tracked on this site. The extent of visibility that each person has in the media can be seen in the volume of articles mentioning them, and the content of their news coverage is available through a summarisation of the news articles.</p>
         </div>
       </div>
     </div>
@@ -20,12 +20,34 @@
     <div class='container-xl'>
 
         <div class="row mb-2 justify-content-md-center">
+
           <div class="col-lg-8">
-            <div class="p-4 mb-3 bg-light rounded">
-              <h2><span class="badge badge-info">CURRENTLY UNDER REDEVELOPMENT</span></h2>
-              <p class="mb-0"><i>The NewsCatcher tracking method is being upgraded to use a newer API. Picking up paywall article titles from Irish News and News Letter via Twitter is no longer possible, but these sources may now be covered by NewsCatcher. The article sentiment plot is under review, so has been temporarily removed.</i></p>
+            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+              <div class="col p-4 d-flex flex-column position-static data-panel-a">
+                
+                <h4>News coverage summary</h4>
+                <p class="card-text mb-2 data-panel-card-border">Politicians are mentioned in various articles, as collected by <a class='use-underline' target="_blank" href='https://newscatcherapi.com'>NewsCatcher</a>, the most recent of which are listed <a href='#Article-list'>below</a>. For a chosen politician, this provides an AI-generated summary of their activity in those recent articles. <i>As the text is written by AI, 100% accuracy is not guaranteed here.</i></p>
+                
+                <form>
+                  <div class='form-group row mt-2'>
+                    <div class='col-sm-2'></div>
+                    <input type='button' onclick="showSummary();" value='Get news summary' class='col-sm-4' id='gen-news-summary-button' style='background-color: dodgerblue; color: white'>
+                    <div class='col-sm-4'>
+                      <select class='form-control' id='politician-for-news-summary'>
+                        {% for politician in news_summary_politicians %}
+                          <option value='{{politician}}'>{{politician}}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                  </div>
+
+                  <p><span id='news-summary'></span></p>
+                </form>
+
+              </div>
             </div>
           </div>
+
         </div>
 
         <div class="row mb-2 justify-content-md-center">
@@ -34,59 +56,22 @@
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column position-static data-panel-b">
                 <h4>News article volume</h4>
-                <p class="card-text mb-2 data-panel-card-border">This tracks the number of online news articles each week <span class='help-tooltip' title='showing the {{news_volume_average_window_weeks}}-week running average' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>, as collected by <a class='use-underline' href='https://newscatcherapi.com'>NewsCatcher</a>, that include a mention of a member of one of the parties. Party leaders and Assembly ministers tend to dominate the mentions, as can be seen in the list of articles <a href='#Article-list'>below</a>.</p>
+                <p class="card-text mb-2 data-panel-card-border">This tracks the number of online news articles each week <span class='help-tooltip' title='showing the {{news_volume_average_window_weeks}}-week running average' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>, as collected by NewsCatcher, that include a mention of a member of one of the parties. Party leaders and Assembly ministers tend to dominate the mentions, as can be seen in the list of articles <a href='#Article-list'>below</a>.</p>
                 <div id='vis3'></div>
               </div>
             </div>
           </div>
-          <!--
-          <div class="col-lg-6">
-            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col py-4 pl-4 pr-2 d-flex flex-column position-static data-panel-c">
-                <h4>News article sentiment</h4>
-                <p class="card-text mb-2 data-panel-card-border">Each news article mentioning a politician is measured for its sentiment, or positivity; results shown are from late September 2020 onwards . The aim here is to identify parties that are reported in a more positive or negative light, on average, but note that some of the articles are directly related to Ministries held by each party, which will affect the estimation of sentiment (see <i><a href='#Technical-stuff'>Technical stuff</a></i>).</p>
-                <div id='vis2'></div>
-              </div>
-            </div>
-          </div>
-        -->
           
-        </div>
-
-        <div class="row mb-2">
           <div class="col-lg-6">
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
-              <div class="col p-4 d-flex flex-column position-static data-panel-a">
+              <div class="col p-4 d-flex flex-column position-static data-panel-c">
                 <h4>Frequently used sources</h4>
-                <p class="card-text mb-2 data-panel-card-border">These are the news sources in the NewsCatcher search space that have most frequently been found to mention NI politicians in the last month.</p>
+                <p class="card-text mb-2 data-panel-card-border">These are the news sources in the NewsCatcher search space that have most frequently been found to mention NI politicians in the last month.<br/><br/></p>
                 <div id='vis1'></div>
               </div>
             </div>
           </div>
-
-          <aside class="col-lg-6 blog-sidebar" id='Technical-stuff'>
-            <div class="p-4 mb-3 bg-light rounded">
-              <h4 class='font-italic'>Technical stuff</h4>
-              <ul class="nav nav-tabs tab-headings" id="myTab" role="tablist">
-                <li class="nav-item" role="presentation">
-                  <a class="nav-link active" id="one-tab" data-bs-toggle="tab" href="#one" role="tab" aria-controls="one" aria-selected="true">News data</a>
-                </li>
-                <li class="nav-item" role="presentation">
-                  <a class="nav-link" id="two-tab" data-bs-toggle="tab" href="#two" role="tab" aria-controls="two" aria-selected="false">Article sentiment</a>
-                </li>
-              </ul>
-              <div class="tab-content small" id="myTabContent">
-                <div class="tab-pane fade show active" id="one" role="tabpanel" aria-labelledby="one-tab">
-                  <p>News article mentions are collected by searching for the politicians' names in the <a class='use-underline' href='https://newscatcherapi.com/'>NewsCatcher API</a>. NewsCatcher tracks a range of thousands of online news sources, including many focused on the UK and Ireland. To minimise false positives (articles mentioning someone with the same name as an NI politician, particularly in America), the search set is limited to (currently) 49 sources that have been found to report on NI politics with some regularity. For a few members, additional filtering is done by checking the content of the article. Nevertheless, some unrelated articles may exist in the article list.</p>
-                  <p>In the volume plot, weekly volumes by party are smoothed with a 7-week running mean, after removing duplicates by party (so that a single article mentioning two members of the same party counts as only one mention). The data are tracked from 25 September 2020.</p>
-                </div>
-                <div class="tab-pane fade" id="two" role="tabpanel" aria-labelledby="two-tab">
-                  <p>The sentiment of each news article - in fact just the summary (1-3 sentences), not the full article - is calculated using the excellent <b>R</b> package <a class='use-underline' href="https://github.com/trinker/sentimentr">sentimentr</a>. This takes a relatively sophisticated approach to determining text sentiment, but nevertheless relies on a vocabulary of words with pre-defined positive or negative sentiment associated. From this standard vocabulary I excluded some words that should be regarded as neutral in a political context, such as 'economic', 'justice', and 'conservative'. However, news article 'sentiment' remains hard to define: for example, an article describing a minister's response to an economic crisis will, almost unavoidably, be scored as 'negative', but the article may not comment on the efficacy or otherwise of the minister's actions. Therefore, this plot should be viewed with caution.</p>
-                  <p>The sentiment data are shown here in a <a class='use-underline' href='https://en.wikipedia.org/wiki/Box_plot'>box-and-whisker plot</a>: the white vertical line shows the median value for each party, the bars and lines show the range of per-article values in which most of the articles lie, and the circles show individual outlier values.</p>
-                </div>
-              </div>
-            </div>
-          </aside>
+          
         </div>
 
         <div class="row mb-2 justify-content-md-center">
@@ -107,6 +92,38 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <div class="row mb-2 justify-content-center">
+          <aside class="col-lg-6 blog-sidebar" id='Technical-stuff'>
+            <div class="p-4 mb-3 bg-light rounded">
+              <h4 class='font-italic'>Technical stuff</h4>
+              <ul class="nav nav-tabs tab-headings" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <a class="nav-link active" id="one-tab" data-bs-toggle="tab" href="#one" role="tab" aria-controls="one" aria-selected="true">News data</a>
+                </li>
+                <!-- <li class="nav-item" role="presentation">
+                  <a class="nav-link" id="two-tab" data-bs-toggle="tab" href="#two" role="tab" aria-controls="two" aria-selected="false">Article sentiment</a>
+                </li> -->
+                <li class="nav-item" role="presentation">
+                  <a class="nav-link" id="three-tab" data-bs-toggle="tab" href="#three" role="tab" aria-controls="three" aria-selected="false">News summaries</a>
+                </li>
+              </ul>
+              <div class="tab-content small" id="myTabContent">
+                <div class="tab-pane fade show active" id="one" role="tabpanel" aria-labelledby="one-tab">
+                  <p>News article mentions are collected by searching for the politicians' names in the <a class='use-underline' target="_blank" href='https://newscatcherapi.com/'>NewsCatcher API</a>. NewsCatcher tracks a range of thousands of online news sources, including many focused on the UK and Ireland. To minimise false positives (articles mentioning someone with the same name as an NI politician, particularly in America), the search set is limited to (currently) 49 sources that have been found to report on NI politics with some regularity. For a few members, additional filtering is done by checking the content of the article. Nevertheless, some unrelated articles may exist in the article list.</p>
+                  <p>In the volume plot, weekly volumes by party are smoothed with a 7-week running mean, after removing duplicates by party (so that a single article mentioning two members of the same party counts as only one mention). The data are tracked from December 2023.</p>
+                </div>
+                <div class="tab-pane fade" id="two" role="tabpanel" aria-labelledby="two-tab">
+                  <p>The sentiment of each news article - in fact just the summary (1-3 sentences), not the full article - is calculated using the excellent <b>R</b> package <a class='use-underline' target="_blank" href="https://github.com/trinker/sentimentr">sentimentr</a>. This takes a relatively sophisticated approach to determining text sentiment, but nevertheless relies on a vocabulary of words with pre-defined positive or negative sentiment associated. From this standard vocabulary I excluded some words that should be regarded as neutral in a political context, such as 'economic', 'justice', and 'conservative'. However, news article 'sentiment' remains hard to define: for example, an article describing a minister's response to an economic crisis will, almost unavoidably, be scored as 'negative', but the article may not comment on the efficacy or otherwise of the minister's actions. Therefore, this plot should be viewed with caution.</p>
+                  <p>The sentiment data are shown here in a <a class='use-underline' target="_blank" href='https://en.wikipedia.org/wiki/Box_plot'>box-and-whisker plot</a>: the white vertical line shows the median value for each party, the bars and lines show the range of per-article values in which most of the articles lie, and the circles show individual outlier values.</p>
+                </div>
+                <div class="tab-pane fade" id="three" role="tabpanel" aria-labelledby="three-tab">
+                  <p>News summaries are generated by a large language model (AI), specifically <a class='use-underline' target="_blank" href="https://platform.openai.com/docs/models/gpt-4o-mini">GPT-4o mini</a>. The information fed to the model to generate the summary in each case is the name and party of the person chosen, and the title and text of news articles mentioning them from the last month, or if this is fewer than five articles, from the last two months, or if this is fewer than five articles, from the last three months. Summaries have been found to be accurate, with hallucination very rare, but source and date references are included to enhance reliability.</p>
+                </div>
+              </div>
+            </div>
+          </aside>
         </div>
 
       </div>
@@ -135,18 +152,12 @@
         }
         //parse("/data/plot_news_sentiment", "vis2");
         
-
-        //expects this format:
-        // var dataSet = [
-        //   ["503", "Bob"],
-        //   ["99", "Don"]
-        // ];
-        var dataSet = {{articles_list | tojson }};
+        var news_articles = {{articles_list | tojson }};
 
         $(document).ready(function() {
             $('#news-articles-table').DataTable( {
                 responsive: true,
-                data: dataSet,
+                data: news_articles,
                 columns: [
                     { title: "Date", responsivePriority: 4 },
                     { title: "Title", responsivePriority: 1,
@@ -160,6 +171,36 @@
                 order: [0, 'desc']
             } );
         } );
+
+        //news summaries
+        var news_summary_summaries = {{news_summary_summaries | tojson }};
+        var news_summary_politicians = {{news_summary_politicians | tojson}};
+        var news_summary_n_articles = {{news_summary_n_articles | tojson}};
+        var news_summary_time_period = {{news_summary_time_period | tojson}};
+        
+        function showSummary() {
+            var dropdown_values = document.getElementById('politician-for-news-summary');
+            // index news_summaries with the index selected in politician-for-news-summary
+            var summary = news_summary_summaries[dropdown_values.selectedIndex];
+            // replace carriage returns with <br> tags
+            summary = summary.replace(/\n/g, "<br>");
+
+            var politician = news_summary_politicians[dropdown_values.selectedIndex];
+
+            // prepend the news-summary text with a sentence giving the number of articles
+            if (news_summary_n_articles[dropdown_values.selectedIndex] > 1) {
+              summary = politician + ' has appeared in <b>' + news_summary_n_articles[dropdown_values.selectedIndex] + '</b> articles in the period since <b>' + news_summary_time_period[dropdown_values.selectedIndex].split('_')[0] + '</b>.</br></br>' + summary;
+            } else if (news_summary_n_articles[dropdown_values.selectedIndex] == 1) {
+              summary = politician + ' has appeared in <b>1</b> article in the period since <b>' + news_summary_time_period[dropdown_values.selectedIndex].split('_')[0] + '</b>.</br></br>' + summary;
+            } else if (dropdown_values.selectedIndex == 0) {
+              summary = 'Please select a politician.'
+            } else {
+              summary = politician + ' has not appeared in any news articles in the last three months.'
+            }
+
+            //add the summary to element #news-summary
+            document.getElementById('news-summary').innerHTML = summary;
+        }
    
     </script>
 

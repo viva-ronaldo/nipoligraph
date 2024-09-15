@@ -5,7 +5,7 @@
   --main-link-hover-colour: plum;
   --data-panel-a-colour: #f5eff5; /*floralwhite;*/
   --data-panel-b-colour: #edf2f7;  /*#ecdfec; */ /*#e6fee6*/  /*#edf2f7*/
-  --data-panel-c-colour: #e6fee6;
+  --data-panel-c-colour: #f0fbef; /*#e6fee6; */
 }
 
 html, body {
@@ -478,6 +478,14 @@ figcaption {
     margin-top: 10px;
     font-size: 0.7em;
     text-decoration-style: italic;
+}
+table.blog-table.dataTable.table-striped tbody tr.odd,
+table.blog-table.dataTable.display tbody tr.odd {
+  background-color: rgba(122,82,122,0.10);
+}
+table.blog-news-summ-table td {
+  text-align: left;
+  padding: 0.6rem;
 }
 
 /* explainer tooltips */
