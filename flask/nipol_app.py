@@ -53,8 +53,8 @@ app.url_map.strict_slashes = False
 #- current_committee_memberships.csv
 #- newsriver_articles_ongoing2020.feather
 #- tweets_network_last3months_top5s.csv
-#- static/tweets_network_lastmonth_edges.csv
-#- static/tweets_network_lastmonth_nodes.json
+#- static/tweets_network_last3months_edges.csv
+#- static/tweets_network_last3months_nodes.json
 
 print('Starting...')
 if getpass.getuser() == 'david':
@@ -438,12 +438,21 @@ diary_df['EventHTMLColour'] = diary_df.EventName.apply(lambda e: diary_colour_di
 #diary_df = diary_df[diary_df['EventDate'] >= datetime.date.today().strftime('%Y-%m-%d')]
 #diary_df = diary_df[diary_df['EndTime'] >= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')]
 
+# Fix awkward names in apg and comm attendees which don't use PersonId so can fall out of sync when AIMS changes a name
+# This needs to list any new or old names used for an MLA and point to their current PersonId name
+mla_name_fix_dict = {
+    'Lord Elliott of Ballinamallard': mla_ids[mla_ids.PersonId=='128'].iloc[-1].normal_name,
+    'Lord Tom Elliott of Ballinamallard': mla_ids[mla_ids.PersonId=='128'].iloc[-1].normal_name,
+    'Tom Elliott': mla_ids[mla_ids.PersonId=='128'].iloc[-1].normal_name,
+}
+
 committee_roles = pd.read_csv(data_dir + 'current_committee_memberships.csv', dtype={'PersonId': object})
 committee_roles = committee_roles.merge(mla_ids[['PersonId','normal_name']], on='PersonId', how='inner')
 
 committee_meeting_attendance = pd.read_csv(data_dir + 'committee_meetings_attendances_feb2024topresent.csv')
 committee_meeting_attendance['member'] = committee_meeting_attendance.member.str.replace('Mr |Mrs |Ms |Miss |Dr |Sir | OBE| MBE| CBE| MC', '', regex=True)
 committee_meeting_attendance = (committee_meeting_attendance
+    .assign(member = lambda df: df.member.apply(lambda m: mla_name_fix_dict.get(m, m)))
     .rename(columns={'member': 'fullname'})
     .merge(mla_ids[['fullname', 'normal_name', 'MemberLastName']], on='fullname', how='inner')
     .drop(columns='fullname')
@@ -477,6 +486,7 @@ mla_interests = mla_interests.merge(mla_ids[['PersonId','normal_name']], on='Per
 
 allpartygroup_memberships = (
     pd.read_csv(data_dir + 'current_apg_group_memberships.csv')
+    .assign(member = lambda df: df.member.apply(lambda m: mla_name_fix_dict.get(m, m)))
     .rename(columns={'member': 'fullname'})
     .merge(mla_ids[['fullname', 'normal_name']], on='fullname', how='inner')
     .drop(columns='fullname')
