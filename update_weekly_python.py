@@ -13,44 +13,48 @@
 
 import feather
 import pandas as pd
-import getpass
-from pathlib import Path
-#import numpy as np
-#import json, re, pickle
+import os
+import json, re, pickle
+import boto3  # if data_dir is S3
 
 #Only needed if do_twitter
+#import numpy as np
 #from sklearn.decomposition import PCA
 #from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-import nltk
-if getpass.getuser() == 'david':
-    nltk.data.path.append('/media/shared_storage/data/nltk_data/')
-else:
-    nltk.data.path.append('/home/rstudio/nipol/data/nltk_data/')
+#nltk data for stopwords: simplified this by saving the data to S3
+#import nltk
+#import getpass
+#if getpass.getuser() == 'david':
+#    nltk.data.path.append('/media/shared_storage/data/nltk_data/')
+#else:
+#    nltk.data.path.append('/home/rstudio/nipol/data/nltk_data/')
 
 # import functions as a module to get the constants and its package imports
 import functions_for_update_weekly_python as weekly_update_fns
 
 do_twitter = False
 
-data_dir = './data/'
+data_dir = 's3://nipol-data/'
 
 # Tweets files
-hist_tweets_slim_filepath = Path(data_dir).joinpath('tweets_slim_apr2019min_to_3jun2021.feather')
-current_tweets_slim_filepath = Path(data_dir).joinpath('tweets_slim_4jun2021_to_present.feather')
-vader_scored_tweets_filepath = Path(data_dir).joinpath('vader_scored_tweets_apr2019min_to_present.csv')
+if do_twitter:
+    hist_tweets_slim_filepath = os.path.join(data_dir, 'tweets_slim_apr2019min_to_3jun2021.feather')
+    current_tweets_slim_filepath = os.path.join(data_dir, 'tweets_slim_4jun2021_to_present.feather')
+    vader_scored_tweets_filepath = os.path.join(data_dir, 'vader_scored_tweets_apr2019min_to_present.csv')
 
 # Plenary contribs files
-contribs_filepath = Path(data_dir).joinpath('plenary_hansard_contribs.feather')
-lda_scored_contribs_filepath = Path(data_dir).joinpath('lda_scored_plenary_contribs.csv')
-contribs_lda_model_filepath = Path(data_dir).joinpath('contribs_lda_model.pkl')
+contribs_filepath = os.path.join(data_dir, 'plenary_hansard_contribs.feather')
+lda_scored_contribs_filepath = os.path.join(data_dir, 'lda_scored_plenary_contribs.csv')
+contribs_lda_model_filepath = os.path.join(data_dir, 'contribs_lda_model.pkl')
+stopwords_filepath = os.path.join(data_dir, 'nltk_english_stopwords.txt')
 
 # Votes (v_comms) files
-votes_filepath = Path(data_dir).joinpath('division_votes.feather')
-vote_results_filepath = Path(data_dir).joinpath('division_vote_results.feather')
-mla_ids_filepath = Path(data_dir).joinpath('all_politicians_list.csv')
-party_names_translation_filepath = Path(data_dir).joinpath('party_names_translation_short.json')
-v_comms_out_filepath = Path(data_dir).joinpath('division_votes_v_comms.csv')
+votes_filepath = os.path.join(data_dir, 'division_votes.feather')
+vote_results_filepath = os.path.join(data_dir, 'division_vote_results.feather')
+mla_ids_filepath = os.path.join(data_dir, 'all_politicians_list.csv')
+party_names_translation_filepath = os.path.join(data_dir, 'party_names_translation_short.json')
+v_comms_out_filepath = os.path.join(data_dir, 'division_votes_v_comms.csv')
 
 
 #i) Score tweets sentiment: read slim tweets files, apply Vader, save as vader_scored file
@@ -116,9 +120,19 @@ if do_twitter:
     # tweets[['status_id','wv_PC1','wv_PC2']].to_csv(data_dir + 'wv_pca_scored_tweets_apr2019min_to_present.csv', index=False)
 
 #iii) Score contribs LDA
+if 's3' in contribs_lda_model_filepath:
+    s3 = boto3.client('s3')
+    bucket_name = contribs_lda_model_filepath.replace('s3://', '').split('/')[0]
+    response = s3.get_object(Bucket=bucket_name, Key=contribs_lda_model_filepath.split('/')[-1])
+    lda_model = pickle.loads(response['Body'].read())
+else:
+    with open(contribs_lda_model_filepath, 'rb') as f:
+        lda_model = pickle.load(f)
+
 weekly_update_fns.score_contribs_with_lda(contribs_filepath,
                                           lda_scored_contribs_filepath,
-                                          contribs_lda_model_filepath)
+                                          lda_model,
+                                          stopwords_filepath)
 
 #iv) pre-compute v_comms (and hist_v_comms for now)
 

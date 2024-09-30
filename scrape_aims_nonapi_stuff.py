@@ -1,14 +1,15 @@
 import re, requests
 from bs4 import BeautifulSoup
 import pandas as pd
-from pathlib import Path
+import os
 
 # i) Committee meeting agendas and attendances
 
-data_dir = './data/'
+#data_dir = './data/'
+data_dir = 's3://nipol-data/'
 
-committee_agenda_filepath = Path(data_dir).joinpath('committee_meetings_agendas_feb2024topresent.csv')
-committee_attendance_filepath = Path(data_dir).joinpath('committee_meetings_attendances_feb2024topresent.csv')
+committee_agenda_filepath = os.path.join(data_dir, 'committee_meetings_agendas_feb2024topresent.csv')
+committee_attendance_filepath = os.path.join(data_dir, 'committee_meetings_attendances_feb2024topresent.csv')
 
 existing_agenda = pd.read_csv(committee_agenda_filepath)
 existing_attendance = pd.read_csv(committee_attendance_filepath)
@@ -70,7 +71,7 @@ existing_attendance.to_csv(committee_attendance_filepath, index=False)
 
 # ii) All-Party Group memberships
 
-apg_membership_filepath = Path(data_dir).joinpath('current_apg_group_memberships.csv')
+apg_membership_filepath = os.path.join(data_dir, 'current_apg_group_memberships.csv')
 
 page = requests.get(f'https://aims.niassembly.gov.uk/mlas/allpartygroups.aspx')
 soup = BeautifulSoup(page.text, features='lxml')

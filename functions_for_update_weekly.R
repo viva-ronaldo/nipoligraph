@@ -322,7 +322,8 @@ get_tidy_hansardcomponents_object <- function(plenary_doc_id,
     } else {
         niassembly_mla_list <- read.csv(politicians_list_filepath)
     }
-    niassembly_mla_list <- niassembly_mla_list[!duplicated(niassembly_mla_list), c('MemberLastName', 'normal_name')]
+    niassembly_mla_list <- subset(niassembly_mla_list, role=='MLA')
+    niassembly_mla_list <- niassembly_mla_list[!duplicated(niassembly_mla_list), c('MemberLastName', 'normal_name', 'active')]
     #Unfortunately this is not filtering to the time each member was active
     #Manually filter out some problem surnames that are inactive as of 2012
     #If there are two active with the same surname and gender, they will use an initial in Hansard,
@@ -340,6 +341,8 @@ get_tidy_hansardcomponents_object <- function(plenary_doc_id,
     if (session_choice > '2016-2017') niassembly_mla_list <- subset(niassembly_mla_list, 
         !(normal_name %in% c('Eamonn McCann','Maeve McLaughlin','Mitchel McLaughlin')))
     if (session_choice < '2016-2017') niassembly_mla_list <- subset(niassembly_mla_list, normal_name != 'Keith Buchanan')
+    # For current session, we can use the active filter
+    if (session_choice >= '2022') niassembly_mla_list <- subset(niassembly_mla_list, active==1)
     
     tmp <- GET(sprintf('http://data.niassembly.gov.uk/hansard.asmx/GetHansardComponentsByReportId_JSON?reportId=%s',
                        plenary_doc_id))

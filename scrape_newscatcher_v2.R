@@ -8,7 +8,8 @@ library(stringr)
 
 if (Sys.info()['user']=='rstudio') setwd('/home/rstudio/nipol')
 
-data_dir = './data'
+#data_dir = './data'
+data_dir = './tmp_data'
 
 prepare_search_mla_name <- function(mla_name) {
     search_mla_name <- mla_name

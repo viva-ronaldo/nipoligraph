@@ -28,7 +28,8 @@ if (Sys.info()['user']=='rstudio') setwd('/home/rstudio/nipol')
 
 source('./functions_for_update_weekly.R')
 
-data_dir <- './data/'
+#data_dir <- './data/'
+data_dir <- './tmp_data/'
 
 current_session_name <- '2022-2027'  # e.g. '2022-2027' (made up by me)
 current_min_session_name_for_plenary <- '2022-2023'  # e.g. 2022-2023 for the larger 2022-2027 session
@@ -92,9 +93,9 @@ update_average_contrib_emotions(contribs_filepath, contribs_emotions_filepath)
 
 news_articles_filepath <- file.path(data_dir, 'newscatcher_articles_sep2020topresent.feather')
 
-if (do_twitter) {
-    update_news_from_twitter(politicians, news_articles_filepath)
-}
+# if (do_twitter) {
+#     update_news_from_twitter(politicians, news_articles_filepath)
+# }
 
 #Add sentiment on the summaries (newscatcher_articles file) which is updated elsewhere before this script runs
 message('\nDoing news article sentiment')

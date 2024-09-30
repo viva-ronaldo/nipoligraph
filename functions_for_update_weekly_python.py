@@ -1,8 +1,9 @@
-import feather, json, pickle, re
+import json, re
 import numpy as np
 import pandas as pd
+import boto3
 from nltk.tokenize import WordPunctTokenizer
-from nltk.corpus import stopwords
+#from nltk.corpus import stopwords
 from gensim.corpora import Dictionary
 from gensim.models import LdaModel
 
@@ -50,14 +51,10 @@ def append_sentiment_scored_tweets(tweets, sentiment_scored_tweets_file):
     comb_scored_tweets.to_csv(sentiment_scored_tweets_file, index=False)
 
 
-def score_contribs_with_lda(contribs_in_file, scored_contribs_out_file, lda_model):
+def score_contribs_with_lda(contribs_in_file, scored_contribs_out_file, lda_model, stopwords_filepath):
     print('\nScoring plenary contribs with LDA topic model')
 
-    #Load model
-    with open(lda_model, 'rb') as f:
-        lda_stuff = pickle.load(f)
-    
-    contribs = feather.read_dataframe(contribs_in_file)
+    contribs = pd.read_feather(contribs_in_file)
     
     #First catch special uses of House and Chamber before casing
     contribs['text_proc'] = contribs.contrib
@@ -85,7 +82,16 @@ def score_contribs_with_lda(contribs_in_file, scored_contribs_out_file, lda_mode
     contribs['text_proc'] = contribs.text_proc.apply(lambda t: re.sub('leave out all after .* and insert:?\n\n\"', ' ', t))
     
     #Tokenize documents
-    stopWords = set(stopwords.words('english'))
+    #stopWords = set(stopwords.words('english'))
+    if 's3' in stopwords_filepath:
+        s3 = boto3.client('s3')
+        bucket_name = stopwords_filepath.replace('s3://', '').split('/')[0]
+        response = s3.get_object(Bucket=bucket_name, Key=stopwords_filepath.split('/')[-1])
+        stopWords = set(response['Body'].read().decode('utf-8'))
+    else:
+        with open(stopwords_filepath, 'r') as f:
+            stopWords = set([w.strip() for w in f.readlines()])
+    
     #also remove common procedural words
     stopWords.update(['thank','mr','mrs','speaker','assembly','welcome','today','motion','give','way','giving',
                       'member','members','bill','amendment','debate','order','raised','committee',
@@ -100,12 +106,12 @@ def score_contribs_with_lda(contribs_in_file, scored_contribs_out_file, lda_mode
     contribs['tokenized_text'] = contribs.text_proc.apply(lambda t: [w for w in tokenizer.tokenize(t) if w.isalpha() and w not in stopWords])
     
     #encode using dictionary
-    corpus = [lda_stuff['dictionary'].doc2bow(doc) for doc in contribs.tokenized_text.tolist()]
+    corpus = [lda_model['dictionary'].doc2bow(doc) for doc in contribs.tokenized_text.tolist()]
     
     #assign topics
-    contribs['topic_num'] = [assign_most_likely_topic(l, topic_nums_to_drop=lda_stuff['topic_nums_to_drop']) \
-                             for l in lda_stuff['topic_model'].get_document_topics(corpus, minimum_probability=0.1)]
-    contribs['topic_name'] = contribs.topic_num.apply(lambda n: lda_stuff['topic_name_dict'][n])
+    contribs['topic_num'] = [assign_most_likely_topic(l, topic_nums_to_drop=lda_model['topic_nums_to_drop']) \
+                             for l in lda_model['topic_model'].get_document_topics(corpus, minimum_probability=0.1)]
+    contribs['topic_name'] = contribs.topic_num.apply(lambda n: lda_model['topic_name_dict'][n])
     
     #save
     contribs[['speaker', 'session_id', 'topic_name']].to_csv(scored_contribs_out_file, index=False)
@@ -140,17 +146,23 @@ def analyse_votes_by_bloc(votes_filepath,
     #Subset to MLAs for now
     mla_ids = mla_ids[mla_ids.role == 'MLA']
     
-    with open(party_names_translation_filepath, 'r') as f:
-        party_names_translation = json.load(f)
+    if 's3' in party_names_translation_filepath:
+        s3 = boto3.client('s3')
+        bucket_name = party_names_translation_filepath.replace('s3://', '').split('/')[0]
+        response = s3.get_object(Bucket=bucket_name, Key=party_names_translation_filepath.split('/')[-1])
+        party_names_translation = json.loads(response['Body'].read().decode('utf-8'))
+    else:
+        with open(party_names_translation_filepath, 'r') as f:
+            party_names_translation = json.load(f)
 
     # Combine vote results and vote detail tables, in full
-    vote_results_df = feather.read_dataframe(vote_results_filepath)
+    vote_results_df = pd.read_feather(vote_results_filepath)
     vote_results_df = vote_results_df.merge(mla_ids[['PersonId', 'PartyName']], 
         on='PersonId', how='left')
     vote_results_df = vote_results_df[vote_results_df.PartyName.notnull()]  #drop a few with missing member and party names
     vote_results_df['PartyName'] = vote_results_df.PartyName.apply(lambda p: party_names_translation[p])
     
-    votes_df = feather.read_dataframe(votes_filepath)
+    votes_df = pd.read_feather(votes_filepath)
     votes_df = votes_df.merge(vote_results_df, on='EventId', how='inner')
     # Check no voters unknown to mla_ids have appeared
     assert set(votes_df.PersonId.unique()).issubset(mla_ids.PersonId), 'Unknown voter ID in votes_df'
@@ -210,6 +222,5 @@ def analyse_votes_by_bloc(votes_filepath,
     v_comms = v_comms.sort_values('vote_date', ascending=False).reset_index(drop=True)
 
     # Make the whole file (it's not many rows) new each time.
-    #feather.write_dataframe(v_comms, v_comms_out_filepath)
     v_comms.to_csv(v_comms_out_filepath, index=False)
 
