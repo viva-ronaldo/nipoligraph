@@ -5,6 +5,7 @@ library(jsonlite)
 #library(feather)
 library(arrow)  # for read_feather to work on file written from python
 library(xml2)
+library(lubridate)
 
 # Check for new MLAs on AIMs
 update_and_get_politicians_list <- function(politicians_list_filepath) {
@@ -148,9 +149,30 @@ update_answers_file <- function(questions_filepath, answers_filepath) {
     existing_answers <- read_feather(answers_filepath)
     pending_questions <- existing_questions %>%
         filter(!DocumentId %in% existing_answers$DocumentId) %>% pull(DocumentId)
-    if (length(pending_questions) > 0) {
-        new_answers <- get_answers_to_questions(pending_questions)
-    }
+    # Some questions were answered after a gap of almost 2 years so can't really
+    #   skip the 2022 ones, have to check them every time. Now not a problem as using fast method.
+    
+    # Get all questions answered in the last 3 months and filter to those pending here;
+    #   these APIs contain all the fields needed for the answers table.
+    tmp <- GET(sprintf('http://data.niassembly.gov.uk/questions.asmx/GetQuestionsForWrittenAnswer_AnsweredInRange_JSON?startDate=%s&endDate=%s',
+                       today()-90, today()+1))
+    tmp <- fromJSON(content(tmp, as='text'))$QuestionsList$Question
+    new_written_answers <- tmp %>%
+        filter(DocumentId %in% pending_questions) %>% 
+        select(DocumentId, DocumentType, TablerName, TablerPersonId,
+               TabledDate, AnsweredOnDate, PriorityRequest,
+               MinisterPersonId, MinisterTitle)
+    tmp <- GET(sprintf('http://data.niassembly.gov.uk/questions.asmx/GetQuestionsForOralAnswer_AnsweredInRange_JSON?startDate=%s&endDate=%s',
+                       today()-90, today()+1))
+    tmp <- fromJSON(content(tmp, as='text'))$QuestionsList$Question
+    new_oral_answers <- tmp %>%
+        filter(DocumentId %in% pending_questions) %>% 
+        mutate(PriorityRequest='false') %>% 
+        select(DocumentId, DocumentType, TablerName, TablerPersonId,
+               TabledDate, AnsweredOnDate, PriorityRequest,
+               MinisterPersonId, MinisterTitle)
+    new_answers <- rbind(new_written_answers, new_oral_answers)
+    
     if (nrow(new_answers) > 0) {
         existing_answers <- rbind(existing_answers, new_answers)
         message('- Writing Assembly answers')
@@ -161,43 +183,44 @@ update_answers_file <- function(questions_filepath, answers_filepath) {
 }
 
 # Called by update_answers_file; search AIMS for answers to a list of pending questions
-get_answers_to_questions <- function(documentId_list) {
-    answers_to_questions <- data.frame()
-    for (q_id in unique(documentId_list)) {
-        tmp <- GET(sprintf('http://data.niassembly.gov.uk/questions.asmx/GetQuestionDetails_JSON?documentId=%s', q_id))
-        tmp <- fromJSON(content(tmp, as='text'))$QuestionsList$Question
-        
-        if (!is.data.frame(tmp)) {
-            #occasionally need to handle a NULL here
-            tmp <- lapply(tmp, function(x) ifelse(is.null(x), NA, x))
-            tmp <- data.frame(tmp)
-        }
-        if (nrow(tmp) == 0) next
-        
-        #Can get duplicates- looks like where one answer should be appended to another
-        #OR can be minister and deputy first minister getting a row each as MinisterPersonId - don't concat these
-        if (nrow(tmp) > 1 && 
-            (('MinisterPersonId' %in% names(tmp) && n_distinct(tmp$MinisterPersonId) == 1) ||
-             (tmp$MinisterTitle == 'Assembly Commission'))) {
-            full_answer <- paste(tmp$AnswerPlainText, sep=' _PLUS_ ')
-            tmp <- tmp[order(tmp$AnsweredOnDate), ]
-            tmp <- tmp[1, ]
-            cat(sprintf('concatenated answers for document id %s\n', tmp$DocumentId[1]))
-        }
-        
-        #Not all have a MinisterPersonId - they are Ministertitle == Assembly Commission
-        if (!('MinisterPersonId' %in% names(tmp))) tmp$MinisterPersonId <- NA
-        
-        #If AnswerByDate is present instead of AnsweredOnDate, it hasn't been answered yet
-        if ('AnsweredOnDate' %in% names(tmp)) {
-            answers_to_questions <- rbind(answers_to_questions, 
-                                          tmp %>% select(DocumentId, DocumentType, TablerName, TablerPersonId,
-                                                         TabledDate, AnsweredOnDate, PriorityRequest,
-                                                         MinisterPersonId, MinisterTitle))
-        }
-    }
-    return(answers_to_questions)
-}
+# get_answers_to_questions <- function(documentId_list) {
+#     answers_to_questions <- data.frame()
+#     for (q_id in unique(documentId_list)) {
+#         tmp <- GET(sprintf('http://data.niassembly.gov.uk/questions.asmx/GetQuestionDetails_JSON?documentId=%s', q_id))
+#         tmp <- fromJSON(content(tmp, as='text'))$QuestionsList$Question
+#         
+#         if (is.null(tmp)) next
+# 
+#         if (!is.data.frame(tmp)) {
+#             #occasionally need to handle a NULL here
+#             #tmp <- lapply(tmp, function(x) ifelse(is.null(x), NA, x))
+#             tmp <- data.frame(tmp)
+#         }
+#         
+#         #Can get duplicates- looks like where one answer should be appended to another
+#         #OR can be minister and deputy first minister getting a row each as MinisterPersonId - don't concat these
+#         if (nrow(tmp) > 1 && 
+#             (('MinisterPersonId' %in% names(tmp) && n_distinct(tmp$MinisterPersonId) == 1) ||
+#              (tmp$MinisterTitle == 'Assembly Commission'))) {
+#             full_answer <- paste(tmp$AnswerPlainText, sep=' _PLUS_ ')
+#             tmp <- tmp[order(tmp$AnsweredOnDate), ]
+#             tmp <- tmp[1, ]
+#             cat(sprintf('concatenated answers for document id %s\n', tmp$DocumentId[1]))
+#         }
+#         
+#         #Not all have a MinisterPersonId - they are Ministertitle == Assembly Commission
+#         if (!('MinisterPersonId' %in% names(tmp))) tmp$MinisterPersonId <- NA
+#         
+#         #If AnswerByDate is present instead of AnsweredOnDate, it hasn't been answered yet
+#         if ('AnsweredOnDate' %in% names(tmp)) {
+#             answers_to_questions <- rbind(answers_to_questions, 
+#                                           tmp %>% select(DocumentId, DocumentType, TablerName, TablerPersonId,
+#                                                          TabledDate, AnsweredOnDate, PriorityRequest,
+#                                                          MinisterPersonId, MinisterTitle))
+#         }
+#     }
+#     return(answers_to_questions)
+# }
 
 # Division votes - just check what the most recent date was and go from there
 update_vote_list <- function(vote_details_filepath, vote_results_filepath) {
