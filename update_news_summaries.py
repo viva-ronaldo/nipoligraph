@@ -25,9 +25,9 @@ data_dir = f"s3://{config['NIPOL_DATA_BUCKET']}/"
 news_path = os.path.join(data_dir, 'newscatcher_articles_sep2020topresent.feather')
 news_summaries_path = os.path.join(data_dir, 'news_summaries.feather')
 
-refresh_frequency_days = 6
+refresh_frequency_days = config['NEWS_SUMMARIES_REFRESH_FREQUENCY_DAYS']
 
-model = 'gpt-4o-mini'
+model = config['NEWS_SUMMARIES_OAI_MODEL']
 input_token_cost_usd, output_token_cost_usd = 0.15/1e6, 0.60/1e6
 
 news = pd.read_feather(news_path)

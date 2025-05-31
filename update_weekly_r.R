@@ -11,17 +11,20 @@
 
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(arrow))  # for read_feather
+library(yaml)
 
 if (Sys.info()['user']=='rstudio') setwd('/home/rstudio/nipol')
 
 source('./functions_for_update_weekly.R')
 
-#data_dir <- './data/'
-data_dir <- './tmp_data/'
+config <- yaml.load_file('config.yaml')
 
-current_session_name <- '2022-2027'  # e.g. '2022-2027' (made up by me)
-current_min_session_name_for_plenary <- '2022-2023'  # e.g. 2022-2023 for the larger 2022-2027 session
-do_twitter <- FALSE   # as of mid-2023, there is no affordable way of scraping latest tweets
+#data_dir <- './data/'
+data_dir <- './tmp_data/'  # not the S3 one
+
+current_session_name <- config$CURRENT_ASSEMBLY_SESSION  # e.g. '2022-2027' (made up by me)
+current_min_session_name_for_plenary <- config$CURRENT_ASSEMBLY_SESSION_AIMS_NAME  # this should update in line with AIMS, used for filtering to recent, e.g. 2024-2025 for part of the larger 2022-2027 session
+do_twitter <- config$INCLUDE_TWITTER   # as of mid-2023, there is no affordable way of scraping latest tweets
 
 # People ----
 #i) First check for any new MLAs and add to the politicians file, then return the list
@@ -67,6 +70,7 @@ contribs_emotions_filepath <- file.path(data_dir, 'plenary_hansard_contribs_emot
 
 update_plenary_contribs(contribs_filepath,
                         current_session_name,
+                        current_min_session_name_for_plenary,
                         politicians_list_filepath,
                         file.path(data_dir, 'hist_mla_ids_by_session.feather'))
 

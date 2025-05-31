@@ -35,7 +35,8 @@ import functions_for_update_weekly_python as weekly_update_fns
 with open('config.yaml', 'r') as f:
     config = yaml.safe_load(f)
 
-do_twitter = False
+do_twitter = config['INCLUDE_TWITTER']
+do_bluesky = config['INCLUDE_BLUESKY']
 
 data_dir = f"s3://{config['NIPOL_DATA_BUCKET']}/"
 
@@ -44,6 +45,9 @@ if do_twitter:
     hist_tweets_slim_filepath = os.path.join(data_dir, 'tweets_slim_apr2019min_to_3jun2021.feather')
     current_tweets_slim_filepath = os.path.join(data_dir, 'tweets_slim_4jun2021_to_present.feather')
     vader_scored_tweets_filepath = os.path.join(data_dir, 'vader_scored_tweets_apr2019min_to_present.csv')
+
+if do_bluesky:
+    pass
 
 # Plenary contribs files
 contribs_filepath = os.path.join(data_dir, 'plenary_hansard_contribs.feather')

@@ -307,6 +307,7 @@ update_vote_list <- function(vote_details_filepath, vote_results_filepath) {
 # Plenary contributions
 update_plenary_contribs <- function(contribs_filepath,
                                     current_session_name,
+                                    current_min_session_name_for_plenary,
                                     politicians_list_filepath,
                                     hist_mlas_by_session_filepath) {
     existing_contribs <- read_feather(contribs_filepath)

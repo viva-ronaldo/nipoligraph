@@ -6,13 +6,16 @@ from flask import Flask, render_template, url_for, \
     request, flash, jsonify, redirect, send_from_directory
 import requests
 import datetime, re, getpass, os, time
-import pickle, json, feather
+import feather, json, pickle, yaml
 import pandas as pd
 import altair as alt
 import numpy as np
 from itertools import product
 from collections import defaultdict
 from sklearn.decomposition import PCA
+
+with open('config.yaml', 'r') as f:
+    config = yaml.safe_load(f)
 
 app = Flask(__name__)
 app.debug = False
@@ -68,16 +71,14 @@ pca_votes_threshold_fraction = 0.70
 news_volume_average_window_weeks = 7
 poll_track_timestep = 100 if test_mode else 10
 #Assembly page sessions
-valid_session_names = ['2022-2027','2020-2022','2016-2017','2011-2016','2007-2011'] #order for dropdown menu
-CURRENT_ASSEMBLY_SESSION = valid_session_names[0]
-#Some plot settings 
-hover_exclude_opacity_value = 0.4  #when hovered case goes to 1.0, what do rest go to
-larger_tick_label_size = 14  #for web mode, on some/all plots
+valid_session_names = config['ALL_ASSEMBLY_SESSIONS'] #order for dropdown menu
+CURRENT_ASSEMBLY_SESSION = config['CURRENT_ASSEMBLY_SESSION']
 
 #Election forecast is usually off
-show_election_forecast = False
+show_election_forecast = config['INCLUDE_ELECTION_FORECAST']
 # From mid-2023, can't scrape tweets, so exclude from indiv page and note on twitter page
-include_twitter = False
+include_twitter = config['INCLUDE_TWITTER']
+# TODO do more with this
 
 #use the colours we get from 'tableau20' but make repeatable and for reuse on indiv page
 plenary_contribs_colour_dict = {
@@ -827,6 +828,7 @@ if len(polls_df) > 0:
     )
 else:
     polls_df['tooltip_text'] = []
+
 #Calculate poll averages - now uses both polls and elections
 def get_current_avg_poll_pct(polls_df, elections_df, party, current_dt, 
     time_power = 4, 
@@ -1569,7 +1571,7 @@ def postcode():
     if 'postcode_choice' in args:
         postcode_choice = args.get('postcode_choice')
     else:
-        postcode_choice = 'BT1 3EW'
+        postcode_choice = 'BT1 1AA'
 
     postcode_choice = postcode_choice.upper()
     if postcode_choice in mla_ids.ConstituencyName.str.upper().tolist():
@@ -1877,7 +1879,7 @@ def plot_questions_asked_fn(session_to_plot, mobile_mode = False):
     #Opacity change on selection doesn't add anything
     #selection = alt.selection_single(on='mouseover', empty='all')
     #.add_selection(selection)\
-    #opacity = alt.condition(selection, alt.value(1), alt.value(hover_exclude_opacity_value)),
+    #opacity = alt.condition(selection, alt.value(1), alt.value(0.4)),
 
     plot = alt.Chart(plot_df).mark_bar(opacity=1)\
         .encode(
@@ -2149,7 +2151,7 @@ def plot_news_sources_fn(mobile_mode = False):
                     domain=['Unionist','Other','Nationalist'],
                     range=['RoyalBlue','Moccasin','LimeGreen']
                 ), legend = alt.Legend(title = 'Mentioning')),
-            opacity = alt.condition(selection, alt.value(1), alt.value(hover_exclude_opacity_value)),
+            opacity = alt.condition(selection, alt.value(1), alt.value(0.4)),
             tooltip='tooltip_text:N')\
         .configure_axis(labelAngle=-45)\
         .properties(title = '', 
@@ -2193,7 +2195,7 @@ def shared_plot_news_fn(news_sentiment_by_party_week, y_variable, y_title, title
             background = 'none')
 
     if not mobile_mode:
-        plot = plot.configure_axis(labelFontSize = larger_tick_label_size)
+        plot = plot.configure_axis(labelFontSize = 14)
 
     plot = plot.configure_legend(
         direction='horizontal', 
