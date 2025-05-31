@@ -10,19 +10,7 @@
 # SKIPPED NOW: Get tweets, calculate tweet network
 
 suppressPackageStartupMessages(library(dplyr))
-library(httr)
-library(jsonlite)
-#library(feather)
 suppressPackageStartupMessages(library(arrow))  # for read_feather
-suppressPackageStartupMessages(library(rtweet))
-library(stringr)
-library(tidytext)
-library(magrittr)
-library(sentimentr)
-suppressPackageStartupMessages(library(network))
-suppressPackageStartupMessages(library(GGally))
-suppressPackageStartupMessages(library(igraph))
-library(intergraph)
 
 if (Sys.info()['user']=='rstudio') setwd('/home/rstudio/nipol')
 
@@ -38,7 +26,8 @@ do_twitter <- FALSE   # as of mid-2023, there is no affordable way of scraping l
 # People ----
 #i) First check for any new MLAs and add to the politicians file, then return the list
 politicians_list_filepath <- file.path(data_dir, 'all_politicians_list.csv')
-politicians <- update_and_get_politicians_list(politicians_list_filepath)
+politicians_list_changes_log_filepath <- file.path(data_dir, 'politician_list_changes.log')
+politicians <- update_and_get_politicians_list(politicians_list_filepath, politicians_list_changes_log_filepath)
 
 #ii) Latest diary events - take anything from current date to a year ahead
 message('\nDoing Assembly diary, committees, minister lists, register of interests')
@@ -220,3 +209,5 @@ if (do_twitter) {
     #make_twitter_network_files(twitter_ids, network_nodes_filepath, network_edges_filepath, network_top5s_filepath)
     
 }
+
+message('\nDone update_weekly_r')

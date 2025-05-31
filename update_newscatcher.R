@@ -1,4 +1,5 @@
-# Update news source using NewsCatcher API V2 (valid for at least Nov 23-Jan 24)
+# Update news source using NewsCatcher API V2 (valid for Nov 23 to Apr 25)
+# See credits and get API key at https://app.newscatcherapi.com/auth/login
 
 suppressPackageStartupMessages(library(dplyr))
 library(httr)
@@ -10,6 +11,11 @@ if (Sys.info()['user']=='rstudio') setwd('/home/rstudio/nipol')
 
 #data_dir = './data'
 data_dir = './tmp_data'
+
+existing_news_articles_filepath <- file.path(data_dir, 'newscatcher_articles_sep2020topresent.feather')
+
+newscatcher_api_key <- readLines('newscatcher_api_token', n=1)
+
 
 prepare_search_mla_name <- function(mla_name) {
     search_mla_name <- mla_name
@@ -161,14 +167,11 @@ article_content_to_remove <- c("Read more: ?",
 
 # Bi-weekly run
 message('\nDoing NewsCatcher update')
-existing_news_articles_filepath <- file.path(data_dir, 'newscatcher_articles_sep2020topresent.feather')
 existing_news_articles <- read_feather(existing_news_articles_filepath)
 
 politicians <- read.csv(file.path(data_dir, 'all_politicians_list.csv'), stringsAsFactors=FALSE)
 search_politician_names <- as.character(sapply(politicians$normal_name, prepare_search_mla_name))
 search_politician_names <- search_politician_names[!duplicated(search_politician_names)]
-
-newscatcher_api_key <- readLines('newscatcher_api_token', n=1)
 
 page_num <- 1
 total_pages <- 999
@@ -179,7 +182,9 @@ while (page_num <= total_pages & page_num <= 20) {
                        gsub(' ', '%20', '4 days ago'),
                        gsub(' ', '%20', paste(search_politician_names, collapse='"OR"')),
                        paste(sources_to_check, collapse=',')),
-               add_headers('x-api-key' = newscatcher_api_key))
+               add_headers('x-api-key' = newscatcher_api_key),
+               httr::config(http_version=1))
+    # Newer versions of curl default to HTTP2 which gives error on newscatcher v2
     
     if (tmp$status_code != '200') {
         message('Error with NewsCatcher request; stopping')

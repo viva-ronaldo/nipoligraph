@@ -1,12 +1,15 @@
-import re, requests
+import os, re, requests, time, yaml
 from bs4 import BeautifulSoup
 import pandas as pd
-import os
+
+with open('config.yaml', 'r') as f:
+    config = yaml.safe_load(f)
+
+data_dir = f"s3://{config['NIPOL_DATA_BUCKET']}/"
 
 # i) Committee meeting agendas and attendances
 
-#data_dir = './data/'
-data_dir = 's3://nipol-data/'
+print('- Getting committee agendas and attendance')
 
 committee_agenda_filepath = os.path.join(data_dir, 'committee_meetings_agendas_feb2024topresent.csv')
 committee_attendance_filepath = os.path.join(data_dir, 'committee_meetings_attendances_feb2024topresent.csv')
@@ -17,12 +20,16 @@ existing_attendance = pd.read_csv(committee_attendance_filepath)
 n_existing_meeting_ids = existing_agenda.meeting_id.nunique()
 
 #start_mid, end_mid = 16100, 17100  # one time, get all from Feb 2024 to present (Jun 2024)
-start_mid, end_mid = existing_agenda.meeting_id.max()-100, existing_agenda.meeting_id.max()+100
-# use latest that we have
+start_mid, end_mid = existing_agenda.meeting_id.max()-50, existing_agenda.meeting_id.max()+25
+# use latest that we have; the ids are not quite ordered by date, but close
 
 agenda_res, attendance_res = [], []
 for mid in range(start_mid, end_mid+1):
-    page = requests.get(f'https://aims.niassembly.gov.uk/committees/meetings.aspx?&cid=118&md=19/06/2024%2000:00:00&mid={mid}')
+    try:
+        page = requests.get(f'https://aims.niassembly.gov.uk/committees/meetings.aspx?&cid=118&md=19/06/2024%2000:00:00&mid={mid}')
+    except requests.exceptions.SSLError:
+        print(f'SSLError for mid={mid}; skipping')
+        continue
     soup = BeautifulSoup(page.text, features='lxml')
     if soup.find(name='h1').text != '':
         committee_name = soup.find(name='h1').text.strip()
@@ -48,6 +55,7 @@ for mid in range(start_mid, end_mid+1):
             'member': [el[0] for el in attendance_list],
             'attended': [el[1] for el in attendance_list]
             }))
+
 agenda_res = pd.concat(agenda_res)
 attendance_res = pd.concat(attendance_res)
 
@@ -71,6 +79,8 @@ existing_attendance.to_csv(committee_attendance_filepath, index=False)
 
 # ii) All-Party Group memberships
 
+print('- Getting All-Party Group memberships')
+
 apg_membership_filepath = os.path.join(data_dir, 'current_apg_group_memberships.csv')
 
 page = requests.get(f'https://aims.niassembly.gov.uk/mlas/allpartygroups.aspx')
@@ -82,8 +92,10 @@ current_apg_names = [el.text for el in soup.find(id='ctl00_MainContentPlaceHolde
 # Hard code the links to membership pages in July 2024
 apg_links_dict = {
     'All-Party Group on Access to Justice': 2185,
+    'All-Party Group on Active Travel': 898,
     'All-Party Group on Addiction and Dual Diagnosis': 1721,
     'All-Party Group on ADHD': 1538,
+    'All-Party Group on Aerospace, Defence, Security & Space': 2247,
     'All-Party Group on Ageing and Older People': 1360,
     'All-Party Group on Animal Welfare': 1782,
     'All-Party Group on Arts': 1894,
@@ -101,6 +113,7 @@ apg_links_dict = {
     'All-Party Group on Early Education and Childcare': 1705,
     'All-Party Group on Ethnic Minority Community': 1667,
     'All-Party Group on Fairtrade': 1089,
+    'All-Party Group on Football': 2220,
     'All-Party Group on Fuel Poverty': 2157,
     'All-Party Group on Further and Higher Education': 1742,
     'All-Party Group on Homelessness': 1895,
@@ -113,10 +126,12 @@ apg_links_dict = {
     'All-Party Group on Micro and Small Business': 1781,
     'All-Party Group on MS and Neurology': 1968,
     'All-Party Group on Parental Participation in Education': 1670,
+    'All-Party Group on Policy and Public Data': 2274,
     'All-Party Group on Press Freedom and Media Sustainability': 1801,
     'All-Party Group on Preventing Loneliness': 1629,
     'All-Party Group on Rare Disease': 2073,
     'All-Party Group on Reducing Harm Related to Gambling': 1666,
+    'All-Party Group on Road Safety': 2248,
     'All-Party Group on Science, Technology, Engineering and Mathematics': 546,
     'All-Party Group on Skills': 2140,
     'All-Party Group on Social Enterprise': 1218,
@@ -135,7 +150,17 @@ apg_links_dict = {
 apg_membership = []
 for n in [n for n in current_apg_names if n in apg_links_dict.keys()]:
     cid = apg_links_dict[n]
-    page = requests.get(f'https://aims.niassembly.gov.uk/mlas/apgdetails.aspx?&cid={cid}')
+    try:
+        page = requests.get(f'https://aims.niassembly.gov.uk/mlas/apgdetails.aspx?&cid={cid}')
+    except requests.exceptions.SSLError:
+        print('SSLError for n={n}; wait and try again')
+        time.sleep(5)
+        try:
+            page = requests.get(f'https://aims.niassembly.gov.uk/mlas/apgdetails.aspx?&cid={cid}')
+        except requests.exceptions.SSLError:
+            print('  another SSLError; skipping')
+            continue
+
     soup = BeautifulSoup(page.text, features='lxml')
     apg_name = soup.find(name='h1').text
 

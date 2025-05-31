@@ -1,14 +1,25 @@
 #Functions to update various parts of the data
 
+suppressPackageStartupMessages(library(dplyr))
 library(httr)
 library(jsonlite)
 #library(feather)
 library(arrow)  # for read_feather to work on file written from python
 library(xml2)
-library(lubridate)
+suppressPackageStartupMessages(library(lubridate))
+library(stringr)
+library(tidytext)
+suppressPackageStartupMessages(library(magrittr))
+library(sentimentr)
+#suppressPackageStartupMessages(library(rtweet))
+#suppressPackageStartupMessages(library(network))
+#suppressPackageStartupMessages(library(GGally))
+#suppressPackageStartupMessages(library(igraph))
+#library(intergraph)
+
 
 # Check for new MLAs on AIMs
-update_and_get_politicians_list <- function(politicians_list_filepath) {
+update_and_get_politicians_list <- function(politicians_list_filepath, changes_log_filepath) {
     politicians <- read.csv(politicians_list_filepath)
     # Sometimes get no response from address; we don't need to do the update, can fall back to using current politicians list
     tryCatch({
@@ -26,10 +37,9 @@ update_and_get_politicians_list <- function(politicians_list_filepath) {
                                  select(PersonId, normal_name, PartyName, role, added, active, 
                                         MemberName, MemberFirstName, MemberLastName, ConstituencyName, ConstituencyId))
         write.csv(politicians, politicians_list_filepath, row.names=FALSE)
-        
         #Make a note of this change
         write.table(data.frame(d=as.character(Sys.Date()), t=sprintf('Added new MLA(s) %s', paste(new_mlas$MemberLastName, collapse=','))), 
-                    'politician_list_changes.log', 
+                    changes_log_filepath,
                     append=TRUE, quote=FALSE, sep=' ', col.names=FALSE, row.names=FALSE)
         
     }
@@ -39,7 +49,7 @@ update_and_get_politicians_list <- function(politicians_list_filepath) {
         politicians %<>% mutate(active = ifelse(MemberName %in% newly_inactive_mlas$MemberName, 0, active))
         write.csv(politicians, politicians_list_filepath, row.names=FALSE)
         write.table(data.frame(d=as.character(Sys.Date()), t=sprintf('Removed inactive MLA(s) %s', paste(newly_inactive_mlas$MemberLastName, collapse=','))), 
-                    'politician_list_changes.log', 
+                    changes_log_filepath,
                     append=TRUE, quote=FALSE, sep=' ', col.names=FALSE, row.names=FALSE)
     }
     return(politicians)
@@ -470,13 +480,14 @@ update_average_contrib_emotions <- function(contribs_filepath, contrib_emotions_
     speakers <- unique(contribs$speaker)
     
     #Do in chunks to work with limited memory; output is 16 rows per speaker
-    mla_emotions <- contribs %>% filter(speaker %in% speakers[1:min(length(speakers), 10)]) %>% 
+    chunk_size <- 10
+    mla_emotions <- contribs %>% filter(speaker %in% speakers[1:min(length(speakers), chunk_size)]) %>% 
         mutate(split_text = get_sentences(contrib)) %$%
         emotion_by(split_text, by=speaker)  # uses sentimentr::emotion_by
-    if (length(speakers) > 10) {
-        for (i in seq(11, length(speakers), 10)) {
+    if (length(speakers) > chunk_size) {
+        for (i in seq(chunk_size+1, length(speakers), chunk_size)) {
             mla_emotions <- rbind(mla_emotions,
-                                  contribs %>% filter(speaker %in% speakers[i:min(length(speakers), i+10)]) %>% 
+                                  contribs %>% filter(speaker %in% speakers[i:min(length(speakers), i+chunk_size)]) %>% 
                                       mutate(split_text = get_sentences(contrib)) %$%
                                       emotion_by(split_text, by=speaker))
         }

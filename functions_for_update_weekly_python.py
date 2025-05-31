@@ -14,7 +14,9 @@ OTHER_PARTIES = ['Alliance Party', 'Green Party', 'People Before Profit Alliance
 
 MOTION_CARRIED_PHRASES = ['The Amendment Was Therefore Agreed',
                           'The Motion Was Carried',
-                          'The Motion Was Carried By Cross Community Consent']
+                          'The Motion Was Carried By Cross Community Consent',
+                          'The Motion, As Amended, Was Carried',
+                          'The Motion Was Carried By Simple Majority']
 MOTION_FAILED_PHRASES = ['The Motion Was Negatived',
                          'The Amendment Therefore Fell']
 #
@@ -76,8 +78,8 @@ def score_contribs_with_lda(contribs_in_file, scored_contribs_out_file, lda_mode
     #contribs['text_proc'] = contribs.text_proc.str.replace('power-sharing','power_sharing')
     contribs['text_proc'] = contribs.text_proc.str.replace('go raibh', 'go_raibh')
     contribs['text_proc'] = contribs.text_proc.str.replace('-', '_')
-    contribs['text_proc'] = contribs.text_proc.apply(lambda t: re.sub('£[\.\,\dm]*', '_price_token_', t))
-    contribs['text_proc'] = contribs.text_proc.apply(lambda t: re.sub('20[\d\-]{2,7}', '_year_token_', t))
+    contribs['text_proc'] = contribs.text_proc.apply(lambda t: re.sub('£[\\.\\,\\dm]*', '_price_token_', t))
+    contribs['text_proc'] = contribs.text_proc.apply(lambda t: re.sub('20[\\d\\-]{2,7}', '_year_token_', t))
     #Remove 'leave out all after XXX and insert'
     contribs['text_proc'] = contribs.text_proc.apply(lambda t: re.sub('leave out all after .* and insert:?\n\n\"', ' ', t))
     

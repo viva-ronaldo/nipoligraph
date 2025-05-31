@@ -13,8 +13,7 @@
 
 import feather
 import pandas as pd
-import os
-import json, re, pickle
+import json, os, pickle, re, yaml
 import boto3  # if data_dir is S3
 
 #Only needed if do_twitter
@@ -33,9 +32,12 @@ import boto3  # if data_dir is S3
 # import functions as a module to get the constants and its package imports
 import functions_for_update_weekly_python as weekly_update_fns
 
+with open('config.yaml', 'r') as f:
+    config = yaml.safe_load(f)
+
 do_twitter = False
 
-data_dir = 's3://nipol-data/'
+data_dir = f"s3://{config['NIPOL_DATA_BUCKET']}/"
 
 # Tweets files
 if do_twitter:

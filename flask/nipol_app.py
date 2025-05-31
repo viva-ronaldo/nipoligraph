@@ -111,6 +111,13 @@ diary_colour_dict.update(
 )
 
 mla_ids = pd.read_csv(data_dir + 'all_politicians_list.csv', dtype = {'PersonId': object})
+# Fix awkward names in apg and comm attendees which don't use PersonId so can fall out of sync when AIMS changes a name
+# This needs to list any new or old names used for an MLA and point to their current PersonId name; include inactive
+mla_name_fix_dict = {
+    'Lord Elliott of Ballinamallard': mla_ids[mla_ids.PersonId=='128'].iloc[-1].normal_name,
+    'Lord Tom Elliott of Ballinamallard': mla_ids[mla_ids.PersonId=='128'].iloc[-1].normal_name,
+    'Tom Elliott': mla_ids[mla_ids.PersonId=='128'].iloc[-1].normal_name,
+}
 #If have too many non-MLA/MPs, could become unreliable over time, so limit to active here
 mla_ids = mla_ids[mla_ids.active==1]
 mla_ids['fullname'] = mla_ids['MemberFirstName'] + ' ' + mla_ids['MemberLastName']  # slightly different from normal_name
@@ -437,14 +444,6 @@ diary_df['EventHTMLColour'] = diary_df.EventName.apply(lambda e: diary_colour_di
 #Exclude events that have now happened (will run filter again in assembly.html function)
 #diary_df = diary_df[diary_df['EventDate'] >= datetime.date.today().strftime('%Y-%m-%d')]
 #diary_df = diary_df[diary_df['EndTime'] >= datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')]
-
-# Fix awkward names in apg and comm attendees which don't use PersonId so can fall out of sync when AIMS changes a name
-# This needs to list any new or old names used for an MLA and point to their current PersonId name
-mla_name_fix_dict = {
-    'Lord Elliott of Ballinamallard': mla_ids[mla_ids.PersonId=='128'].iloc[-1].normal_name,
-    'Lord Tom Elliott of Ballinamallard': mla_ids[mla_ids.PersonId=='128'].iloc[-1].normal_name,
-    'Tom Elliott': mla_ids[mla_ids.PersonId=='128'].iloc[-1].normal_name,
-}
 
 committee_roles = pd.read_csv(data_dir + 'current_committee_memberships.csv', dtype={'PersonId': object})
 committee_roles = committee_roles.merge(mla_ids[['PersonId','normal_name']], on='PersonId', how='inner')
@@ -1283,7 +1282,7 @@ def indiv():
         if person_choice in mla_minister_roles.keys():
             person_name_string += f"</br>({mla_minister_roles[person_choice]})"
 
-        if person_is_mla and row['normal_name'] in committee_roles.normal_name.tolist():
+        if person_is_mla and row['normal_name'] in committee_roles.normal_name.tolist() and row['normal_name'] in committee_meeting_attendance.normal_name.tolist():
             person_committee_roles_raw = committee_roles[committee_roles.normal_name == row['normal_name']].Organisation.tolist()
             person_committee_roles = committee_roles[committee_roles.normal_name == row['normal_name']].apply(
                 lambda row: f"{row['Organisation']}{ ' ('+row['Role']+')' if 'Chair' in row['Role'] else ''}", axis=1
@@ -1319,7 +1318,7 @@ def indiv():
 
         if person_is_mla and row['normal_name'] in allpartygroup_memberships.normal_name.tolist():
             person_apgs = (allpartygroup_memberships[allpartygroup_memberships.normal_name==row['normal_name']]
-                .apg_name.tolist()
+                .apg_name.unique().tolist()
                 )
         else:
             person_apgs = []
@@ -2278,8 +2277,9 @@ def polls_plot_fn(mobile_mode = False):
 
     plot = alt.Chart(joint_plot_df).mark_point(filled=True, size=100 if mobile_mode else 150)\
         .encode(x=alt.X('date:T', 
-                    axis=alt.Axis(title='', tickCount = joint_plot_df.date.dt.year.nunique())),
-            y=alt.Y('pct', axis=alt.Axis(title='Vote share / %')),
+                    axis=alt.Axis(title='', tickCount = joint_plot_df.date.dt.year.nunique()),
+                    scale=alt.Scale(domain=((datetime.date.today() - datetime.timedelta(days=4*365)).strftime('%Y-%m-%d'), poll_avgs_track_plot_df['date'].max()))),
+            y=alt.Y('pct', axis=alt.Axis(title='Vote share / %'), scale=alt.Scale(domain=(0,50))),
             color = alt.Color('party', 
                 scale=alt.Scale(
                     domain=party_colours[party_colours.party_name.isin(polls_df.party)]['party_name'].tolist(), 
@@ -2290,6 +2290,7 @@ def polls_plot_fn(mobile_mode = False):
             size = alt.condition(alt.datum.pct_type == 'polls', alt.value(150), alt.value(300)),
             opacity = alt.condition(selection2, alt.value(0.5), alt.value(0.1)),
             tooltip = 'tooltip_text:N')\
+        .interactive(bind_x=True, bind_y=False)\
         .add_selection(selection2)
 
     #Draw lines with separate data to get control on size
@@ -2309,7 +2310,7 @@ def polls_plot_fn(mobile_mode = False):
     plot = plot.configure_axis(titleFontSize=14, labelFontSize=10)
     plot = plot.configure_legend(
         direction='horizontal', 
-        orient='top',
+        orient='top-right',
         strokeColor='gray',
         fillColor='#EEEEEE',
         padding=10,
