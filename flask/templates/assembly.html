@@ -48,6 +48,8 @@
                 <li><span style="color: {{ item.EventHTMLColour }}"><b>{{ item.EventName}}</b></span> on {{ item.EventPrettyDate }} at {{ item.StartTime[11:16] }}</li>
               {% endfor %}
               </ul>
+            {% else %}
+              <p class='text-center'>No upcoming Assembly business (see <a class='use-underline' href='http://aims.niassembly.gov.uk/assemblybusiness/businessdiary.aspx' target='_blank'>the official Assembly site</a> for full information)</p>
             {% endif %}
           </div>
         </div>

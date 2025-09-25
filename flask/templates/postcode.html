@@ -33,7 +33,7 @@
           <div class="row mb-2 mx-2 justify-content-center">
             
             <div class='col-md-4 col-sm-6'>
-              <p><small>Click the links on the cards to view full politician profiles, Twitter accounts, or AIMS profiles.</small></p>
+              <p><small>Click the links on the cards to view full politician profiles, Bluesky accounts, or AIMS profiles.</small></p>
             </div>
 
             <div class='col-md-2 col-sm-6'>
@@ -62,8 +62,8 @@
                         </a>
                         <h5>{{rep_parties_list[i]}}</h5>
 
-                        {% if rep_twitter_handles_list[i] is not none %}
-                          <p style='margin-bottom: 0px'><i class='fab fa-twitter'></i> <a class='use-underline' target='_blank' style='color: inherit;' href='https://www.twitter.com/{{rep_twitter_handles_list[i]}}' title="Click to go to {{rep_names_list[i]}}'s Twitter page">{{rep_twitter_handles_list[i]}}</a></p> 
+                        {% if rep_sm_handles_list[i] is not none %}
+                          <p style='margin-bottom: 0px'><i class='fab fa-twitter'></i> <a class='use-underline' target='_blank' style='color: inherit;' href='https://bsky.app/profile/{{rep_sm_handles_list[i]}}.bsky.social' title="Click to go to {{rep_names_list[i]}}'s Bluesky page">{{rep_sm_handles_list[i]}}</a></p> 
                         {% else %}
                           <p style='min-height: 25px'></p>
                         {% endif %}
@@ -79,9 +79,9 @@
                         {% endif %}
                         
                         <div style="font-size: 0.8em">
-                          <p class='postcode-card-list'>{{tweet_volume_rank_string_list[i] | safe}}</p>
-                          {% if retweet_rate_rank_string_list[i] != 'n/a' %}
-                            <p class='postcode-card-list'>{{retweet_rate_rank_string_list[i] | safe}}</p>
+                          <p class='postcode-card-list'>{{sm_post_volume_rank_string_list[i] | safe}}</p>
+                          {% if repost_rate_rank_string_list[i] != 'n/a' %}
+                            <p class='postcode-card-list'>{{repost_rate_rank_string_list[i] | safe}}</p>
                           {% endif %}
 
                           {% if rep_roles_list[i]=='MLA' %}

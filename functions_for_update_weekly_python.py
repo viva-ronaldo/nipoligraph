@@ -1,9 +1,8 @@
-import json, re
+import json, re, requests
 import numpy as np
 import pandas as pd
 import boto3
 from nltk.tokenize import WordPunctTokenizer
-#from nltk.corpus import stopwords
 from gensim.corpora import Dictionary
 from gensim.models import LdaModel
 
@@ -32,26 +31,6 @@ def assign_most_likely_topic(list_tuples, topic_nums_to_drop=[]):
             return -999
         else:
             return results[0][0]
-
-def append_sentiment_scored_tweets(tweets, sentiment_scored_tweets_file):
-    #sentiment_scored_tweets_file = data_dir + 'vader_scored_tweets_apr2019min_to_present.csv'
-    existing_tweets = pd.read_csv(sentiment_scored_tweets_file)
-    assert existing_tweets.status_id.dtypes.type is np.int64 and \
-        tweets.status_id.dtypes.type is np.int64, 'tweets status_id type mismatch'
-    new_tweets = tweets[~tweets.status_id.isin(existing_tweets.status_id)].copy()
-    assert len(new_tweets) + len(existing_tweets) == len(tweets), 'Problem with subsetting to new tweets'
-    print(f"- {new_tweets.shape[0]} tweets to score for sentiment")
-
-    analyzer = SentimentIntensityAnalyzer()
-    new_tweets['sentiment_vader_compound'] = new_tweets['text'].apply(
-        lambda t: analyzer.polarity_scores(t)['compound'])
-
-    comb_scored_tweets = pd.concat([new_tweets[['status_id', 'sentiment_vader_compound']].sort_values('status_id', ascending=False),
-                                    existing_tweets])
-    assert len(comb_scored_tweets) == len(tweets), 'Problem with concatenating existing and new scored tweets'
-    print(f"- Done: total {comb_scored_tweets.shape[0]} tweets with sentiment")
-    comb_scored_tweets.to_csv(sentiment_scored_tweets_file, index=False)
-
 
 def score_contribs_with_lda(contribs_in_file, scored_contribs_out_file, lda_model, stopwords_filepath):
     print('\nScoring plenary contribs with LDA topic model')
@@ -226,3 +205,81 @@ def analyse_votes_by_bloc(votes_filepath,
     # Make the whole file (it's not many rows) new each time.
     v_comms.to_csv(v_comms_out_filepath, index=False)
 
+# Bluesky
+
+def fetch_bluesky_posts(account_id, cursor=None):
+    """Fetch posts for a given account ID from the BlueSky API."""
+    API_BASE_URL = "https://public.api.bsky.app/xrpc"
+    url = f"{API_BASE_URL}/app.bsky.feed.getAuthorFeed"
+    headers = {} #"Authorization": f"Bearer {API_TOKEN}"}
+    params = {"actor": account_id, 'limit': 50}
+    # format must be '2024-11-20T19:04:04.583Z'; returns anything before this, exclusive
+    if cursor is not None:
+        params['cursor'] = cursor
+
+    response = requests.get(url, headers=headers, params=params)
+    if response.status_code != 200:
+        print(f"Failed to fetch posts for {account_id}: {response.status_code}")
+        return []
+
+    data = response.json()
+    posts = []
+    for item in data.get("feed", []):
+        is_repost = 'reason' in item.keys()
+
+        post = item['post']
+
+        if not is_repost and post['likeCount'] > 0:
+            url_likes = f"{API_BASE_URL}/app.bsky.feed.getLikes"
+            params_likes = {'uri': post['uri']}
+            response_likes = requests.get(url_likes, headers={}, params=params_likes)
+            post_likes = [l['actor']['handle'] for l in response_likes.json()['likes']]
+        else:
+            post_likes = []
+
+        if not is_repost and post['repostCount'] > 0:
+            url_reposts = f"{API_BASE_URL}/app.bsky.feed.getRepostedBy"
+            params_reposts = {'uri': post['uri']}
+            response_reposts = requests.get(url_reposts, headers={}, params=params_reposts)
+            post_reposts = [l['handle'] for l in response_reposts.json()['repostedBy']]
+        else:
+            post_reposts = []
+        
+
+        posts.append({
+            "account_id": account_id,
+            "date": post['record']['createdAt'],
+            "uri": post['uri'],
+            "is_repost": is_repost,
+            "author": post['author']['handle'],
+            "text": post['record']['text'],
+            "reply_count": post['replyCount'],
+            "repost_count": post['repostCount'],
+            "reposted_by": post_reposts,
+            "like_count": post['likeCount'],
+            "liked_by": post_likes,
+            "quote_count": post['quoteCount'],
+        })
+    return posts
+
+def append_bluesky_posts_to_feather(new_data, file_path):
+    """Append new data to an existing Feather file or create a new one."""
+    try:
+        # Load existing data
+        df_existing = pd.read_feather(file_path)
+        print(f'{len(df_existing)} Bluesky rows existing')
+    except FileNotFoundError:
+        # If the file doesn't exist, create a new DataFrame
+        df_existing = pd.DataFrame()
+
+    # Convert new data to DataFrame
+    df_new = pd.DataFrame(new_data)
+
+    # Combine and save to Feather
+    df_combined = (
+        pd.concat([df_existing, df_new], ignore_index=True)
+        .drop_duplicates(subset=['uri'])
+        .reset_index(drop=True)
+    )
+    print(f'Increased to {len(df_combined)} Bluesky rows')
+    df_combined.to_feather(file_path)

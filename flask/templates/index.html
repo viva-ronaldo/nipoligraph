@@ -66,9 +66,9 @@
                   </li>
 
                   <li class='media'>
-                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_twitter.png')}}" alt="twitter icon" style='height:50px;width:50px'>
+                    <img class="d-flex mb-3 mx-auto avatar" src="{{url_for('static', filename='icon_bluesky.png')}}" alt="twitter icon" style='height:50px;width:50px'>
                     <div class="media-body text-center text-sm-left ml-md-3 ml-0">
-                        <p><b>{{totals_dict['n_tweets']}}</b> tweets,</p>
+                        <p><b>{{totals_dict['n_posts']}}</b> social media posts,</p>
                     </div>
                   </li>
                 </ul>
@@ -107,12 +107,12 @@
 
             <div class='col-xl-5 px-2 py-1'>
               <div class='container image-link image-link-zoom'>
-                <a href="{{ url_for('twitter') }}">
-                  <img src="{{ url_for('static', filename='WHAT THEY SAY.jpg') }}" width='100%' alt="Twitter feature">
+                <a href="{{ url_for('social_media') }}">
+                  <img src="{{ url_for('static', filename='WHAT THEY SAY.jpg') }}" width='100%' alt="Social media feature">
                   <div class="container">
                     <div class='col-8'>
                       <div class="carousel-caption text-center d-md-block pt-2 pb-1 mx-1 mb-2">
-                        <h4>NI politicians on Twitter</h4>
+                        <h4>NI politicians on social media</h4>
                       </div>
                     </div>
                   </div>

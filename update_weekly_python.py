@@ -1,33 +1,17 @@
 # TODO Convert for two historical v_comms files to csv
 
-# Change division_votes_v_comms from feather to csv 
-# DONE here
-# DONE in app.py
-# DONE in weekly sh x2
-
 # More weekly updates
 # SKIPPED NOW i) Score tweets sentiment
 # SKIPPED NOW ii) Convert tweets to word vectors and score with PCA - TURNED OFF
-# iii) Score contributions LDA
-# iv) Division votes bloc information (v_comms)
+# iii) Get Bluesky posts and do sentiment
+# iv) Score contributions LDA
+# v) Division votes bloc information (v_comms)
 
 import feather
 import pandas as pd
 import json, os, pickle, re, yaml
 import boto3  # if data_dir is S3
-
-#Only needed if do_twitter
-#import numpy as np
-#from sklearn.decomposition import PCA
-#from nltk.sentiment.vader import SentimentIntensityAnalyzer
-
-#nltk data for stopwords: simplified this by saving the data to S3
-#import nltk
-#import getpass
-#if getpass.getuser() == 'david':
-#    nltk.data.path.append('/media/shared_storage/data/nltk_data/')
-#else:
-#    nltk.data.path.append('/home/rstudio/nipol/data/nltk_data/')
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 # import functions as a module to get the constants and its package imports
 import functions_for_update_weekly_python as weekly_update_fns
@@ -39,15 +23,16 @@ do_twitter = config['INCLUDE_TWITTER']
 do_bluesky = config['INCLUDE_BLUESKY']
 
 data_dir = f"s3://{config['NIPOL_DATA_BUCKET']}/"
+local_data_dir = './tmp_data'
 
-# Tweets files
 if do_twitter:
     hist_tweets_slim_filepath = os.path.join(data_dir, 'tweets_slim_apr2019min_to_3jun2021.feather')
     current_tweets_slim_filepath = os.path.join(data_dir, 'tweets_slim_4jun2021_to_present.feather')
     vader_scored_tweets_filepath = os.path.join(data_dir, 'vader_scored_tweets_apr2019min_to_present.csv')
 
 if do_bluesky:
-    pass
+    bluesky_accounts_filepath = os.path.join(data_dir, 'bluesky_accounts_sep2025.csv')
+    bluesky_posts_filepath = os.path.join(data_dir, 'bluesky_posts_oct2023_to_present.feather')
 
 # Plenary contribs files
 contribs_filepath = os.path.join(data_dir, 'plenary_hansard_contribs.feather')
@@ -125,7 +110,32 @@ if do_twitter:
     
     # tweets[['status_id','wv_PC1','wv_PC2']].to_csv(data_dir + 'wv_pca_scored_tweets_apr2019min_to_present.csv', index=False)
 
-#iii) Score contribs LDA
+#iii) Scrape Bluesky posts and score sentiment at the same time
+if do_bluesky:
+    bsky_ids_dict = pd.read_csv(bluesky_accounts_filepath).to_dict(orient='records')
+    bsky_ids_dict = {d['normal_name']: d['bsky_user_name'] for d in bsky_ids_dict if pd.notnull(d['bsky_user_name'])}
+
+    analyzer = SentimentIntensityAnalyzer(
+        lexicon_file=f'{local_data_dir}/vader_lexicon.txt'
+    )
+    all_posts = []
+    for normal_name, account_id in bsky_ids_dict.items():
+        posts = weekly_update_fns.fetch_bluesky_posts(account_id)
+        for post in posts:
+            post['normal_name'] = normal_name
+
+            #Also add sentiment
+            post['sentiment_vader_compound'] = analyzer.polarity_scores(post['text'])['compound']
+
+        all_posts.extend(posts)
+
+    if all_posts:
+        weekly_update_fns.append_bluesky_posts_to_feather(all_posts, bluesky_posts_filepath)
+    else:
+        print("No new Bluesky posts found.")
+
+
+#iv) Score contribs LDA
 if 's3' in contribs_lda_model_filepath:
     s3 = boto3.client('s3')
     bucket_name = contribs_lda_model_filepath.replace('s3://', '').split('/')[0]
@@ -140,7 +150,7 @@ weekly_update_fns.score_contribs_with_lda(contribs_filepath,
                                           lda_model,
                                           stopwords_filepath)
 
-#iv) pre-compute v_comms (and hist_v_comms for now)
+#v) pre-compute v_comms (and hist_v_comms for now)
 
 # Prepare v_comms, the group voting table by EventId (vote), and write to file.
 # A group with no votes seen is marked as ABSTAINED but this could instead be because they have no members,

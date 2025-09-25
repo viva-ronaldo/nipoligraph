@@ -9,8 +9,8 @@ library(stringr)
 
 if (Sys.info()['user']=='rstudio') setwd('/home/rstudio/nipol')
 
-#data_dir = './data'
-data_dir = './tmp_data'
+#data_dir <- './data'
+data_dir <- './tmp_data'
 
 existing_news_articles_filepath <- file.path(data_dir, 'newscatcher_articles_sep2020topresent.feather')
 

@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+  <!--<div class="wrapper">-->
+
+    {% include 'nav.html' %}
+
+    <div class="overlay"></div>
+
+    <div class="jumbotron" style="background-image: url('{{ url_for('static', filename='WHAT THEY SAY.jpg') }}'); background-size: cover">
+      <div class="row d-flex justify-content-start">
+        <!-- <div style='position: absolute; top: 50%; left'> -->
+        <div class="col-lg-4 col-md-8 ml-5 my-3" style='color: white'>
+          <h1 class='display-3'>What They <b>Say</b></h1>
+          <p>Some of the NI MLAs and MPs are active on Bluesky, so tracking this activity can provide some insight into their political outlook, and their engagement with the public and their colleagues. Posts are collected weekly, starting from 2023.</p>
+          <p>Twitter is the more popular platform, but it no longer allows programmatic access to tweet data at an affordable price, so was discontinued on NI PoliGraph in mid-2023.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class='container-xl'>
+
+        <div class="row mb-2">
+
+          <div class="col-lg-6">
+            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+              <div class="col p-4 d-flex flex-column position-static data-panel-a" >
+                <h4>Top posters</h4>
+                <div style='min-height: 150px'>
+                  <p class="card-text mb-2 data-panel-card-border">These are the most active politicians on Bluesky, by <b>total posts</b> in the past three months.</p>
+                </div>
+                <div id='vis2'></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6">
+            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+              <div class="col p-4 d-flex flex-column position-static data-panel-c">
+                <h4>Most impactful posters</h4>
+                <div style='min-height: 150px'>
+                  <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians with the <b>biggest impact</b> on Bluesky, as measured by the average number of reposts received by each of their <i>original posts</i> in the past three months <span class='help-tooltip' title='Repost counts are measured a few days after the post is made, so will be underestimates of the true repost rate.' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>.</p>
+                </div>
+                <div id='vis3'></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="row mb-2 justify-content-md-center">
+
+          <div class="col-lg-7">
+            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+              <div class="col p-4 d-flex flex-column position-static data-panel-c">
+                <h4>Most positive and negative posters</h4>
+                <p class="card-text mb-2 data-panel-card-border">This plot shows the politicians whose posts (including reposts) scored highest and lowest, on average, for <b>positive sentiment</b> <span class='help-tooltip' title="calculated as the VADER 'compound' score, relative to the mean for all posts (see Technical stuff)" data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span> in the past three months.</p>
+                <div id='vis4'></div>
+              </div>
+            </div>
+          </div>
+
+          <aside class="col-lg-5 blog-sidebar" id='Technical-stuff'>
+            <div class="p-4 mb-3 bg-light rounded">
+              <h4 class="font-italic">Technical Stuff</h4>
+              <ul class="nav nav-tabs tab-headings" id="myTab" role="tablist" style="margin-bottom:15px">
+                <li class="nav-item" role="presentation">
+                  <a class="nav-link active" id="one-tab" data-bs-toggle="tab" href="#one" role="tab" aria-controls="one" aria-selected="true">Bluesky data</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <a class="nav-link" id="two-tab" data-bs-toggle="tab" href="#two" role="tab" aria-controls="two" aria-selected="false">Post sentiment</a>
+                </li>
+                <!--
+                <li class="nav-item" role="presentation">
+                  <a class="nav-link" id="three-tab" data-bs-toggle="tab" href="#three" role="tab" aria-controls="three" aria-selected="false">Network plot</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <a class="nav-link" id="four-tab" data-bs-toggle="tab" href="#four" role="tab" aria-controls="four" aria-selected="false">Tweet content map</a>
+                </li>
+                -->
+              </ul>
+              <div class="tab-content small" id="myTabContent">
+                <div class="tab-pane fade show active" id="one" role="tabpanel" aria-labelledby="one-tab">
+                  <p>Posts are collected from Bluesky once a week. The number of reposts for each pos is recorded at this time, so some posts will have had a full week to collect reposts, while others will have had only a day or less. The repost rates should therefore be taken as the average number of reposts obtained in the first 3-4 days of a post's lifetime.</p>
+                </div>
+                <div class="tab-pane fade" id="two" role="tabpanel" aria-labelledby="two-tab">
+                  <p>Blueksy post sentiment is calculated using the <a class='use-underline' href="https://github.com/cjhutto/vaderSentiment">VADER</a> algorithm, which is specifically geared towards social media content. These raw values are usually positive, but the overall mean is removed, to leave the scores for the most positive and negative posters as positive and negative deviations of comparable magnitude.</p>
+                </div>
+                <!--
+                <div class="tab-pane fade" id="three" role="tabpanel" aria-labelledby="three-tab">
+                  <p>Point positions for the tweet network plot were calculated with the <b>R</b> package <a class='use-underline' href="https://briatte.github.io/ggnet/">ggnet2</a>. Each tweeter is positioned near to those that they frequently <i>retweet</i> or <i>are retweeted by</i>, and the thickness of the <i>edge</i> (line) connecting two tweeters is proportional to the number of times they retweeted one another (whichever is the larger of the two directions), in the past month. The size of each <i>node</i> (circle) is proportional to the total number of retweets <i>received</i>. Note that due to the weekly data collection frequency, these are underestimates of the true, 'final', retweet numbers.</p>
+                  <p>Hovering over a node highlights the incoming edges, which are the retweets <i>received</i> by that politician. The most influential politicians - those who are frequently retweeted - tend to appear near the centre of a cluster, with large nodes and many connecting edges. Politicians positioned near the middle of the plot are those that get some retweets from outside their party.</p>
+                </div>
+                <div class="tab-pane fade" id="four" role="tabpanel" aria-labelledby="four-tab">
+                  <p>The tweet content plot uses, first, word embeddings (<a class='use-underline' href="https://radimrehurek.com/gensim/auto_examples/tutorials/run_word2vec.html">Word2Vec</a>, with 50 dimensions, trained on 180,000 tweets), and then <a class='use-underline' href="https://en.wikipedia.org/wiki/Principal_component_analysis">Principal Component Analysis</a>, to reduce the content of each tweet into two numerical dimensions. These co-ordinates are averaged for each tweeter. Tweeters that are positioned close together on the plot tend to use similar words in their tweets. Note however that, as can be expected, reducing the complexity of hundreds of tweets into two numbers is a big over-simplification: the position of the politicians on these two axes only explains 25% of the <i>variance</i>, or differences, in the content of their tweets.</p>
+                </div>
+                -->
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <!--
+        <div class="row mb-2 justify-content-md-center">
+
+          <div class="col-lg-8">
+            <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
+              <div class="col p-4 d-flex flex-column position-static">
+                <h4>Party tweet volume and impact</h4>
+                <p class="card-text mb-2">This plot shows the total number of <b>original tweets</b> (not retweets) by each party in the past month (horizontal axis), and the <b>average number of retweets</b> on each of those tweets, measured after around a week (vertical axis).</p>
+                <div id='vis1' style='padding-top:20px; padding-bottom:20px'></div>
+                <p>Parties far to the right of the panel tweet often (it helps if they have more MLAs), but parties to the top of the panel seem to have more impact when they do tweet.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        -->
+
+    </div>
+
+  <!--</div>-->
+
+
+{% endblock %}
+
+{% block addtl_footer %}
+    <p>Artwork by <a class='use-underline' href="http://ellistration.co.uk/">Ellistration</a></p> 
+{% endblock %}
+
+{% block other_js %}
+
+    <script src="https://cdn.jsdelivr.net/jquery.typeit/4.3.0/typeit.min.js"></script>
+
+    <script type="text/javascript">
+
+        //parse("/data/plot_party_tweets_scatter", "vis1")
+        if (screen.width >= 500) {
+            parse("/data/plot_user_sm_post_num_web", "vis2")
+            parse("/data/plot_user_repost_web", "vis3")
+            parse("/data/plot_user_sm_post_sentiment_web", "vis4")
+            //parse("/data/plot_tweet_pca_all_mlas_web", "vis5")
+        } else {
+            parse("/data/plot_user_sm_post_num_mobile", "vis2")
+            parse("/data/plot_user_repost_mobile", "vis3")
+            parse("/data/plot_user_sm_post_sentiment_mobile", "vis4")
+            //parse("/data/plot_tweet_pca_all_mlas_mobile", "vis5")
+        }
+
+    </script>
+
+{% endblock %}
