@@ -103,13 +103,13 @@
                 </tr>
                 {% if alli_like_uni_details[0] > 0 %}
                   <tr>
-                    <td>In <b>{{alli_like_uni_details[1]}}</b> split votes, Alliance have voted with unionists in <b>{{alli_like_uni_details[0]}}</b> vote{{'' if alli_like_uni_details[0] == 1 else 's'}} and with nationalists in <b>{{alli_like_nat_details[0]}}</b> vote{{'s' if alli_like_nat_details[0] == 1 else ''}}</td>
+                    <td>In <b>{{alli_like_uni_details[1]}}</b> split votes, Alliance have voted with unionists in <b>{{alli_like_uni_details[0]}}</b> vote{{'' if alli_like_uni_details[0] == 1 else 's'}} and with nationalists in <b>{{alli_like_nat_details[0]}}</b> vote{{'' if alli_like_nat_details[0] == 1 else 's'}}</td>
                     <td><span id='alli_split_sparkline'></span></td>
                   </tr>
                 {% endif %}
-                {% if green_like_uni_details[0] > 0 %}
+                {% if green_like_uni_details[0] > 0 or green_like_nat_details[0] > 0 %}
                 <tr>
-                  <td>In <b>{{green_like_uni_details[1]}}</b> split votes, Green have voted with unionists in <b>{{green_like_uni_details[0]}}</b> vote{{'' if green_like_uni_details[0] == 1 else 's'}} and with nationalists in <b>{{green_like_nat_details[0]}}</b> vote{{'s' if green_like_nat_details[0] == 1 else ''}}</td>
+                  <td>In <b>{{green_like_uni_details[1]}}</b> split votes, Green have voted with unionists in <b>{{green_like_uni_details[0]}}</b> vote{{'' if green_like_uni_details[0] == 1 else 's'}} and with nationalists in <b>{{green_like_nat_details[0]}}</b> vote{{'' if green_like_nat_details[0] == 1 else 's'}}</td>
                   <td><span id='green_split_sparkline'></span></td>
                 </tr>
                 {% endif %}
@@ -126,7 +126,9 @@
                     <th>Unionist bloc vote</th>
                     <th>Nationalist bloc vote</th>
                     <th>Alliance vote</th>
-                    <th>Green vote</th>
+                    {% if green_like_uni_details[0] > 0 or green_like_nat_details[0] > 0 %}
+                      <th>Green vote</th>
+                    {% endif %}
                     <th>Sectarian split?</th>
                   </tr>
                 </thead>
@@ -292,38 +294,43 @@
         // parse("/data/plot_party_unity_bars_"+session_to_plot, "vis6");
 
         var votes_df = {{votes_list | tojson }};
+        let votes_table_columns = [
+            { title: "Date", 
+              render: function(data, type, row){
+                if(type === "sort" || type === "type"){
+                    return data;
+                }
+                return moment(data).format("DD MMM YYYY");
+              },
+              responsivePriority: 3
+            },
+            { title: "Motion",
+              render: function(data, type, row) {
+                return '<a href="' + data.split('|')[1] + '" target="_blank">' + data.split('|')[0] + '</a>';
+              }, 
+              responsivePriority: 1
+            },
+            { title: "Tabled by", responsivePriority: 6 },
+            { title: "Result", 
+              render: function(data) {return '<b>'+data+'</b>'},
+              responsivePriority: 2 },
+            { title: "Unionist vote", responsivePriority: 4 },
+            { title: "Nationalist vote", responsivePriority: 5 },
+            { title: "Alliance vote", responsivePriority: 7 },
+            { title: "Green vote", responsivePriority: 8 },
+            { title: "Sectarian split?", responsivePriority: 9 }
+        ]
+        if (votes_df[0].length < 9) {
+          votes_table_columns = votes_table_columns.filter(column => column.title != 'Green vote')
+        }
+
         var committee_meetings_df = {{committee_meetings_list | tojson }};
 
         $(document).ready(function() {
             $('#votes_table').DataTable( {
                 responsive: true,
                 data: votes_df,
-                columns: [
-                    { title: "Date", 
-                      render: function(data, type, row){
-                        if(type === "sort" || type === "type"){
-                            return data;
-                        }
-                        return moment(data).format("DD MMM YYYY");
-                      },
-                      responsivePriority: 3
-                    },
-                    { title: "Motion",
-                      render: function(data, type, row) {
-                        return '<a href="' + data.split('|')[1] + '" target="_blank">' + data.split('|')[0] + '</a>';
-                      }, 
-                      responsivePriority: 1
-                    },
-                    { title: "Tabled by", responsivePriority: 6 },
-                    { title: "Result", 
-                      render: function(data) {return '<b>'+data+'</b>'},
-                      responsivePriority: 2 },
-                    { title: "Unionist vote", responsivePriority: 4 },
-                    { title: "Nationalist vote", responsivePriority: 5 },
-                    { title: "Alliance vote", responsivePriority: 7 },
-                    { title: "Green vote", responsivePriority: 8 },
-                    { title: "Sectarian split?", responsivePriority: 9 }
-                ],
+                columns: votes_table_columns,
                 ordering: false
             } );
 
@@ -345,7 +352,6 @@
             } );
         } );
 
-        // var votes_passed = [27,15,27]; 
         var votes_passed = [{{votes_passed_details[0]}}, 
           {{votes_passed_details[1]}}];
         var uni_votes_passed = [{{uni_tabled_passed_details[0]}}, 

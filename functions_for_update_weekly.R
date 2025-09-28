@@ -22,6 +22,8 @@ library(sentimentr)
 update_and_get_politicians_list <- function(politicians_list_filepath, changes_log_filepath) {
     politicians <- read.csv(politicians_list_filepath)
     # Sometimes get no response from address; we don't need to do the update, can fall back to using current politicians list
+    new_mlas <- data.frame()
+    mlas <- data.frame()
     tryCatch({
         tmp <- GET(sprintf('http://data.niassembly.gov.uk/members.asmx/GetAllCurrentMembers_JSON'))
         mlas <- fromJSON(content(tmp, as='text'))$AllMembersList$Member
@@ -29,7 +31,6 @@ update_and_get_politicians_list <- function(politicians_list_filepath, changes_l
     },
     error = function(e) {
         message("Couldn't reach data.niassembly.gov.uk; using existing politicians list")
-        new_mlas <- data.frame()
     })
     if (nrow(new_mlas) > 0) {
         politicians <- rbind(politicians,
@@ -43,14 +44,16 @@ update_and_get_politicians_list <- function(politicians_list_filepath, changes_l
                     append=TRUE, quote=FALSE, sep=' ', col.names=FALSE, row.names=FALSE)
         
     }
-    #Also check for any MLAs that have left and set them to inactive in the file
-    newly_inactive_mlas <- subset(politicians, role=='MLA' & active==1 & !(MemberName %in% mlas$MemberName))
-    if (nrow(newly_inactive_mlas) > 0) {
-        politicians %<>% mutate(active = ifelse(MemberName %in% newly_inactive_mlas$MemberName, 0, active))
-        write.csv(politicians, politicians_list_filepath, row.names=FALSE)
-        write.table(data.frame(d=as.character(Sys.Date()), t=sprintf('Removed inactive MLA(s) %s', paste(newly_inactive_mlas$MemberLastName, collapse=','))), 
-                    changes_log_filepath,
-                    append=TRUE, quote=FALSE, sep=' ', col.names=FALSE, row.names=FALSE)
+    #Also check for any MLAs that have left and set them to inactive in the file; don't do this if the trycatch failed
+    if (nrow(mlas) > 0) {
+        newly_inactive_mlas <- subset(politicians, role=='MLA' & active==1 & !(MemberName %in% mlas$MemberName))
+        if (nrow(newly_inactive_mlas) > 0) {
+            politicians %<>% mutate(active = ifelse(MemberName %in% newly_inactive_mlas$MemberName, 0, active))
+            write.csv(politicians, politicians_list_filepath, row.names=FALSE)
+            write.table(data.frame(d=as.character(Sys.Date()), t=sprintf('Removed inactive MLA(s) %s', paste(newly_inactive_mlas$MemberLastName, collapse=','))), 
+                        changes_log_filepath,
+                        append=TRUE, quote=FALSE, sep=' ', col.names=FALSE, row.names=FALSE)
+        }
     }
     return(politicians)
 }

@@ -64,7 +64,16 @@ from nipol_plot_functions import (
     elct_cw_most_seats_fn,
 )
 
-with open('../config.yaml', 'r') as f:
+if getpass.getuser() == 'david':
+    data_dir = '/media/shared_storage/data/nipol_aws_copy/data/'
+    config_dir = '../'
+    test_mode = True
+else:
+    data_dir = '/home/vivaronaldo/nipol/data/'
+    config_dir = '/home/vivaronaldo/nipol/'
+    test_mode = False
+
+with open(config_dir + 'config.yaml', 'r') as f:
     config = yaml.safe_load(f)
 
 app = Flask(__name__)
@@ -109,12 +118,6 @@ app.url_map.strict_slashes = False
 #- static/tweets_network_last3months_nodes.json
 
 print('Starting...')
-if getpass.getuser() == 'david':
-    data_dir = '/media/shared_storage/data/nipol_aws_copy/data/'
-    test_mode = True
-else:
-    data_dir = '/home/vivaronaldo/nipol/data/'
-    test_mode = False
 
 #Assembly page sessions
 CURRENT_ASSEMBLY_SESSION = config['CURRENT_ASSEMBLY_SESSION']
@@ -352,18 +355,30 @@ def assembly():
         v_comms_tmp = hist_v_comms[hist_v_comms.session_name==session_to_plot].copy()
         committee_meetings_list = []
 
-    votes_list = [e[1].values.tolist() for e in v_comms_tmp[['vote_date','vote_subject','vote_tabler_group','vote_result',
-        'uni_bloc_vote','nat_bloc_vote','alli_vote','green_vote','uni_nat_split']].iterrows()]
     chances_to_take_a_side = v_comms_tmp[(v_comms_tmp.uni_nat_split=='Yes')].shape[0]
     alli_num_votes_with_uni = v_comms_tmp[(v_comms_tmp.uni_nat_split=='Yes') &
-        (v_comms_tmp.alli_vote==v_comms_tmp.uni_bloc_vote)].shape[0]
+        (v_comms_tmp.alli_vote == v_comms_tmp.uni_bloc_vote) &
+        (v_comms_tmp.alli_vote != 'ABSTAINED')].shape[0]
     alli_num_votes_with_nat = v_comms_tmp[(v_comms_tmp.uni_nat_split=='Yes') & 
-        (v_comms_tmp.alli_vote==v_comms_tmp.nat_bloc_vote)].shape[0]
+        (v_comms_tmp.alli_vote == v_comms_tmp.nat_bloc_vote) &
+        (v_comms_tmp.alli_vote != 'ABSTAINED')].shape[0]
     green_num_votes_with_uni = v_comms_tmp[(v_comms_tmp.uni_nat_split=='Yes') &
-        (v_comms_tmp.green_vote==v_comms_tmp.uni_bloc_vote)].shape[0]
+        (v_comms_tmp.green_vote == v_comms_tmp.uni_bloc_vote) &
+        (v_comms_tmp.green_vote != 'ABSTAINED')].shape[0]
     green_num_votes_with_nat = v_comms_tmp[(v_comms_tmp.uni_nat_split=='Yes') & 
-        (v_comms_tmp.green_vote==v_comms_tmp.nat_bloc_vote)].shape[0]
-
+        (v_comms_tmp.green_vote == v_comms_tmp.nat_bloc_vote) &
+        (v_comms_tmp.green_vote != 'ABSTAINED')].shape[0]
+    # Remove the green vote part if there are no Green MLAs
+    # (in assembly.html, identify this with green_like_uni_details[0] + green_like_nat_details[0] == 0)
+    cols_for_votes_list = [
+        'vote_date', 'vote_subject', 'vote_tabler_group', 'vote_result',
+        'uni_bloc_vote', 'nat_bloc_vote',
+        'alli_vote', 'green_vote', 'uni_nat_split'
+    ]
+    if (v_comms_tmp.green_vote != 'ABSTAINED').sum() == 0:
+        cols_for_votes_list = [c for c in cols_for_votes_list if c != 'green_vote']
+    votes_list = [e[1].values.tolist() for e in v_comms_tmp[cols_for_votes_list].iterrows()]
+    
     return render_template('assembly.html',
         session_to_plot = session_to_plot,
         current_session = CURRENT_ASSEMBLY_SESSION,
@@ -825,8 +840,8 @@ for session_to_plot in config['ALL_ASSEMBLY_SESSIONS']:
         emotions_party_df = emotions_party_agg
     else:
         emotions_party_df = hist_emotions_party_agg[hist_emotions_party_agg.session_name==session_to_plot]
-    create_route(f'/data/plot_plenary_emotions_by_party_{session_to_plot}_web', plot_plenary_emotions_fn, emotions_party_df)
-    create_route(f'/data/plot_plenary_emotions_by_party_{session_to_plot}_mobile', plot_plenary_emotions_fn, emotions_party_df, mobile_mode=True)
+    create_route(f'/data/plot_plenary_emotions_by_party_{session_to_plot}_web', plot_plenary_emotions_fn, emotions_party_df, party_colours)
+    create_route(f'/data/plot_plenary_emotions_by_party_{session_to_plot}_mobile', plot_plenary_emotions_fn, emotions_party_df, party_colours, mobile_mode=True)
 
 
 #Most sm posts by person
