@@ -22,7 +22,8 @@ client = OpenAI(api_key=openai.api_key)
 
 data_dir = f"s3://{config['NIPOL_DATA_BUCKET']}/"
 
-news_path = os.path.join(data_dir, 'newscatcher_articles_sep2020topresent.feather')
+#news_path = os.path.join(data_dir, 'newscatcher_articles_sep2020topresent.feather')
+news_path = os.path.join(data_dir, 'worldnewsapi_articles_oct2025topresent.feather')
 news_summaries_path = os.path.join(data_dir, 'news_summaries.feather')
 
 refresh_frequency_days = config['NEWS_SUMMARIES_REFRESH_FREQUENCY_DAYS']
@@ -124,7 +125,7 @@ nn_requiring_update = (news.drop_duplicates(subset='normal_name')[['normal_name'
                        .normal_name.tolist()
                       )
 #nn_requiring_update = [p for p in nn_requiring_update if p in active_politicians]
-print(f'{len(nn_requiring_update)} politicians with no summary in last {refresh_frequency_days} days')
+print(f'{len(nn_requiring_update)} politicians with news articles and no summary in last {refresh_frequency_days} days')
 
 res = []
 for i, nn in enumerate(nn_requiring_update, start=1):

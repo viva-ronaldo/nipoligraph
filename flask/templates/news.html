@@ -26,7 +26,7 @@
               <div class="col p-4 d-flex flex-column position-static data-panel-a">
                 
                 <h4>News coverage summary</h4>
-                <p class="card-text mb-2 data-panel-card-border">Politicians are mentioned in various articles, as collected by <a class='use-underline' target="_blank" href='https://newscatcherapi.com'>NewsCatcher</a>, the most recent of which are listed <a href='#Article-list'>below</a>. For a chosen politician, this provides an AI-generated summary of their activity in those recent articles. <i>As the text is written by AI, 100% accuracy is not guaranteed here.</i></p>
+                <p class="card-text mb-2 data-panel-card-border">Politicians are mentioned in various articles, as collected by <a class='use-underline' target="_blank" href='https://worldnewsapi.com/'>World News API</a>, the most recent of which are listed <a href='#Article-list'>below</a>. For a chosen politician, this provides an AI-generated summary of their activity in those recent articles. <i>As the text is written by AI, 100% accuracy is not guaranteed here.</i></p>
                 
                 <form>
                   <div class='form-group row mt-2'>
@@ -56,7 +56,7 @@
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column position-static data-panel-b">
                 <h4>News article volume</h4>
-                <p class="card-text mb-2 data-panel-card-border">This tracks the number of online news articles each week <span class='help-tooltip' title='showing the {{news_volume_average_window_weeks}}-week running average' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>, as collected by NewsCatcher, that include a mention of a member of one of the parties. Party leaders and Assembly ministers tend to dominate the mentions, as can be seen in the list of articles <a href='#Article-list'>below</a>.</p>
+                <p class="card-text mb-2 data-panel-card-border">This tracks the number of online news articles each week <span class='help-tooltip' title='showing the {{news_volume_average_window_weeks}}-week running average' data-toggle="tooltip"><i class="fas fa-question-circle fa-sm"></i></span>, as collected by World News API, that include a mention of a member of one of the parties. Party leaders and Assembly ministers tend to dominate the mentions, as can be seen in the list of articles <a href='#Article-list'>below</a>.</p>
                 <div id='vis3'></div>
               </div>
             </div>
@@ -66,7 +66,7 @@
             <div class="row no-gutters border rounded overflow-hidden flex-md-row mb-4 shadow-sm h-md-250 position-relative">
               <div class="col p-4 d-flex flex-column position-static data-panel-c">
                 <h4>Frequently used sources</h4>
-                <p class="card-text mb-2 data-panel-card-border">These are the news sources in the NewsCatcher search space that have most frequently been found to mention NI politicians in the last month.<br/><br/></p>
+                <p class="card-text mb-2 data-panel-card-border">These are the news sources in the World News API search space that have most frequently been found to mention NI politicians in the last month.<br/><br/></p>
                 <div id='vis1'></div>
               </div>
             </div>
@@ -111,8 +111,8 @@
               </ul>
               <div class="tab-content small" id="myTabContent">
                 <div class="tab-pane fade show active" id="one" role="tabpanel" aria-labelledby="one-tab">
-                  <p>News article mentions are collected by searching for the politicians' names in the <a class='use-underline' target="_blank" href='https://newscatcherapi.com/'>NewsCatcher API</a>. NewsCatcher tracks a range of thousands of online news sources, including many focused on the UK and Ireland. To minimise false positives (articles mentioning someone with the same name as an NI politician, particularly in America), the search set is limited to (currently) 49 sources that have been found to report on NI politics with some regularity. For a few members, additional filtering is done by checking the content of the article. Nevertheless, some unrelated articles may exist in the article list.</p>
-                  <p>In the volume plot, weekly volumes by party are smoothed with a 7-week running mean, after removing duplicates by party (so that a single article mentioning two members of the same party counts as only one mention). The data are tracked from December 2023.</p>
+                  <p>News article mentions are collected by searching for the politicians' names in <a class='use-underline' target="_blank" href='https://worldnewsapi.com/'>World News API</a>. World News tracks a range of thousands of online news sources, including many focused on the UK and Ireland. Additional search filtering by article content is performed, but a small number of 'false positive' (unrelated) articles may exist in the article list.</p>
+                  <p>In the volume plot, weekly volumes by party are smoothed with a {{news_volume_average_window_weeks}}-week running average, after removing duplicates by party (so that a single article mentioning two members of the same party counts as only one mention). The data are tracked from October 2025.</p>
                 </div>
                 <div class="tab-pane fade" id="two" role="tabpanel" aria-labelledby="two-tab">
                   <p>The sentiment of each news article - in fact just the summary (1-3 sentences), not the full article - is calculated using the excellent <b>R</b> package <a class='use-underline' target="_blank" href="https://github.com/trinker/sentimentr">sentimentr</a>. This takes a relatively sophisticated approach to determining text sentiment, but nevertheless relies on a vocabulary of words with pre-defined positive or negative sentiment associated. From this standard vocabulary I excluded some words that should be regarded as neutral in a political context, such as 'economic', 'justice', and 'conservative'. However, news article 'sentiment' remains hard to define: for example, an article describing a minister's response to an economic crisis will, almost unavoidably, be scored as 'negative', but the article may not comment on the efficacy or otherwise of the minister's actions. Therefore, this plot should be viewed with caution.</p>

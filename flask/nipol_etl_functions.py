@@ -943,7 +943,8 @@ def load_and_process_news_data(data_dir, config, mla_ids, news_volume_average_wi
     news_df = (
         pd.concat([
             #feather.read_dataframe(data_dir + 'newscatcher_articles_slim_w_sentiment_julaugsep2020.feather'),
-            feather.read_dataframe(data_dir + config['DATA_NEWS_NEWSCATCHER'])
+            #feather.read_dataframe(data_dir + config['DATA_NEWS_NEWSCATCHER']),
+            feather.read_dataframe(data_dir + config['DATA_NEWS_WORLDNEWS'])
         ]).drop_duplicates()
         .query("published_date >= '2023-12-01'")
         .assign(source = lambda df: df.source.apply(lambda s: news_source_pprint_dict.get(s, s)))
@@ -977,7 +978,7 @@ def load_and_process_news_data(data_dir, config, mla_ids, news_volume_average_wi
     #Filter to most recent month
     news_sources = (
         news_df[news_df.published_date.dt.date > news_df.published_date.dt.date.max()-datetime.timedelta(days=30)]
-        [['link','source','PartyGroup']]
+        [['link', 'source', 'PartyGroup']]
         .drop_duplicates()
         .groupby(['source', 'PartyGroup'], as_index=False).link.count()
         .rename(index=str, columns={'link': 'News articles'})
@@ -991,13 +992,13 @@ def load_and_process_news_data(data_dir, config, mla_ids, news_volume_average_wi
 
     #dedup articles by party before calculating averages by party - doesn't make a big difference
     news_sentiment_by_party_week = (
-        news_df[['published_date_year', 'published_date_week', 'link', 'PartyName', 'sr_sentiment_score']].drop_duplicates()
+        news_df[['published_date_year', 'published_date_week', 'link', 'PartyName', 'sentiment']].drop_duplicates()
         .groupby(['published_date_year', 'published_date_week', 'PartyName'], as_index=False)
-        .agg({'link': len, 'sr_sentiment_score': np.nanmean})
+        .agg({'link': len, 'sentiment': np.nanmean})
         .query("PartyName in ['DUP','Alliance','Sinn Fein','UUP','SDLP']")
     )
     #news_sentiment_by_party_week = news_sentiment_by_party_week.sort_values(['PartyName','published_date_week'], ignore_index=True)
-    #news_sentiment_by_party_week = news_sentiment_by_party_week[news_sentiment_by_party_week.sr_sentiment_score.notnull()]
+    #news_sentiment_by_party_week = news_sentiment_by_party_week[news_sentiment_by_party_week.sentiment.notnull()]
     #news_sentiment_by_party_week = news_sentiment_by_party_week[news_sentiment_by_party_week.url >= 3]  #OK to keep in now because using smoothing
     
     #fill in missing weeks before averaging - works for volume only
@@ -1012,14 +1013,15 @@ def load_and_process_news_data(data_dir, config, mla_ids, news_volume_average_wi
             .rolling(news_volume_average_window_weeks, min_periods=1, center=True).mean().reset_index(0),  #the 0 is vital here
         rsuffix='_smooth').rename(index=str, columns={'link_smooth':'vol_smooth'})
     #print(news_sentiment_by_party_week.head())
-    #drop first and last weeks here instead, so that table still shows the most recent articles
+    #drop first and last weeks here instead (as they are incomplete), so that table still shows the most recent articles
     news_sentiment_by_party_week['yearweekcomb'] = news_sentiment_by_party_week['published_date_year'] + news_sentiment_by_party_week['published_date_week']
-    news_sentiment_by_party_week = news_sentiment_by_party_week[(news_sentiment_by_party_week.yearweekcomb > news_sentiment_by_party_week.yearweekcomb.min()) &
-        (news_sentiment_by_party_week.yearweekcomb < news_sentiment_by_party_week.yearweekcomb.max())]
+    print('TODO drop first, last news weeks')
+    #news_sentiment_by_party_week = news_sentiment_by_party_week[(news_sentiment_by_party_week.yearweekcomb > news_sentiment_by_party_week.yearweekcomb.min()) &
+    #    (news_sentiment_by_party_week.yearweekcomb < news_sentiment_by_party_week.yearweekcomb.max())]
     #This is used for the boxplot - need mean value by party for tooltip
     news_sentiment_by_party_week = news_sentiment_by_party_week.merge(
         news_sentiment_by_party_week.groupby('PartyName').agg( 
-            tooltip_text = pd.NamedAgg('sr_sentiment_score', lambda s: f"Mean sentiment score = {np.mean(s):.3f}")
+            tooltip_text = pd.NamedAgg('sentiment', lambda s: f"Mean sentiment score = {np.mean(s):.3f}")
         ), on='PartyName', how='inner')
 
     return news_df, news_sources, news_sentiment_by_party_week

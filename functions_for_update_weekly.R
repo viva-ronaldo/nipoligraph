@@ -4,7 +4,7 @@ suppressPackageStartupMessages(library(dplyr))
 library(httr)
 library(jsonlite)
 #library(feather)
-library(arrow)  # for read_feather to work on file written from python
+suppressPackageStartupMessages(library(arrow))  # for read_feather to work on file written from python
 library(xml2)
 suppressPackageStartupMessages(library(lubridate))
 library(stringr)
@@ -499,93 +499,165 @@ update_average_contrib_emotions <- function(contribs_filepath, contrib_emotions_
     write_feather(mla_emotions, contrib_emotions_filepath)
 }
 
-# Get Irish News and News Letter stories from Twitter - now skipped in 2023
-update_news_from_twitter <- function(politicians, existing_news_articles_filepath) {
+# NEWS ----
+
+remove_fadas <- function(lower_case_text) {
+    lower_case_text <- gsub('é','e', lower_case_text)
+    lower_case_text <- gsub('ó','o', lower_case_text)
+    lower_case_text <- gsub('á','a', lower_case_text)
+    lower_case_text <- gsub('í','i', lower_case_text)
+    lower_case_text
+}
+
+prepare_search_mla_name <- function(mla_name, apostrophe=TRUE) {
+    search_mla_name <- mla_name
+    if (mla_name == 'Ian Paisley Jr') search_mla_name <- 'Ian Paisley'  #should give a more accurate total articles
+    
+    search_mla_name <- tolower(search_mla_name)
+    
+    #can't use irish characters in GET
+    search_mla_name <- remove_fadas(search_mla_name)
+    
+    #apostrophe (encoded) seems better for searching API than ', but for linking people to text, use '
+    if (apostrophe) {
+        search_mla_name <- gsub('\'', '’', search_mla_name)
+    } else {
+        search_mla_name <- gsub('’', '\'', search_mla_name)
+    }
+    
+    search_mla_name
+}
+
+make_people_search_string <- function(people_search_names) {
+    people_search_names <- unlist(lapply(people_search_names, prepare_search_mla_name))
+    
+    paste(
+        URLencode(
+            as.character(sapply(people_search_names, function(name) sprintf("\"%s\"", name))),
+            reserved=TRUE),
+        collapse='+OR+')
+}
+
+chunk_politician_search_strings <- function(politicians, max_chars=100) {
+    search_strings <- c()
+    pol_ind <- 1
+    # should usually be 3-6
+    while (pol_ind < length(politicians)+1) {
+        this_chunk_search_string <- make_people_search_string(politicians[pol_ind])
+        for (i in seq(1,7)) {
+            politicians_chunk <- politicians[pol_ind:(pol_ind+i)]
+            #print(politicians_chunk)
+            if (pol_ind+i > length(politicians) || nchar(make_people_search_string(politicians_chunk)) > max_chars) {
+                search_strings <- c(search_strings, this_chunk_search_string)
+                pol_ind <- pol_ind + i
+                break
+            } else {
+                this_chunk_search_string <- make_people_search_string(politicians_chunk)
+            }
+        }
+    }
+    search_strings
+}
+
+# Update main news article via from World News API
+update_news_from_worldnews <- function(existing_news_articles_filepath, politicians, worldnewsapi_key) {
+    url_patterns_to_exclude <- c(
+        "/sport",
+        "/football",
+        "/soccer",
+        "/rugby",
+        "/gaa",
+        "/culture/books",
+        "/tv",
+        "/showbiz",
+        "/arts",
+        "the42",
+        "sportsnewsireland"
+    )
     
     existing_news_articles <- read_feather(existing_news_articles_filepath)
+    go_back_to_date <- as.character(max(as.Date(existing_news_articles$published_date)))  # include that day
+    # first run used 2025-10-01
     
-    #Get Irish News from Twitter? They may Tweet the first line of every article.
-    if (Sys.info()['user']=='rstudio') Sys.setenv('TWITTER_PAT'='/home/rstudio/nipol/.rtweet_token11.rds')
-    get_token()
+    active_politicians <- filter(politicians, active==1)
     
-    #irish_news, user_id 99960420
-    #tmp <- tweets_data(get_timelines(user = 99960420, n = 200))
-    #table(mday(tmp$created_at))  #200 covers ~5 days
-    #Some are retweets of their journalists - can check for irishnews.com in the urls_expanded_url
-    #Use the url for the title and the text for the first line, i.e.
-    #tmp$text[3], and
-    #strsplit(tmp$urls_expanded_url[[3]],'/')[[1]] %>% .[[length(.)]] %>% strsplit('-') %>% unlist() %>% paste(collapse=' ')
+    search_politician_chunks <- chunk_politician_search_strings(active_politicians$normal_name)
     
-    get_article_title_from_hyphenated_url <- function(url) {
-        if (grepl('trib\\.al', url) & nchar(url) <= 35) {
-            return('-')
+    new_rows <- data.frame()
+    for (search_chunk in search_politician_chunks) {
+        # We assume that 100 will always be enough for 5-6 people in the last half week
+        tmp <- GET(sprintf('https://api.worldnewsapi.com/search-news?text=%s&language=en&earliest-publish-date=%s&number=100&offset=0',
+                           search_chunk, go_back_to_date),
+                   add_headers('x-api-key' = worldnewsapi_key))
+        if (tmp$status_code != '200') {
+            message('Error with World News API request; ending loop')
+            break
         } else {
-            lower_case_string <- sub('\\?param\\=[^\\s]*$', '', url, perl=TRUE)
-            lower_case_string <- strsplit(lower_case_string,'/')[[1]] %>% .[[length(.)]] %>% strsplit('-') %>% unlist()
+            hits <- fromJSON(content(tmp, as='text', encoding = 'utf8'))
+        }
+        
+        if (hits$available > 0) {
+            hits$news$source <- as.character(sapply(hits$news$url, function(s) unlist(strsplit(s, '/'))[3]))
             
-            #maybe drop a story id from the end
-            if (grepl('^\\d*$', lower_case_string[length(lower_case_string)])) {
-                lower_case_string <- lower_case_string[1:(length(lower_case_string)-1)]
-            }
-            #and a url
-            lower_case_string <- sub('\n*http[^\\s]*$', '', lower_case_string, perl=TRUE)
+            # Rename a bit like newscatcher
+            chunk_new_rows <- hits$news[,c('publish_date', 'title', 'url', 'source', 'text', 'sentiment')] %>%
+                rename(published_date = publish_date,
+                       link = url,
+                       summary = text)
             
-            lower_case_string <- trimws(paste(lower_case_string, collapse=' '))
+            # Exclude url patterns that are likely to be false positives
+            chunk_new_rows <- filter(chunk_new_rows, !grepl(paste(url_patterns_to_exclude, collapse='|'), link)) 
             
-            return(paste(toupper(substring(lower_case_string, 1, 1)), substring(lower_case_string, 2), sep = "", collapse = " "))
+            # Create clean text for name matching below, and avoid possible very long texts
+            chunk_new_rows <- mutate(chunk_new_rows,
+                                     cleaned_lc_summary = remove_fadas(tolower(summary)),
+                                     cleaned_lc_summary = gsub('’', '\'', cleaned_lc_summary),
+                                     cleaned_lc_summary = gsub('\\.', '', cleaned_lc_summary),  # to match mark h durkan below
+                                     summary = str_squish(summary),
+                                     summary = str_trunc(summary, 5000))
+            
+            # Filter to NI relevant - safer to do this; doesn't give many false negatives
+            chunk_new_rows <- filter(chunk_new_rows, grepl('Northern Ireland|\\bNI\\b|Belfast|NI Assembly|Northern Ireland Assembly|NI Executive|Northern Ireland Executive|First Minister|Finance Minister|Minister of Finance|Economy Minister|Minister for the Economy|Health Minister|Minister of Health|Environment Minister|Agriculture Minister|Minister of Agriculture|Infrastructure Minister|Minister for Infrastructure|Education Minister|Minister of Education|Justice Minister|Minister of Justice|Communities Minister|Minister for Communities|MLA|\\bMP\\b|UUP|Ulster Unionist|SDLP|Social Democratic|DUP|Democratic Unionist|Alliance|Sinn F|TUV|Traditional Unionist|PBP|People Before Profit|PUP|Progressive Unionist|Aontu', summary))
+            
+            new_rows <- rbind(new_rows, chunk_new_rows)
         }
     }
     
-    recent_irish_news_tweets <- tweets_data(get_timelines(user = 99960420, n = 500)) %>% filter(!is_retweet)
-    recent_irish_news_tweets$published_date <- as.character(recent_irish_news_tweets$created_at)
-    recent_irish_news_tweets$link <- sapply(recent_irish_news_tweets$urls_expanded_url, function(x) x[[1]])
-    recent_irish_news_tweets$title <- as.character(sapply(recent_irish_news_tweets$link, get_article_title_from_hyphenated_url))
-    recent_irish_news_tweets$source <- 'irishnews.com'
-    recent_irish_news_tweets$summary <- as.character(sapply(recent_irish_news_tweets$text, function(t) sub('\n*http[^\\s]*$', '', t, perl=TRUE)))
+    #Dedup because we will have matched the same article for different people,
+    #  and remove any where articles (titles) are identical but in different url subdomains (same source)
+    new_rows <- new_rows %>% sample_frac(1) %>% 
+        mutate(title = gsub('’', '\'', title)) %>%
+        filter(!duplicated(.[, c('source', 'title')])) %>% arrange(published_date)
     
-    #And same for News Letter, 135920727
-    #tmp <- tweets_data(get_timelines(user = 135920727, n = 200))
-    #table(mday(tmp$created_at))  #200 covers ~8 days
-    #Some urls have the title but about half are trib.al/* with no title; set title='-' for these
-    
-    recent_news_letter_tweets <- tweets_data(get_timelines(user = 135920727, n = 300)) %>% filter(!is_retweet)
-    recent_news_letter_tweets$published_date <- as.character(recent_news_letter_tweets$created_at)
-    recent_news_letter_tweets$link <- sapply(recent_news_letter_tweets$urls_expanded_url, function(x) x[[1]])
-    recent_news_letter_tweets$title <- as.character(sapply(recent_news_letter_tweets$link, get_article_title_from_hyphenated_url))
-    recent_news_letter_tweets$source <- 'newsletter.co.uk'
-    recent_news_letter_tweets$summary <- as.character(sapply(recent_news_letter_tweets$text, function(t) sub('\n*http[^\\s]*$', '', t, perl=TRUE)))
-    
-    #Dedup by link only, before adding to the main file (haven't duplicated by involving person yet), 
-    #  to avoid repeated tweets about the same article quoting a different line each time
-    recent_irish_news_tweets <- recent_irish_news_tweets[!duplicated(recent_irish_news_tweets$link),]
-    recent_news_letter_tweets <- recent_news_letter_tweets[!duplicated(recent_news_letter_tweets$link),]
-    
-    #To save, we need published_date, title, link, source, summary, and normal_name for each match
-    inews_or_nl_matches <- data.frame()
-    #Use lower case to search, because I lower-cased most of the title
-    for (politician in politicians$normal_name) {
-        inews_or_nl_matches <- rbind(inews_or_nl_matches,
-                                     recent_irish_news_tweets %>% filter(grepl(tolower(politician), tolower(title)) | grepl(tolower(politician), tolower(summary))) %>%
-                                         mutate(normal_name = politician) %>%
-                                         select(normal_name, published_date, title,
-                                                link, source, summary))
-        inews_or_nl_matches <- rbind(inews_or_nl_matches,
-                                     recent_news_letter_tweets %>% filter(grepl(tolower(politician), tolower(title)) | grepl(tolower(politician), tolower(summary))) %>%
-                                         mutate(normal_name = politician) %>%
-                                         select(normal_name, published_date, title,
-                                                link, source, summary))
+    # Assign politicians and explode rows
+    new_rows_by_p <- data.frame()
+    for (p in unique(active_politicians$normal_name)) {
+        p_hits <- new_rows %>%
+            filter(grepl(prepare_search_mla_name(p, apostrophe=FALSE),
+                         paste(tolower(title), gsub('\\.','',cleaned_lc_summary), sep='\n'))) %>% 
+            mutate(normal_name = p)
+        
+        new_rows_by_p <- rbind(new_rows_by_p, p_hits)
     }
-    #table(inews_or_nl_matches$normal_name)
+    new_rows_by_p <- new_rows_by_p %>%
+        select(normal_name, published_date, title, link, source, summary, sentiment) %>%
+        arrange(published_date, normal_name)
     
+    message(sprintf('- Retrieved %i articles from API containing %i people', 
+                    new_rows_by_p %>% filter(!duplicated(.[, c('source', 'title')])) %>% nrow(),
+                    n_distinct(new_rows_by_p$normal_name)
+    ))
+    
+    #Append new hits to file
+    #Dedup after appending because we might have got articles from most recent day for a second time
     prev_nrows <- nrow(existing_news_articles)
-    existing_news_articles <- rbind(existing_news_articles, inews_or_nl_matches)
-    #dedup - don't allow more than one normal_name-link per day
-    existing_news_articles$short_date <- as.Date(existing_news_articles$published_date)
-    existing_news_articles <- existing_news_articles[!duplicated(existing_news_articles %>% select(normal_name, link, short_date)), ]
-    existing_news_articles$short_date <- NULL
-    #
-    cat(sprintf('Added %i rows to file\n', nrow(existing_news_articles)-prev_nrows))
-    write_feather(existing_news_articles, existing_news_articles_file_name)
+    existing_news_articles <- rbind(existing_news_articles, new_rows_by_p) %>%
+        mutate(short_date = as.Date(published_date)) %>%
+        filter(!duplicated(.[, c('normal_name', 'link', 'short_date')])) %>%
+        select(-short_date)
+    
+    write_feather(existing_news_articles, existing_news_articles_filepath)
+    cat(sprintf('- Added %i rows to news article file\n', nrow(existing_news_articles)-prev_nrows))
 }
 
 
@@ -619,7 +691,7 @@ update_news_article_sentiment <- function(news_articles_filepath, news_articles_
 }
 
 
-
+# TWITTER ----
 
 # Moved to python, now skipped anyway
 # add_pca_scores_to_tweets <- function(new_mla_tweets) {

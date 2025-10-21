@@ -5,15 +5,14 @@
 # iv) Division votes ('votes' (vote details) and 'vote_results' (how members voted))
 # v) Contributions by each member in Hansard
 # vi) Average emotions for current session contributions
+# vii) News article mentions from World News API
 # SKIPPED NOW: Get extra news articles from Twitter (not in NewsCatcher)
-# viii) Sentiment for news article mentions - TODO replace/enhance with GPT summary
+# NOT NEEDED NOW: Sentiment for news article mentions (already in World News API)
 # SKIPPED NOW: Get tweets, calculate tweet network
 
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(arrow))  # for read_feather
 library(yaml)
-
-if (Sys.info()['user']=='rstudio') setwd('/home/rstudio/nipol')
 
 source('./functions_for_update_weekly.R')
 
@@ -28,16 +27,16 @@ do_twitter <- config$INCLUDE_TWITTER   # as of mid-2023, there is no affordable 
 
 # People ----
 #i) First check for any new MLAs and add to the politicians file, then return the list
-politicians_list_filepath <- file.path(data_dir, 'all_politicians_list.csv')
+politicians_list_filepath <- file.path(data_dir, config$DATA_MEMBER_IDS)
 politicians_list_changes_log_filepath <- file.path(data_dir, 'politician_list_changes.log')
 politicians <- update_and_get_politicians_list(politicians_list_filepath, politicians_list_changes_log_filepath)
 
 #ii) Latest diary events - take anything from current date to a year ahead
 message('\nDoing Assembly diary, committees, minister lists, register of interests')
-diary_filepath <- file.path(data_dir, 'diary_future_events.psv')
-committees_list_filepath <- file.path(data_dir, 'current_committee_memberships.csv')
-minister_list_filepath <- file.path(data_dir, 'current_ministers_and_speakers.csv')
-mla_interests_list_filepath <- file.path(data_dir, 'current_mla_registered_interests.csv')
+diary_filepath <- file.path(data_dir, config$DATA_ASSEMBLY_DIARY_EVENTS)
+committees_list_filepath <- file.path(data_dir, config$DATA_ASSEMBLY_COMMITTEE_MEMBERSHIP)
+minister_list_filepath <- file.path(data_dir, config$DATA_ASSEMBLY_MINISTER_ROLES)
+mla_interests_list_filepath <- file.path(data_dir, config$DATA_ASSEMBLY_REGISTERED_INTERESTS)
 update_assembly_lists(
     diary_filepath,
     committees_list_filepath,
@@ -47,26 +46,26 @@ update_assembly_lists(
 # TODO check for change in minister AffiliationTitle strings?
 
 
-# Questions and answers ----
+# iii) Questions and answers ----
 
-questions_filepath <- file.path(data_dir, 'niassembly_questions.feather')
-answers_filepath <- file.path(data_dir, 'niassembly_answers.feather')
+questions_filepath <- file.path(data_dir, config$DATA_ASSEMBLY_QUESTIONS)
+answers_filepath <- file.path(data_dir, config$DATA_ASSEMBLY_ANSWERS)
 update_questions_and_answers(questions_filepath, answers_filepath)
 
-# Votes ----
+# iv) Votes ----
 
 message('\nDoing votes')
-vote_details_filepath <- file.path(data_dir, 'division_votes.feather')
-vote_results_filepath <- file.path(data_dir, 'division_vote_results.feather')
+vote_details_filepath <- file.path(data_dir, config$DATA_ASSEMBLY_DIVISION_VOTES)
+vote_results_filepath <- file.path(data_dir, config$DATA_ASSEMBLY_DIVISION_VOTE_RESULTS)
 update_vote_list(vote_details_filepath, vote_results_filepath)
 
-# Contributions ----
+# v) Contributions ----
 
 message('\nDoing plenary contributions')
 # plenary_hansard_contribs.feather started in 2022-05 - we want to use the current Assembly session
 #   so this is OK; TODO get method for archiving older contribs, or use one file and filter in time in update_average_contrib_emotions
 contribs_filepath <- file.path(data_dir, 'plenary_hansard_contribs.feather')
-contribs_emotions_filepath <- file.path(data_dir, 'plenary_hansard_contribs_emotions_averaged.feather')
+contribs_emotions_filepath <- file.path(data_dir, config$DATA_ASSEMBLY_PLENARY_CONTRIBS_AVERAGE_EMOTIONS)
 
 update_plenary_contribs(contribs_filepath,
                         current_session_name,
@@ -74,27 +73,22 @@ update_plenary_contribs(contribs_filepath,
                         politicians_list_filepath,
                         file.path(data_dir, 'hist_mla_ids_by_session.feather'))
 
+# vi) Contribution emotions
 update_average_contrib_emotions(contribs_filepath, contribs_emotions_filepath)
 
 
-# News article mentions ----
+# vii) News article mentions ----
 
-# The main news scraping is done in update_newscatcher_in_chunks_r.R
-#   Irish News was done via twitter, but in 2023 this must be skipped
-# Sentiment slim file is computed for all articles (via NewsCatcher and anything else);
-#   TODO update with a GPT solution
+# Previously used NewsCatcher in update_newscatcher.R, and sentiment was added here in update_news_article_sentiment.
+# At one time Irish News was added via Twitter, but then NewsCatcher added it as a source.
 
-news_articles_filepath <- file.path(data_dir, 'newscatcher_articles_sep2020topresent.feather')
+# From October 2025, use World News API here.
 
-# if (do_twitter) {
-#     update_news_from_twitter(politicians, news_articles_filepath)
-# }
+news_articles_filepath <- file.path(data_dir, config$DATA_NEWS_WORLDNEWS)
+worldnewsapi_key <- readLines('worldnewsapi_token', n=1)
 
-#Add sentiment on the summaries (newscatcher_articles file) which is updated elsewhere before this script runs
-message('\nDoing news article sentiment')
-update_news_article_sentiment(news_articles_filepath,
-                              file.path(data_dir, 'newscatcher_articles_slim_w_sentiment_sep2020topresent.feather'))
-
+message('\nDoing World News API update')
+update_news_from_worldnews(news_articles_filepath, politicians, worldnewsapi_key)
 
 # Tweets ----
 

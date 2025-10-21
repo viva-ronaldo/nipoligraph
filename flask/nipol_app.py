@@ -208,9 +208,8 @@ print('Done historical contributions')
 
 #News 
 #----
-news_volume_average_window_weeks = 7
 news_df, news_sources, news_sentiment_by_party_week = load_and_process_news_data(
-    data_dir, config, mla_ids, news_volume_average_window_weeks=news_volume_average_window_weeks)
+    data_dir, config, mla_ids, news_volume_average_window_weeks=config['NEWS_VOLUME_PLOT_AVERAGE_WINDOW_WEEKS'])
 news_summaries = load_news_summaries(data_dir, config, mla_ids)
 print('Done news')
 
@@ -259,7 +258,7 @@ n_active_mlas = (mla_ids.role=='MLA').sum()
 file_change_times = [os.path.getmtime(x) for x in \
     [data_dir + config['DATA_BLUESKY_POSTS'],
      data_dir + config['DATA_ASSEMBLY_DIARY_EVENTS'],
-     data_dir + config['DATA_NEWS_NEWSCATCHER']]
+     data_dir + config['DATA_NEWS_WORLDNEWS']]
 ]
 last_updated_date = time.strftime('%A, %-d %B', time.localtime(max(file_change_times)))
 
@@ -328,6 +327,10 @@ def social_media():
             full_mla_list = sorted_mlas_mps_list,
             postcodes_list = postcode_and_constits_list,
             blog_pieces = blog_pieces[:3])
+
+@app.route('/twitter')
+def twitter():
+    return redirect(url_for('social_media'))
 
 @app.route('/what-they-do', methods=['GET'])
 def assembly():
@@ -433,7 +436,7 @@ def news():
         articles_list = articles_list,
         full_mla_list = sorted_mlas_mps_list,
         postcodes_list = postcode_and_constits_list,
-        news_volume_average_window_weeks = news_volume_average_window_weeks,
+        news_volume_average_window_weeks = config['NEWS_VOLUME_PLOT_AVERAGE_WINDOW_WEEKS'],
         news_summary_politicians = ['-- Please select --'] + news_summaries.normal_name.tolist(),
         news_summary_n_articles = [0] + news_summaries.n_articles.tolist(),
         news_summary_time_period = [''] + news_summaries.time_period.tolist(),

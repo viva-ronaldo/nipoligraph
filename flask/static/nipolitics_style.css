@@ -86,7 +86,7 @@ a.use-underline:hover:after{
     z-index: 900;
 }
 .nav-item {
-    padding: 5px 15px;
+    padding: 5px 10px;
     text-align: right;
 }
 /* Navbar links - also overwrite the colour of use-underline */
@@ -237,7 +237,7 @@ ul ul a {
 }
 .sidebar-list-search-container input[type=text] {
   width: 170px;
-  padding: 6px;
+  padding: 4px;
   font-size: 0.75em;
 }
 .sidebar-list-search-container-squash input[type=text] {
