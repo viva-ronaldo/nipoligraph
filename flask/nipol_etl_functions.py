@@ -1038,6 +1038,7 @@ def load_news_summaries(data_dir, config, mla_ids):
         # Keep active politicians only - filter on mla_ids
         .merge(mla_ids[['normal_name']], on='normal_name', how='right')
         .fillna({'news_coverage_summary': 'NONE'})
+        .sort_values('normal_name')
     )
     return news_summaries
 
@@ -1239,7 +1240,7 @@ def get_member_news_stuff(mla_ids_row, news_df, news_summaries):
         member_news_summaries = news_summaries[news_summaries.normal_name==person_choice].iloc[0]
         if member_news_summaries.n_articles > 0:
             news_summary_desc_string = (
-                f"(Summary of {int(member_news_summaries.n_articles)} articles "
+                f"(Summary of {int(member_news_summaries.n_articles)} article{'s' if int(member_news_summaries.n_articles) > 1 else ''} "
                 f"in the period from {member_news_summaries.time_period.split('_')[0]} to now)"
                 )
         else:
