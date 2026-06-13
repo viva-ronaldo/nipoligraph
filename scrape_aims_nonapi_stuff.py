@@ -20,7 +20,7 @@ existing_attendance = pd.read_csv(committee_attendance_filepath)
 n_existing_meeting_ids = existing_agenda.meeting_id.nunique()
 
 #start_mid, end_mid = 16100, 17100  # one time, get all from Feb 2024 to present (Jun 2024)
-start_mid, end_mid = existing_agenda.meeting_id.max()-50, existing_agenda.meeting_id.max()+25
+start_mid, end_mid = existing_agenda.meeting_id.max()-50, existing_agenda.meeting_id.max()+75
 # use latest that we have; the ids are not quite ordered by date, but close
 
 agenda_res, attendance_res = [], []
@@ -98,11 +98,13 @@ apg_links_dict = {
     'All-Party Group on Aerospace and Space': 2247,
     'All-Party Group on Ageing and Older People': 1360,
     'All-Party Group on Animal Welfare': 1782,
+    'All-Party Group on Artificial Intelligence': 2458,
     'All-Party Group on Arts': 1894,
     'All-Party Group on Autism': 227,
     'All-Party Group on Built Environment': 274,
     'All-Party Group on Cancer': 273,
     'All-Party Group on Carers': 1779,
+    'All-Party Group on Children and Young People': 2521,
     'All-Party Group on Climate Action': 1631,
     'All-Party Group on Community Pharmacy': 1833,
     'All-Party Group on Dementia': 2196,
@@ -110,12 +112,14 @@ apg_links_dict = {
     'All-Party Group on Disability': 269,
     'All-Party Group on Domestic and Sexual Violence': 1554,
     'All-Party Group on Early Education and Childcare': 1705,
+    'All-Party Group on Eating Disorders and Disordered Eating': 2479,
     'All-Party Group on Ethnic Minority Community': 1667,
     'All-Party Group on Food to Go': 2328,
     'All-Party Group on Football': 2220,
     'All-Party Group on Fuel Poverty': 2157,
     'All-Party Group on Funerals and Bereavement': 2370,
     'All-Party Group on Further and Higher Education': 1742,
+    'All-Party Group on General Practice': 2465,
     'All-Party Group on Homelessness': 1895,
     'All-Party Group on Housing': 1282,
     'All-Party Group on International Development': 2195,
@@ -124,6 +128,7 @@ apg_links_dict = {
     'All-Party Group on Lung Health': 1720,
     'All-Party Group on Mental Health': 652,
     'All-Party Group on Micro and Small Business': 1781,
+    'All-Party Group on Modern Slavery and Sexual Exploitation': 2466,
     'All-Party Group on MS and Neurology': 1968,
     'All-Party Group on Online Safety for Children and Young People': 2394,
     'All-Party Group on Parental Participation in Education': 1670,

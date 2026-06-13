@@ -966,8 +966,7 @@ def load_and_process_news_data(data_dir, config, mla_ids, news_volume_average_wi
         news_df
         .merge(mla_ids[['normal_name', 'PartyName', 'PartyGroup']], how='inner', on='normal_name')
         #drop the first and last weeks which could be partial
-        #news_df = news_df[(news_df.published_date_week > news_df.published_date_week.min()) &
-        #    (news_df.published_date_week < news_df.published_date_week.max())]
+        .query("(published_date_yweek > published_date_yweek.min()) & (published_date_yweek < published_date_yweek.max())")
         .sort_values('published_date', ascending=False)
         .assign(
             date_pretty = lambda df: pd.to_datetime(df.published_date).dt.strftime('%Y-%m-%d'),
@@ -1012,12 +1011,10 @@ def load_and_process_news_data(data_dir, config, mla_ids, news_volume_average_wi
         news_sentiment_by_party_week.groupby('PartyName', sort=False).link\
             .rolling(news_volume_average_window_weeks, min_periods=1, center=True).mean().reset_index(0),  #the 0 is vital here
         rsuffix='_smooth').rename(index=str, columns={'link_smooth':'vol_smooth'})
-    #print(news_sentiment_by_party_week.head())
     #drop first and last weeks here instead (as they are incomplete), so that table still shows the most recent articles
     news_sentiment_by_party_week['yearweekcomb'] = news_sentiment_by_party_week['published_date_year'] + news_sentiment_by_party_week['published_date_week']
-    print('TODO drop first, last news weeks')
-    #news_sentiment_by_party_week = news_sentiment_by_party_week[(news_sentiment_by_party_week.yearweekcomb > news_sentiment_by_party_week.yearweekcomb.min()) &
-    #    (news_sentiment_by_party_week.yearweekcomb < news_sentiment_by_party_week.yearweekcomb.max())]
+    news_sentiment_by_party_week = news_sentiment_by_party_week[(news_sentiment_by_party_week.yearweekcomb > news_sentiment_by_party_week.yearweekcomb.min()) &
+        (news_sentiment_by_party_week.yearweekcomb < news_sentiment_by_party_week.yearweekcomb.max())]
     #This is used for the boxplot - need mean value by party for tooltip
     news_sentiment_by_party_week = news_sentiment_by_party_week.merge(
         news_sentiment_by_party_week.groupby('PartyName').agg( 
